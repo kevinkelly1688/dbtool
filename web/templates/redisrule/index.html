@@ -1,0 +1,110 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/redisrule.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="rr">
+  <div class="page-head">
+    <h1>{{t "Redis 规则"}}</h1>
+  </div>
+  <div id="rr-msg" aria-live="polite"></div>
+  <div id="rr-missing" class="alert err" role="alert" hidden>
+    {{th "规则表未创建，请先执行 <code>deploy/sql/170_redis_rules.sql</code>；在此之前 Redis 工单全部拒绝。"}}
+  </div>
+
+  <section class="card">
+    <h2>{{t "规则"}} <span class="sub muted" id="rr-count"></span></h2>
+    <div class="toolbar">
+      <label class="rr-tpl">{{t "从模板添加"}}
+        <select id="rr-tpl" aria-label="{{t "规则模板"}}"><option value="">{{t "选择模板…"}}</option></select>
+      </label>
+      <button class="btn" type="button" id="rr-tpl-add" data-btn="redisrule.edit">{{t "填入编辑器"}}</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="rr-test">{{t "规则测试"}}</button>
+      <button class="btn primary" type="button" id="rr-new" data-btn="redisrule.edit">{{t "新增规则"}}</button>
+    </div>
+    <div class="grid-wrap">
+      <table class="list" id="rr-table">
+        <thead><tr><th>{{t "名称"}}</th><th>{{t "状态"}}</th><th>{{t "命令"}}</th><th>{{t "键匹配"}}</th><th>{{t "适用范围"}}</th><th class="num">{{t "键数上限"}}</th><th>{{t "记录原值"}}</th><th>{{t "说明"}}</th><th>{{t "最近修改"}}</th><th>{{t "操作"}}</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{t "命令清单"}}</h2>
+    <details open>
+      <summary>{{t "硬禁止命令"}}</summary>
+      <div class="chips rr-chips" id="rr-forbidden"></div>
+    </details>
+    <details>
+      <summary>{{t "支持的写命令"}}</summary>
+      <div class="chips rr-chips" id="rr-supported"></div>
+    </details>
+  </section>
+
+  <!-- 新增 / 编辑 -->
+  <div class="modal-mask" id="rr-m-edit" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="{{t "编辑规则"}}">
+    <h2 id="rr-edit-title">{{t "新增规则"}}</h2>
+    <div id="rr-edit-msg"></div>
+    <div class="form-grid">
+      <label class="full">{{t "规则名称（唯一）"}}<input type="text" id="rr-f-name" maxlength="50" autocomplete="off"></label>
+      <label class="check"><input type="checkbox" id="rr-f-enabled" checked> {{t "启用"}}</label>
+      <label class="full">{{t "命令（逗号分隔）"}}
+        <input type="text" id="rr-f-cmds" autocomplete="off" aria-describedby="rr-cmd-err">
+        <small id="rr-cmd-err" class="rr-err"></small>
+      </label>
+      <details class="full rr-pick"><summary>{{t "选择命令"}}</summary><div class="chips rr-chips" id="rr-cmd-pick" aria-label="{{t "点击加入命令"}}"></div></details>
+      <label class="full">{{t "键匹配（glob，每行一个）"}}
+        <textarea id="rr-f-pats" rows="3" placeholder="cache:*&#10;session:*" autocomplete="off"></textarea>
+      </label>
+      <label>{{t "限定实例（不选 = 全部）"}}<select id="rr-f-insts" multiple size="4" aria-label="{{t "限定实例"}}"></select></label>
+      <label>{{t "限定 db 编号（留空 = 全部）"}}<input type="text" id="rr-f-dbs" placeholder="0,1,3" autocomplete="off"></label>
+      <label><span id="rr-maxkeys-limit">{{t "键数上限（1 ~ {n}）" "n" "10000"}}</span><input type="text" id="rr-f-maxkeys" inputmode="numeric" autocomplete="off"></label>
+      <label class="check full"><input type="checkbox" id="rr-f-before"><span>{{th "执行前记录原值（<b>原值会明文显示在工单详情里</b>）"}}</span></label>
+      <label class="full">{{t "说明"}}<input type="text" id="rr-f-desc" maxlength="500" autocomplete="off"></label>
+      <label class="full">{{t "备注"}}<input type="text" id="rr-f-remark" maxlength="500" autocomplete="off"></label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" data-close>{{t "取消"}}</button>
+      <span class="spacer"></span>
+      <button class="btn primary" type="button" id="rr-edit-save">{{t "保存…"}}</button>
+    </div>
+  </div></div>
+
+  <!-- 二次确认 -->
+  <div class="modal-mask" id="rr-m-confirm" hidden><div class="modal" role="dialog" aria-modal="true" aria-label="{{t "确认规则变更"}}">
+    <h2 id="rr-confirm-title" class="crit">{{t "确认变更"}}</h2>
+    <p id="rr-confirm-text"></p>
+    <pre class="rr-diff mono" id="rr-confirm-diff"></pre>
+    <p class="muted small">{{t "变更立即对所有 Redis 工单生效，并写入系统审计。"}}</p>
+    <div class="actions">
+      <button class="btn" type="button" data-close>{{t "取消"}}</button>
+      <span class="spacer"></span>
+      <button class="btn danger" type="button" id="rr-confirm-ok">{{t "确认"}}</button>
+    </div>
+  </div></div>
+
+  <!-- 规则测试 -->
+  <div class="modal-mask" id="rr-m-test" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-label="{{t "规则测试"}}">
+    <h2>{{t "规则测试"}}</h2>
+    <div class="form-grid">
+      <label>{{t "实例"}}<select id="rr-t-inst" aria-label="{{t "实例"}}"><option value="0">{{t "（任意实例）"}}</option></select></label>
+      <label>{{t "db 编号"}}<input type="text" id="rr-t-db" value="0" inputmode="numeric" autocomplete="off"></label>
+      <label class="full">{{t "命令（每行一条）"}}<textarea id="rr-t-text" rows="5" placeholder="DEL cache:a cache:b&#10;SET cache:x 1 EX 60" autocomplete="off"></textarea></label>
+    </div>
+    <div class="actions"><button class="btn primary" type="button" id="rr-t-run">{{t "检查"}}</button></div>
+    <div class="grid-wrap"><table class="list" id="rr-t-table" hidden>
+      <thead><tr><th>{{t "行"}}</th><th>{{t "结果"}}</th><th>{{t "命令"}}</th><th>{{t "说明"}}</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "关闭"}}</button></div>
+  </div></div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/redisrule/redisrule.js"></script>{{end}}

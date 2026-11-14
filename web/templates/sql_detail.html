@@ -1,0 +1,211 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sql_detail.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sqlflow.css"><noscript><style>#result-table { table-layout: auto; min-width: 0; } #result-table th, #result-table td { overflow: visible; }</style></noscript>{{end}}
+{{define "content"}}
+{{- $rs := t "不限"}}{{if .Data.Workflow.RunDateStart}}{{$rs = .Data.Workflow.RunDateStart.Format "2006-01-02 15:04"}}{{end}}
+{{- $re := t "不限"}}{{if .Data.Workflow.RunDateEnd}}{{$re = .Data.Workflow.RunDateEnd.Format "2006-01-02 15:04"}}{{end}}
+<main class="page" id="detail" data-id="{{.Data.Workflow.ID}}" data-status="{{.Data.Workflow.Status}}" data-pending="{{.Data.Pending}}" data-can-osc="{{.Data.CanOsc}}" data-export="{{.Data.IsExport}}" data-batch="{{.Data.IsBatch}}" data-instance="{{if .Data.IsBatch}}{{t "批量 {n} 个实例" "n" (len .Data.BatchTargets)}}{{else}}{{.Data.InstanceName}}{{end}}" data-db="{{.Data.Workflow.DBName}}" data-env="{{.Data.Env}}" data-env-prod="{{.Data.EnvProd}}">
+  <div class="page-head">
+    <a class="btn ghost" href="/sqlworkflow">&larr; {{t "返回列表"}}</a>
+    <h1>{{if .Data.IsExport}}{{t "数据导出工单|item"}}{{else}}{{t "SQL 工单|item"}}{{end}} #{{.Data.Workflow.ID}}</h1>
+    <span class="st {{sqlStatusClass .Data.Workflow.Status}}">{{tp .Data.StatusLabel}}</span>
+    <span class="spacer"></span>
+    {{if .Data.CanCopy}}<a class="btn" id="act-copy" href="{{if .Data.IsExport}}/sqlworkflow/export/new{{else}}/sqlworkflow/new{{end}}?copy={{.Data.Workflow.ID}}">{{t "复制为新工单"}}</a>{{end}}
+  </div>
+
+  <div id="detail-msg"></div>
+  {{if .Data.IsRedis}}<div class="alert warn" role="note">{{th "<b>Redis 工单：</b>Redis 没有事务回滚，已执行的命令无法自动撤销。"}}</div>{{end}}
+  {{if .Data.ParseError}}<div class="alert err">{{tp .Data.ParseError}}</div>{{end}}
+
+  <div class="dgrid">
+  <section class="card">
+    <h2>{{.Data.Workflow.WorkflowName}}</h2>
+    <dl class="kv">
+      <dt>{{t "提交人"}}</dt><dd>{{t "{name}（{user}）" "name" .Data.Workflow.EngineerDisplay "user" .Data.Workflow.Engineer}}</dd>
+      <dt>{{t "资源组"}}</dt><dd>{{.Data.Workflow.GroupName}}</dd>
+      {{if .Data.IsBatch}}<dt>{{t "目标实例"}}</dt><dd>{{if .Data.IsExport}}{{t "批量导出，共 {n} 个：" "n" (len .Data.BatchTargets)}}{{else}}{{t "批量上线，共 {n} 个：" "n" (len .Data.BatchTargets)}}{{end}}{{range $i, $n := .Data.BatchTargets}}{{if $i}}{{t "、"}}{{end}}{{$n}}{{end}}</dd>{{else}}<dt>{{t "目标实例"}}</dt><dd>{{.Data.InstanceName}}</dd>{{end}}
+      <dt>{{t "数据库"}}</dt><dd class="mono">{{.Data.Workflow.DBName}}</dd>
+      <dt>{{t "类型"}}</dt><dd>{{if .Data.IsRedis}}{{t "Redis 命令"}}{{else}}{{tp .Data.SyntaxLabel}}{{end}}{{if .Data.IsManualSubmit}}{{t "（已跳过语法检查，原生执行）"}}{{end}}</dd>
+      {{if .Data.IsExport}}<dt>{{t "导出格式"}}</dt><dd>{{.Data.ExportFormat}}</dd>
+      {{if .Data.ExportUnmasked}}<dt>{{t "导出原值"}}</dt><dd><span class="badge sf-warn">{{t "不脱敏"}}</span> {{.Data.ExportUnmasked.Reason}}
+        <div class="muted small">{{t "{user} 在 {time} 选择；SQL 防火墙要求强制脱敏的列仍会脱敏。" "user" .Data.ExportUnmasked.SetBy "time" (.Data.ExportUnmasked.At.Format "2006-01-02 15:04")}}{{if not .Data.ExportUnmasked.Active}} <b>{{t "提交人现在已不是超级用户，执行时不会导出原值，按脱敏设置导出。"}}</b>{{end}}</div></dd>{{end}}
+      {{if .Data.ExportMerge}}<dt>{{t "合并导出"}}</dt><dd><span class="badge">{{t "合并成一个文件"}}</span> {{t "各实例导出的数据按勾选顺序依次写在同一个文件里（不含实例名称列）。"}}</dd>{{end}}
+      {{if .Data.ExportRows}}<dt>{{if .Data.ExportRowsEst}}{{t "预计行数"}}{{else}}{{t "导出行数"}}{{end}}</dt><dd>{{.Data.ExportRows}}</dd>{{end}}
+      {{if .Data.FileName}}<dt>{{t "导出文件|file"}}</dt><dd class="mono">{{.Data.FileName}}{{if .Data.ExportFile}}{{if .Data.ExportFile.Cleaned}}{{if .Data.ExportFile.PurgedAt}} <span class="muted">{{t "文件已于 {time} 按保留策略清理，请重新提交导出" "time" (.Data.ExportFile.PurgedAt.Format "2006-01-02 15:04:05")}}</span>{{else}} <span class="muted">{{t "文件已不在存储里"}}</span>{{end}}{{else if .Data.CanDownload}} <a class="btn primary" href="/api/v1/sqlworkflow/{{.Data.Workflow.ID}}/download">{{t "下载文件"}}</a>{{end}}{{else if .Data.CanDownload}} <a class="btn primary" href="/api/v1/sqlworkflow/{{.Data.Workflow.ID}}/download">{{t "下载文件"}}</a>{{end}}</dd>{{end}}
+      {{else if .Data.IsRedis}}<dt>{{t "回滚"}}</dt><dd>{{t "无自动回滚（Redis 没有事务回滚）"}}</dd>{{else}}<dt>{{t "执行前备份"}}</dt><dd>{{if .Data.Workflow.IsBackup}}{{t "是"}}{{else}}{{t "否"}}{{end}}</dd>{{end}}
+      {{if .Data.Workflow.DemandURL}}<dt>{{t "需求链接"}}</dt><dd><a href="{{.Data.Workflow.DemandURL}}" target="_blank" rel="noopener noreferrer">{{.Data.Workflow.DemandURL}}</a></dd>{{end}}
+      <dt>{{t "可执行时间"}}</dt><dd>{{t "{start} ～ {end}" "start" $rs "end" $re}}</dd>
+      <dt>{{t "提交时间"}}</dt><dd>{{.Data.Workflow.CreateTime.Format "2006-01-02 15:04:05"}}</dd>
+      {{if .Data.Workflow.FinishTime}}<dt>{{t "结束时间"}}</dt><dd>{{.Data.Workflow.FinishTime.Format "2006-01-02 15:04:05"}}</dd>{{end}}
+      {{if .Data.Schedule}}<dt>{{if eq .Data.Workflow.Status "workflow_manreviewing"}}{{t "计划定时"}}{{else}}{{t "定时执行"}}{{end}}</dt><dd>{{.Data.Schedule.RunAt.Format "2006-01-02 15:04"}}{{if ne .Data.Workflow.Status "workflow_manreviewing"}}{{if eq .Data.Schedule.Executor "goinception"}}{{t "（goInception）"}}{{else}}{{t "（原生执行）"}}{{end}}{{end}}
+        {{if .Data.CanCancelSchedule}} <button class="btn" id="act-sched-cancel" type="button">{{t "取消定时"}}</button>{{end}}</dd>{{end}}
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>{{t "审批流程"}}</h2>
+    {{if .Data.Steps}}
+    <ol class="sf-steps">
+      {{range .Data.Steps}}
+      <li class="sf-step {{.State}}">
+        <span class="dot" aria-hidden="true"></span>
+        <div class="sf-step-body">
+          {{/* 只显示审批组；这一级现在哪些人能审批，放在鼠标悬停提示里（可用键盘聚焦） */}}
+          <b{{if .Tip}} class="sf-tip" tabindex="0" title="{{.TipFor lang}}" aria-label="{{t "{title}。{tip}" "title" (tp .Title) "tip" (.TipFor lang)}}"{{end}}>{{tp .Title}}</b>{{if .NoApprover}}<span class="sf-noone">{{t "：无人可审"}}</span>{{end}}
+          <small class="sf-step-st">{{if eq .State "done"}}{{t "已完成"}}{{else if eq .State "current"}}{{t "审批中"}}{{else if eq .State "rejected"}}{{t "已驳回"}}{{else if eq .State "aborted"}}{{t "已撤回"}}{{else if eq .State "skipped"}}{{t "未走到"}}{{else if eq .State "auto"}}{{t "自动"}}{{else}}{{t "待处理"}}{{end}}</small>
+          {{if .Who}}<div class="sf-step-who">{{tp .Who}}{{if .Time}} <time>{{.Time.Format "2006-01-02 15:04"}}</time>{{end}}</div>{{end}}
+          {{if .Remark}}<div class="muted sf-step-remark">{{if eq .State "rejected"}}{{t "驳回原因：{remark}" "remark" (tp .Remark)}}{{else if eq .State "aborted"}}{{t "撤回原因：{remark}" "remark" (tp .Remark)}}{{else}}{{t "意见：{remark}" "remark" (tp .Remark)}}{{end}}</div>{{end}}
+          {{if and (eq .State "current") .NoApprover}}<div class="sf-appr bad">{{t "本级没有可审批的人，仅超级用户可审批，请联系管理员。"}}</div>{{end}}
+        </div>
+      </li>
+      {{end}}
+    </ol>
+    {{else}}
+    <ol class="flow"><li>{{if .Data.Flow}}{{tp .Data.Flow}}{{else}}{{t "无审批节点"}}{{end}}</li></ol>
+    {{end}}
+
+    {{if or .Data.CanReview .Data.CanCancel .Data.CanAlterDate}}
+    <div class="review-box">
+      {{if or .Data.CanReview .Data.CanCancel}}
+      <label for="remark" class="lbl">{{t "备注（驳回/终止时必填）"}}</label>
+      <textarea id="remark" rows="2" maxlength="500" aria-label="{{t "备注"}}"></textarea>
+      <div class="actions">
+        {{if .Data.CanCancel}}<button class="btn danger" id="act-cancel" type="button">{{if .Data.CanReview}}{{t "驳回"}}{{else}}{{t "终止工单"}}{{end}}</button>{{end}}
+        {{if .Data.CanReview}}<button class="btn primary" id="act-pass" type="button">{{t "审批通过"}}</button>{{end}}
+      </div>
+      {{end}}
+      {{if .Data.CanAlterDate}}
+      <div class="form-grid" style="margin-top:12px">
+        <label>{{t "可执行开始时间"}}<input type="datetime-local" id="rd-start" value="{{if .Data.Workflow.RunDateStart}}{{.Data.Workflow.RunDateStart.Format "2006-01-02T15:04"}}{{end}}" aria-label="{{t "可执行开始时间"}}"></label>
+        <label>{{t "可执行结束时间"}}<input type="datetime-local" id="rd-end" value="{{if .Data.Workflow.RunDateEnd}}{{.Data.Workflow.RunDateEnd.Format "2006-01-02T15:04"}}{{end}}" aria-label="{{t "可执行结束时间"}}"></label>
+      </div>
+      <div class="actions"><button class="btn" id="act-rundate" type="button">{{t "修改可执行时间"}}</button></div>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
+  </div>
+
+  {{if .Data.Pending}}
+  <section class="card" id="progress-card">
+    <h2>{{if .Data.IsExport}}{{t "导出进度"}}{{else}}{{t "执行进度"}}{{end}}</h2>
+    <div class="sf-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="pg-track"><i id="pg-bar"></i></div>
+    <div class="sf-pg-line"><span id="pg-text">{{t "正在读取进度…"}}</span><span class="spacer"></span><span class="muted" id="pg-elapsed"></span></div>
+    {{if .Data.CanCancelRun}}
+    <div id="cancel-run-box" class="sf-cancel-run">
+      <div class="sf-reason-row">
+        <label for="cancel-reason" class="lbl">{{t "取消执行"}}</label>
+        <input type="text" id="cancel-reason" maxlength="500" placeholder="{{t "取消原因（必填）"}}" aria-label="{{t "取消执行的原因"}}">
+        <button class="btn danger" id="act-cancel-run" type="button">{{t "取消执行"}}</button>
+      </div>
+      <p class="muted small">{{th "<b>已成功的语句不会回滚</b>，工单变为「执行有异常」，不会自动重试。"}}</p>
+    </div>
+    {{end}}
+    {{if .Data.CanMarkException}}
+    <details id="stuck-box">
+      <summary>{{t "执行进程失联了？"}}</summary>
+      {{if .Data.StuckHint}}<div class="alert warn" role="note">{{tp .Data.StuckHint}}</div>{{end}}
+      <p class="muted small">{{th "标记后工单变为「执行有异常」，<b>不会自动重试</b>，请到目标库核对已执行的语句。"}}</p>
+      <label for="stuck-reason" class="lbl">{{t "原因"}}</label>
+      <input type="text" id="stuck-reason" maxlength="500" placeholder="{{t "例如：服务被重启"}}" aria-label="{{t "标记为异常的原因"}}">
+      <div class="actions"><button class="btn danger" id="act-mark-exception" type="button">{{t "标记为执行异常"}}</button></div>
+    </details>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if .Data.Runnable}}
+  <section class="card" id="run-card">
+    <h2>{{if .Data.IsExport}}{{t "导出"}}{{else}}{{t "执行"}}{{end}}</h2>
+    {{if not .Data.OnWindow}}<div class="alert warn">{{t "当前不在可执行时间范围内（{start} ～ {end}），立即执行会被拒绝。" "start" $rs "end" $re}}</div>{{end}}
+    <div class="form-grid">
+      <label>{{t "执行方式"}}
+        <select id="run-executor" aria-label="{{t "执行方式"}}">
+          {{range .Data.Executors}}<option value="{{.Value}}" {{if eq .Value $.Data.DefaultExecutor}}selected{{end}}>{{tp .Label}}{{if eq .Value $.Data.DefaultExecutor}}{{t "（默认推荐）"}}{{end}}</option>{{end}}
+        </select>
+      </label>
+      <label>{{t "定时执行时间"}}<input type="datetime-local" id="run-at" min="{{.Data.MinRunAt}}"{{if .Data.Schedule}} value="{{.Data.Schedule.RunAt.Format "2006-01-02T15:04"}}"{{end}} aria-label="{{t "定时执行时间"}}"></label>
+    </div>
+    <div class="actions">
+      {{if not .Data.IsExport}}<button class="btn" id="act-manual" type="button">{{t "确认手工执行结束"}}</button>{{end}}
+      <button class="btn" id="act-schedule" type="button">{{if .Data.IsExport}}{{t "定时导出"}}{{else if .Data.Schedule}}{{t "修改定时时间"}}{{else}}{{t "定时执行"}}{{end}}</button>
+      <button class="btn primary" id="act-execute" type="button">{{if .Data.IsExport}}{{t "立即导出"}}{{else}}{{t "立即执行"}}{{end}}</button>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .Data.BatchInstances}}
+  <section class="card" id="batch-card">
+    <h2>{{if .Data.IsExport}}{{t "各实例导出状态"}}{{else}}{{t "各实例执行状态"}}{{end}}</h2>
+    <table class="list">
+      <thead><tr><th>{{t "实例"}}</th><th>{{t "类型 / 地址"}}</th><th>{{t "数据库版本"}}</th><th>{{t "状态"}}</th><th>{{t "说明"}}</th><th class="num">{{t "耗时(s)"}}</th>{{if .Data.CanBatchOp}}<th>{{t "操作"}}</th>{{end}}</tr></thead>
+      <tbody>
+        {{range .Data.BatchInstances}}
+        <tr data-instance="{{.ID}}">
+          <td>{{.Name}}</td>
+          <td class="mono">{{if .DBType}}{{.DBType}} · {{end}}{{.Address}}</td>
+          <td class="mono" data-batch-version>…</td>
+          <td>{{if .Closed}}<span class="st aborted">{{t "已关闭"}}</span>{{else if .Failed}}<span class="st rejected">{{t "失败"}}</span>{{else}}<span class="st passed">{{t "成功"}}</span>{{end}}</td>
+          <td class="wrap">{{tp .Note}}</td>
+          <td class="num">{{printf "%.3f" .Elapsed}}</td>
+          {{if $.Data.CanBatchOp}}<td class="row-actions">{{if .Failed}}<button class="btn" type="button" data-batch-op="retry">{{t "重试"}}</button> <button class="btn ghost danger" type="button" data-batch-op="close">{{t "关闭"}}</button>{{end}}</td>{{end}}
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+
+  <section class="card">
+    <h2>{{if .Data.ShowExec}}{{if .Data.IsExport}}{{t "导出结果"}}{{else}}{{t "执行结果"}}{{end}}{{else}}{{t "检查结果"}}{{end}}
+      {{if .Data.CanRollback}}<span class="spacer"></span>
+      <button class="btn" id="act-rollback" type="button">{{t "查看回滚语句"}}</button>
+      <a class="btn" href="/api/v1/sqlworkflow/{{.Data.Workflow.ID}}/rollback/download">{{t "下载回滚 SQL"}}</a>{{end}}
+    </h2>
+    <div id="rollback-box" hidden></div>
+    <div class="grid-wrap"><table class="list{{if .Data.IsBatch}} rt-inst{{end}}{{if .Data.ShowExec}} rt-time{{end}}{{if .Data.CanOsc}} rt-osc{{end}}" id="result-table">
+      <colgroup><col class="c-id">{{if .Data.IsBatch}}<col class="c-inst">{{end}}<col class="c-stage"><col class="c-lv"><col class="c-msg"><col class="c-sql"><col class="c-aff">{{if .Data.ShowExec}}<col class="c-time">{{end}}{{if .Data.CanOsc}}<col class="c-osc">{{end}}</colgroup>
+      <thead><tr><th data-c="id">#</th>{{if .Data.IsBatch}}<th data-c="inst">{{t "实例"}}</th>{{end}}<th class="nw" data-c="stage">{{t "阶段"}}</th><th class="nw" data-c="lv">{{t "级别"}}</th><th data-c="msg">{{t "信息"}}</th><th data-c="sql">SQL</th><th data-c="aff">{{t "影响行数"}}</th>{{if .Data.ShowExec}}<th data-c="time">{{t "耗时(s)"}}</th>{{end}}{{if .Data.CanOsc}}<th data-c="osc">{{t "在线改表"}}</th>{{end}}</tr></thead>
+      <tbody>
+        {{range .Data.Rows}}
+        <tr class="{{lvl .ErrLevel}}{{if .IsSummary}} sum{{end}}">
+          <td data-c="id">{{.ID}}</td>
+          {{if $.Data.IsBatch}}<td data-c="inst">{{tp .InstanceName}}{{if .BatchClosed}} <small class="muted">{{t "已关闭"}}</small>{{end}}</td>{{end}}
+          <td class="nw" data-c="stage">{{tp .StageStatus}}</td>
+          <td class="nw" data-c="lv">{{if eq .ErrLevel 2}}{{t "错误"}}{{else if eq .ErrLevel 1}}{{t "警告"}}{{else}}{{t "通过|level"}}{{end}}</td>
+          <td class="wrap" data-c="msg">{{if ne .ErrorMessage "None"}}<div class="msgcell">{{.ErrorMessage}}</div>{{end}}{{if .Before}}<details class="rds-before"><summary>{{t "执行前的原值"}}</summary><pre class="mono">{{.Before}}</pre></details>{{end}}</td>
+          <td class="mono wrap sqlcell" data-c="sql">{{.SQL}}</td>
+          <td class="num" data-c="aff">{{.AffectedRows}}</td>
+          {{if $.Data.ShowExec}}<td class="num" data-c="time">{{.ExecuteTime}}</td>{{end}}
+          {{if $.Data.CanOsc}}<td data-c="osc">{{if .SQLSha1}}<span class="osc" data-sha="{{.SQLSha1}}"><span class="sf-progress sm indet" aria-hidden="true"><i></i></span> <button class="btn" data-osc="get" type="button">{{t "进度"}}</button> <button class="btn" data-osc="pause" type="button">{{t "暂停"}}</button> <button class="btn" data-osc="resume" type="button">{{t "恢复|osc"}}</button> <button class="btn danger" data-osc="kill" type="button">{{t "终止"}}</button></span><span class="osc-out muted"></span>{{end}}</td>{{end}}
+        </tr>
+        {{else}}
+        <tr><td colspan="8" class="empty">{{t "没有结果。"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table></div>
+  </section>
+
+  <div class="dgrid">
+  <section class="card">
+    <h2>{{if .Data.IsExport}}{{t "导出查询"}}{{else if .Data.IsRedis}}{{t "Redis 命令（原文）"}}{{else}}{{t "SQL 内容"}}{{end}}</h2>
+    <pre class="sqlbox mono" id="wf-sql">{{.Data.Content.SQLContent}}</pre>
+  </section>
+
+  <section class="card">
+    <h2>{{t "操作日志"}}</h2>
+    <ul class="log">
+      {{range .Data.Logs}}
+      <li><time>{{.OperationTime.Format "2006-01-02 15:04:05"}}</time> <b>{{tp .OperatorDisplay}}</b> {{tp .OperationTypeDesc}} <span class="muted">{{tp .OperationInfo}}</span></li>
+      {{end}}
+    </ul>
+  </section>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sqlflow/detail.js"></script>{{end}}

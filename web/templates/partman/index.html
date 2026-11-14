@@ -1,0 +1,194 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/partman.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="partman">
+  <div class="page-head">
+    <h1>{{t "分区维护"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form" id="pm-filter">
+      <select id="pm-inst" aria-label="{{t "实例"}}"><option value="">{{t "全部实例"}}</option></select>
+      <select id="pm-enable" aria-label="{{t "启用状态"}}"><option value="">{{t "启用：全部"}}</option><option value="1">{{t "开"}}</option><option value="0">{{t "关"}}</option></select>
+      <select id="pm-coltype" aria-label="{{t "字段类型"}}"><option value="">{{t "字段类型：全部"}}</option></select>
+      <select id="pm-period" aria-label="{{t "分区周期"}}"><option value="">{{t "周期：全部"}}</option></select>
+      <input type="search" id="pm-search" placeholder="{{t "搜索库 / 表 / 字段 / 说明"}}" aria-label="{{t "搜索"}}">
+      <button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <button class="btn" id="pm-refresh" type="button">{{t "刷新状态"}}</button>
+    <button class="btn" id="pm-alerts" type="button">{{t "告警记录"}}</button>
+    <button class="btn" id="pm-hooks" type="button" hidden>{{t "推送设置"}}</button>
+    <button class="btn primary" id="pm-new" type="button" hidden>{{t "+ 新增配置"}}</button>
+  </div>
+  <nav class="pm-tabs" aria-label="{{t "分区维护"}}">
+    <a class="on" href="/partman" aria-current="page">{{t "分区配置"}}</a>
+    <a href="/partman/logs">{{t "维护日志"}}</a>
+  </nav>
+  <div id="pm-msg"></div>
+  <div class="alert warn" id="pm-auto" hidden></div>
+  <div class="alert warn" id="pm-alert-warn" hidden></div>
+
+  <div class="kpis" id="pm-kpis" aria-live="polite"></div>
+  <p class="muted small" id="pm-kpi-note"></p>
+  <p class="muted small" id="pm-alert-note"></p>
+
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "启停"}}</th><th>{{t "编号"}}</th><th>{{t "实例"}}</th><th>{{t "库名"}}</th><th>{{t "表名"}}</th><th>{{t "可用分区"}}</th><th>{{t "最近维护"}}</th><th>{{t "状态"}}</th><th>{{t "告警"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="pm-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pm-pager"><span class="muted" id="pm-total"></span><span class="spacer"></span>
+      <button class="btn ghost" id="pm-prev" type="button">{{t "上一页"}}</button><button class="btn ghost" id="pm-next" type="button">{{t "下一页"}}</button></div>
+  </section>
+</main>
+
+<div class="modal-mask" id="pm-edit" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="pm-edit-title">
+  <h2 id="pm-edit-title">{{t "新增 / 编辑分区配置"}}</h2>
+  <div id="pm-edit-msg"></div>
+  <div class="form-grid">
+    <label>{{t "数据库实例"}}<select id="pe-inst"></select></label>
+    <label>{{t "说明"}}<input type="text" id="pe-env" maxlength="100" placeholder="{{t "例：sit-polardb"}}"></label>
+    <label>{{t "库名"}}<input type="text" id="pe-db" maxlength="64" autocomplete="off" list="pe-dbs"></label>
+    <label>{{t "表名"}}<input type="text" id="pe-tb" maxlength="64" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pe-tb-list"></label>
+    <label>{{t "分区字段"}}<input type="text" id="pe-col" maxlength="64" autocomplete="off" list="pe-cols"></label>
+    <label>{{t "字段类型"}}<select id="pe-coltype"></select></label>
+    <label>{{t "分区周期"}}<select id="pe-period"></select></label>
+    <label>{{t "周期跨度"}}<input type="number" id="pe-interval" min="1" max="255" value="1"></label>
+    <label>{{t "保留历史分区数（0 = 全部）"}}<input type="number" id="pe-retain" min="0" value="0"></label>
+    <label>{{t "预创建分区数"}}<input type="number" id="pe-pre" min="0" max="100" value="3"></label>
+    <label class="full">{{t "时区（可留空）"}}
+      <input type="text" id="pe-tz" autocomplete="off" spellcheck="false" list="pe-tzs" placeholder="{{t "留空 = 跟随目标库"}}">
+    </label>
+    <div class="full pm-tz" id="pe-tz-box">
+      <div class="pm-tz-chips" id="pe-tz-chips" role="group" aria-label="{{t "常用时区"}}"></div>
+      <p class="muted small" id="pe-tz-note"></p>
+    </div>
+    <label class="check"><input type="checkbox" id="pe-enable" checked> {{t "开启维护"}}</label>
+  </div>
+  <datalist id="pe-tzs"></datalist><datalist id="pe-dbs"></datalist><datalist id="pe-cols"></datalist>
+  <ul class="pm-tb-list" id="pe-tb-list" role="listbox" hidden></ul>
+  <div id="pe-hint"></div>
+  <div id="pe-plan"></div>
+  <div class="actions">
+    <button class="btn" id="pe-preview" type="button">{{t "预览将执行的语句"}}</button>
+    <span class="spacer"></span>
+    <button class="btn" id="pe-cancel" type="button">{{t "取消"}}</button>
+    <button class="btn primary" id="pe-save" type="button">{{t "保存"}}</button>
+  </div>
+</div></div>
+
+<div class="modal-mask" id="pm-alert" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="pa-title">
+  <h2 id="pa-title">{{t "告警设置"}}</h2>
+  <div id="pa-msg"></div>
+  <section class="pm-sec"><h3>{{t "当前可用分区"}}</h3><div id="pa-now"></div></section>
+  <section class="pm-sec"><h3>{{t "这张表的告警阈值"}}</h3>
+    <label class="pm-opt"><input type="radio" name="pa-mode" value="follow"><span id="pa-follow"></span></label>
+    <label class="pm-opt"><input type="radio" name="pa-mode" value="custom"><span>{{t "自定义"}} <input type="number" class="pm-n" id="pa-n" min="1" max="100" aria-label="{{t "自定义阈值"}}"> {{t "个分区"}}</span></label>
+    <label class="pm-opt"><input type="radio" name="pa-mode" value="off"><span>{{t "这张表不告警（阈值 0）"}}</span></label>
+    <div id="pa-verdict"></div>
+  </section>
+  <section class="pm-sec"><h3>{{t "静默"}}</h3><div id="pa-silence"></div></section>
+  <div class="actions">
+    <span class="spacer"></span>
+    <button class="btn" id="pa-close" type="button">{{t "关闭"}}</button>
+    <button class="btn primary" id="pa-save" type="button">{{t "保存阈值"}}</button>
+  </div>
+</div></div>
+
+<div class="modal-mask" id="pm-alerts-log" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="pas-title">
+  <h2 id="pas-title">{{t "可用分区告警记录"}}</h2>
+  <div id="pas-msg"></div>
+  <table class="list"><thead><tr><th>{{t "时间"}}</th><th>{{t "类型"}}</th><th>{{t "实例"}}</th><th>{{t "库.表"}}</th><th>{{t "可用 / 阈值"}}</th><th>{{t "通道"}}</th><th>{{t "推送结果"}}</th></tr></thead><tbody id="pas-rows"></tbody></table>
+  <div class="pm-pager"><span class="muted" id="pas-total"></span><span class="spacer"></span>
+    <button class="btn ghost" id="pas-prev" type="button">{{t "上一页"}}</button><button class="btn ghost" id="pas-next" type="button">{{t "下一页"}}</button></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" id="pas-close" type="button">{{t "关闭"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="pm-run" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="pr-title">
+  <h2 id="pr-title">{{t "分区维护预览"}}</h2>
+  <div id="pr-msg"></div>
+  <section class="pm-init" id="pr-init" hidden aria-labelledby="pr-init-title">
+    <h3 id="pr-init-title">{{t "初始化为分区表"}}</h3>
+    <div class="alert warn">{{t "初始化会整表重建，期间持有元数据锁、可能阻塞写入，请在业务低峰执行。"}}</div>
+    <fieldset class="pm-start" id="pr-start">
+      <legend>{{t "起点"}}</legend>
+      <label class="pm-opt"><input type="radio" name="pr-start" value="current" checked><span><b>{{t "从当前窗口开始"}}</b></span></label>
+      <label class="pm-opt"><input type="radio" name="pr-start" value="earliest"><span><b>{{t "从最早数据所在窗口开始"}}</b></span></label>
+      <label class="pm-opt"><input type="radio" name="pr-start" value="date"><span><b>{{t "指定起始日期"}}</b></span></label>
+      <div class="pm-start-date" id="pr-start-date-box" hidden>
+        <input type="text" id="pr-start-date" autocomplete="off" spellcheck="false" placeholder="2026-09-01" aria-label="{{t "起始日期（YYYY-MM-DD，可带 HH:MM:SS）"}}">
+        <button class="btn" id="pr-start-apply" type="button">{{t "按此日期重新预览"}}</button>
+      </div>
+    </fieldset>
+    <p class="muted small" id="pr-init-perm" hidden></p>
+  </section>
+  <div id="pr-plan"></div>
+  <div class="pm-danger" id="pr-danger" hidden>
+    <b>{{t "危险操作：下列分区会被永久删除，其中的数据无法恢复。"}}</b>
+    <ul id="pr-drops"></ul>
+    <label>{{t "请输入|confirm"}} <code id="pr-name" class="crit"></code> {{t "以确认|confirm"}}<input type="text" id="pr-confirm" autocomplete="off" aria-label="{{t "输入库.表名确认"}}"></label>
+  </div>
+  <label class="pm-reorg" id="pr-reorg" hidden><input type="checkbox" id="pr-reorg-ok"> {{t "确认执行 REORGANIZE（会重写 MAXVALUE 分区的数据，耗时较长）"}}</label>
+  <div class="actions">
+    <span class="spacer"></span>
+    <button class="btn" id="pr-close" type="button">{{t "关闭"}}</button>
+    <button class="btn danger" id="pr-go" type="button" hidden>{{t "确认执行"}}</button>
+  </div>
+</div></div>
+
+<div class="modal-mask" id="pm-log" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="pl-title">
+  <h2 id="pl-title">{{t "维护日志"}}</h2>
+  <table class="list"><thead><tr><th>{{t "日志 ID"}}</th><th>{{t "来源"}}</th><th>{{t "操作人"}}</th><th>{{t "状态"}}</th><th>{{t "执行结果"}}</th><th>{{t "时间"}}</th></tr></thead><tbody id="pl-rows"></tbody></table>
+  <div class="actions"><a class="btn ghost" id="pl-all" href="/partman/logs">{{t "全部配置的维护日志"}}</a><span class="spacer"></span><button class="btn" id="pl-close" type="button">{{t "关闭"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="pm-hook" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="ph-title">
+  <h2 id="ph-title">{{t "推送设置"}}</h2>
+  <div id="ph-msg"></div>
+  <p class="muted small" id="ph-rule"></p>
+  <div class="pm-hook-bar">
+    <button class="btn primary" id="ph-new" type="button">{{t "+ 新增通道"}}</button>
+    <button class="btn" id="ph-test-all" type="button">{{t "测试发送（全部已启用）"}}</button>
+    <span class="spacer"></span>
+    <button class="btn" id="ph-close" type="button">{{t "关闭"}}</button>
+  </div>
+  <div id="ph-list" class="pm-hooks" aria-live="polite"></div>
+  <div id="ph-results"></div>
+</div></div>
+
+<div class="modal-mask" id="pm-hook-edit" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="phe-title">
+  <h2 id="phe-title">{{t "新增推送通道"}}</h2>
+  <div id="phe-msg"></div>
+  <div class="form-grid">
+    <label>{{t "通道类型"}}<select id="phe-type">
+      <option value="dingtalk">{{t "钉钉"}}</option>
+      <option value="feishu">{{t "飞书"}}</option>
+      <option value="wecom">{{t "企业微信"}}</option>
+      <option value="slack">Slack</option>
+    </select></label>
+    <label>{{t "@ 时机"}}<select id="phe-mention-on">
+      <option value="on_failure">{{t "仅失败时 @（默认）"}}</option>
+      <option value="always">{{t "每次推送都 @"}}</option>
+      <option value="never">{{t "从不 @"}}</option>
+    </select></label>
+    <label class="full">{{t "Webhook 地址"}}<input type="text" id="phe-url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://…"></label>
+    <label>{{t "自定义关键词（可选）"}}<input type="text" id="phe-keyword" maxlength="500" autocomplete="off" placeholder="{{t "安全设置里的关键词"}}"></label>
+    <label>{{t "加签密钥（可选，仅钉钉 / 飞书）"}}<input type="password" id="phe-secret" maxlength="500" autocomplete="new-password" spellcheck="false" placeholder="{{t "安全设置里的加签密钥"}}"></label>
+    <label class="check full" id="phe-clear-box" hidden><input type="checkbox" id="phe-clear-secret"> {{t "清空已保存的加签密钥"}}</label>
+    <label class="full">{{t "@ 对象（可选）"}}<input type="text" id="phe-mention" maxlength="400" autocomplete="off" placeholder="{{t "手机号 / userid / all"}}"></label>
+    <label class="check"><input type="checkbox" id="phe-enable" checked> {{t "启用"}}</label>
+  </div>
+  <div class="actions">
+    <button class="btn" id="phe-test" type="button" hidden>{{t "测试发送"}}</button>
+    <span class="spacer"></span>
+    <button class="btn" id="phe-cancel" type="button">{{t "取消"}}</button>
+    <button class="btn primary" id="phe-save" type="button">{{t "保存"}}</button>
+  </div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/partman/partman.js"></script>{{end}}

@@ -1,0 +1,116 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: login.css
+ * @time: 2026/10/28
+ */
+/* 登录页：左品牌区 + 右登录区。设计来自 prototype/login-redesign.html（8px 栅格、40px 控件、6px 圆角、单一靛蓝主色）。
+   三套皮肤（明亮 / 深空 / 护眼）下左右两侧一起换色：下面的 --lg-* 只在 .lgn 里生效，不影响其它页面。 */
+
+.lgn {
+  --lg-pane: #f5f6fa; --lg-fg: #1d2129; --lg-muted: #4e5969; --lg-dim: #86909c; --lg-line: #e5e6eb; --lg-input: #ffffff; --lg-input-line: #d9dce3;
+  --lg-accent: #4452d4; --lg-accent-hi: #3a47bd; --lg-on-accent: #ffffff; --lg-link: #3b4bc8;
+  --lg-crit: #cb2634;
+  --lg-b-bg: radial-gradient(760px 460px at 88% 108%, rgba(68, 82, 212, .13), transparent 62%), linear-gradient(160deg, #f4f6ff 0%, #e9edff 55%, #dde3fb 100%);
+  --lg-b-fg: #1d2129; --lg-b-mute: rgba(29, 33, 41, .6); --lg-b-dim: rgba(29, 33, 41, .5); --lg-b-line: rgba(29, 33, 41, .22); --lg-b-ok: #1a8f5c; --lg-b-art: #4452d4; --lg-b-art-op: .2;
+  flex: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); min-height: 560px; color: var(--lg-fg); background: var(--lg-pane);
+}
+:root[data-skin="dark"] .lgn {
+  --lg-pane: #0e1320; --lg-fg: #e5e8ef; --lg-muted: #a0a8b8; --lg-dim: #6b7487; --lg-line: #232b3d; --lg-input: #131a2a; --lg-input-line: #2c3650;
+  --lg-accent: #5865f2; --lg-accent-hi: #6b77f5; --lg-on-accent: #ffffff; --lg-link: #8fa0ff; --lg-crit: #ff7875;
+  --lg-b-bg: radial-gradient(760px 460px at 88% 108%, rgba(88, 101, 242, .24), transparent 62%), linear-gradient(160deg, #0a0f1e 0%, #0f1730 55%, #161d40 100%);
+  --lg-b-fg: #e8ecff; --lg-b-mute: rgba(232, 236, 255, .6); --lg-b-dim: rgba(232, 236, 255, .5); --lg-b-line: rgba(232, 236, 255, .22); --lg-b-ok: #5eeaa8; --lg-b-art: #8fa0ff; --lg-b-art-op: .22;
+}
+:root[data-skin="sepia"] .lgn {
+  --lg-pane: #f1ead9; --lg-fg: #3b3428; --lg-muted: #6a5f4b; --lg-dim: #9a8d72; --lg-line: #e2d7bf; --lg-input: #fbf7ec; --lg-input-line: #d3c5a7;
+  --lg-accent: #4a56b8; --lg-accent-hi: #3f4aa2; --lg-on-accent: #fbf7ec; --lg-link: #3f4aa2; --lg-crit: #b2443a;
+  --lg-b-bg: radial-gradient(760px 460px at 88% 108%, rgba(166, 106, 18, .12), transparent 62%), linear-gradient(160deg, #f1ead9 0%, #e8dec6 55%, #ddd0b0 100%);
+  --lg-b-fg: #3b3428; --lg-b-mute: rgba(59, 52, 40, .62); --lg-b-dim: rgba(59, 52, 40, .5); --lg-b-line: rgba(59, 52, 40, .24); --lg-b-ok: #3f7d3a; --lg-b-art: #7a6e59; --lg-b-art-op: .26;
+}
+
+/* ===== 左：品牌区 ===== */
+.lgn-brand { position: relative; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; padding: 40px 64px 32px; color: var(--lg-b-fg); background: var(--lg-b-bg); }
+.lgn-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.lgn-logo { display: flex; align-items: center; gap: 12px; }
+.lgn-logo i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; font: 700 15px/1 system-ui, sans-serif; font-style: normal; color: var(--lg-on-accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--lg-accent) 65%, #fff), var(--lg-accent)); }
+.lgn-logo b { display: block; font-size: 20px; line-height: 24px; letter-spacing: .5px; }
+.lgn-logo small { display: block; font-size: 12px; line-height: 16px; color: var(--lg-b-mute); }
+.lgn-status { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--lg-b-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lgn-status[hidden], .lgn-db[hidden] { display: none; }
+.lgn-db b { font-weight: 600; color: var(--lg-b-ok); }
+.lgn-db .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--lg-b-ok); margin: 0 6px 1px 0; }
+.lgn-db.bad b { color: var(--lg-crit); }
+.lgn-db.bad .dot { background: var(--lg-crit); }
+
+.lgn-hero { position: relative; z-index: 2; align-self: start; margin-top: clamp(48px, 13vh, 140px); max-width: 720px; }
+.lgn-hero .kicker { margin: 0 0 20px; font-size: 14px; line-height: 22px; color: var(--lg-b-dim); letter-spacing: 1px; }
+.lgn-hero .kicker b { font-weight: 600; color: var(--lg-b-fg); }
+.lgn-hero h2 { margin: 0; font-size: clamp(34px, 3.4vw, 46px); line-height: 1.32; letter-spacing: 1px; font-weight: 700; color: inherit; }
+.lgn-hero h2 em { font-style: normal; color: var(--lg-link); }
+.lgn-hero .lead { margin: 20px 0 24px; max-width: 680px; font-size: 14px; line-height: 22px; color: var(--lg-b-mute); text-wrap: balance; }
+.lgn-hero .engines { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.lgn-hero .engines li { padding: 0 12px; height: 28px; line-height: 26px; border-radius: 6px; border: 1px solid var(--lg-b-line); font-size: 12px; color: var(--lg-b-mute); }
+.lgn-foot { position: relative; z-index: 2; display: flex; gap: 8px; font-size: 12px; color: var(--lg-b-dim); }
+.lgn-art { position: absolute; right: -48px; bottom: -36px; width: 440px; height: 320px; color: var(--lg-b-art); opacity: var(--lg-b-art-op); pointer-events: none; z-index: 1; }
+
+/* ===== 右：登录区 ===== */
+.lgn-pane { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: var(--lg-pane); border-left: 1px solid var(--lg-line); overflow: auto; }
+.lgn-tools { position: absolute; top: 24px; right: 32px; display: flex; align-items: center; gap: 12px; }
+.lgn-pane .tb-seg { gap: 0; padding: 0; border-radius: 6px; overflow: hidden; background: var(--lg-input); border-color: var(--lg-line); }
+.lgn-pane .tb-seg button { height: 28px; min-width: 0; padding: 0 12px; border-radius: 0; font-size: 12px; }
+.lgn-pane .tb-seg button + button { border-left: 1px solid var(--lg-line); }
+.lgn-pane .tb-seg button span { display: inline; }
+.lgn-pane .tb-seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--lg-accent) 12%, var(--lg-input)); color: var(--lg-link); box-shadow: none; }
+.lgn-pane .tb-lang button span { display: none; }
+.lgn-form { width: min(368px, 100%); }
+.lgn-form h1 { margin: 0 0 32px; font-size: 24px; line-height: 32px; font-weight: 600; color: var(--lg-fg); }
+.lgn-row + .lgn-row { margin-top: 24px; }
+.lgn-l { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; font-size: 14px; line-height: 22px; color: var(--lg-muted); }
+.lgn-l label, label.lgn-l { margin: 0; color: inherit; font-size: inherit; }
+.lgn .linklike { border: 0; background: none; padding: 0; color: var(--lg-link); font-size: 14px; cursor: pointer; }
+.lgn .linklike:hover { text-decoration: underline; }
+.lgn .linklike[hidden] { display: none; }
+.lgn-field { position: relative; display: flex; align-items: center; height: 40px; border: 1px solid var(--lg-input-line); border-radius: 6px; background: var(--lg-input); transition: border-color .15s, box-shadow .15s; }
+.lgn-field:hover { border-color: var(--lg-dim); }
+.lgn-field:focus-within { border-color: var(--lg-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lg-accent) 18%, transparent); }
+.lgn-field svg { flex: none; width: 16px; height: 16px; margin: 0 8px 0 12px; color: var(--lg-dim); }
+.lgn-field input { flex: 1; min-width: 0; width: auto; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; box-shadow: none; color: var(--lg-fg); font-size: 14px; }
+.lgn-field input::placeholder { color: var(--lg-dim); }
+.lgn-field .pw-eye { position: static; flex: none; height: 100%; padding: 0 12px; border: 0; background: none; color: var(--lg-link); font-size: 14px; cursor: pointer; }
+.lgn-field .pw-eye[hidden] { display: none; }
+.lgn .login-opts { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 0; font-size: 14px; color: var(--lg-muted); }
+.lgn .login-opts label.check-inline { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--lg-muted); font-size: 14px; cursor: pointer; }
+.lgn .login-opts input { width: 14px; height: 14px; margin: 0; accent-color: var(--lg-accent); }
+.lgn-submit { display: block; width: 100%; height: 40px; margin-top: 32px; border: 0; border-radius: 6px; background: var(--lg-accent); color: var(--lg-on-accent); font-size: 14px; font-weight: 500; letter-spacing: .4em; text-indent: .4em; cursor: pointer; transition: background .15s; }
+.lgn-submit:hover { background: var(--lg-accent-hi); }
+.lgn-submit:focus-visible { outline: 3px solid color-mix(in srgb, var(--lg-accent) 35%, transparent); outline-offset: 2px; }
+
+/* 外部登录按钮、“或使用平台账号”折叠、注册 */
+.lgn-form .alert { margin: 0 0 24px; border-radius: 6px; }
+.lgn-form .btn.sso { display: flex; align-items: center; justify-content: center; width: 100%; height: 40px; margin: 0 0 12px; padding: 0 16px; border: 1px solid var(--lg-input-line); border-radius: 6px; background: var(--lg-input); color: var(--lg-fg); font-size: 14px; font-weight: 500; text-decoration: none; }
+.lgn-form .btn.sso:hover { border-color: var(--lg-accent); color: var(--lg-link); }
+.lgn-form .btn.sso.primary { border-color: var(--lg-accent); background: var(--lg-accent); color: var(--lg-on-accent); }
+.lgn-form .btn.sso.primary:hover { background: var(--lg-accent-hi); color: var(--lg-on-accent); }
+.lgn-form details.local-form, .lgn-form details.signup { margin-top: 16px; }
+.lgn-form details > summary { cursor: pointer; padding: 4px 0; color: var(--lg-muted); font-size: 14px; }
+.lgn-form details > summary:hover { color: var(--lg-fg); }
+.lgn-form details[open] > summary { margin-bottom: 16px; }
+.lgn-form details.signup label { display: block; margin: 12px 0 6px; color: var(--lg-muted); font-size: 14px; }
+.lgn-form details.signup input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--lg-input-line); border-radius: 6px; background: var(--lg-input); color: var(--lg-fg); font-size: 14px; }
+.lgn-form details.signup .btn { width: 100%; height: 40px; margin-top: 16px; justify-content: center; }
+
+/* 页面底部的 ICP 备案号（layout 的 sitefoot）：和登录页底色一致，不再是一条带边的栏 */
+.lgn ~ .site-foot { background: var(--dt-bg); }
+
+@media (max-width: 1100px) { .lgn-brand { padding: 32px 36px 24px; } }
+@media (max-width: 860px) {
+  .lgn { grid-template-columns: 1fr; }
+  .lgn-brand { padding: 24px 24px 22px; grid-template-rows: auto auto auto; gap: 16px; }
+  .lgn-hero { margin-top: 0; }
+  .lgn-hero h2 { font-size: 28px; }
+  .lgn-hero .kicker, .lgn-hero .lead, .lgn-hero .engines, .lgn-art, .lgn-status { display: none; }
+  .lgn-pane { padding: 72px 24px 48px; border-left: 0; }
+  .lgn-tools { right: 16px; top: 16px; }
+}
+@media (max-height: 760px) and (min-width: 861px) { .lgn-brand { padding-top: 28px; padding-bottom: 24px; } }

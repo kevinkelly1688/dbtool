@@ -1,0 +1,275 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: archive.css
+ * @time: 2026/10/28
+ */
+/* 数据归档页面（js/p_archive.js）专用样式：只用 style.css 里的 CSS 变量，明亮 / 深空 / 护眼三套主题通用 */
+.ar-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.ar-kpis .kpi{padding:12px 14px}
+
+/* 进度条 / 实时面板 */
+.ar-prog{height:8px;border-radius:5px;background:var(--panel2);border:1px solid var(--border);overflow:hidden;min-width:120px;margin:4px 0}
+.ar-prog b{display:block;height:100%;background:var(--brand);transition:width .35s linear}
+.ar-live{min-width:200px;margin-top:6px}
+.ar-live .small{line-height:1.7}
+.ar-gauges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin:8px 0}
+.ar-gauge{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0;flex-wrap:wrap}
+.ar-gauge>span{color:var(--muted);flex:none;min-width:92px}
+.ar-gauge .ar-bar{flex:1;min-width:80px;height:8px;border-radius:5px;background:var(--panel2);border:1px solid var(--border);position:relative;overflow:visible}
+.ar-gauge .ar-bar b{display:block;height:100%;border-radius:5px;background:var(--ok);transition:width .3s}
+.ar-gauge .ar-bar b.warn{background:var(--warn)}
+.ar-gauge .ar-bar b.bad{background:var(--bad)}
+.ar-gauge .ar-bar i{position:absolute;left:66.6%;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.55}
+.ar-gauge>b{flex:none;font-weight:600}
+@keyframes arpulse{from{width:25%}to{width:90%}}
+
+/* 试运行检查项 */
+.ar-checks{display:flex;flex-direction:column;gap:4px}
+.ar-chk{display:grid;grid-template-columns:62px minmax(130px,230px) minmax(0,1fr);gap:8px;align-items:start;padding:6px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--border);font-size:13px}
+.ar-chk.bad{background:var(--bad-soft);border-color:transparent}
+.ar-chk.warn{background:var(--warn-soft);border-color:transparent}
+.ar-chk>b{font-weight:600}
+.ar-chk>span:last-child{min-width:0;word-break:break-all}
+.ar-stale{opacity:.5;filter:grayscale(.5)}
+
+/* 向导：模式卡片 / 备份面板 */
+.ar-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ar-mode{display:block;border:1px solid var(--border);border-radius:10px;padding:10px 12px 10px 34px;cursor:pointer;position:relative;background:var(--panel)}
+.ar-mode input{position:absolute;left:12px;top:13px}
+.ar-mode b{display:block;margin-bottom:2px}
+.ar-mode span{font-size:12px;color:var(--muted)}
+.ar-mode.on{border-color:var(--brand);background:var(--brand-soft)}
+.ar-mode.dis{opacity:.55;cursor:not-allowed}
+.ar-bk{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--panel)}
+.ar-bk .form label.req::before{content:"* "}
+
+/* 窄屏 */
+@media(max-width:900px){
+  .ar-modes{grid-template-columns:1fr}
+  .ar-gauges{grid-template-columns:1fr}
+  .ar-chk{grid-template-columns:62px minmax(0,1fr)}
+  .ar-chk>span:last-child{grid-column:1/-1}
+  #arView .form{grid-template-columns:minmax(0,1fr)!important;max-width:none!important}
+  #arView .form label{text-align:left}
+  #arView .form .hint{grid-column:1}
+  #arView .toolbar select,#arView .toolbar input[type=search]{min-width:0;flex:1 1 140px}
+}
+
+/* 任务列表：名称列给足宽度，避免被挤成竖排 */
+#arList td:first-child{min-width:190px}
+#arList td{vertical-align:top}
+#arList .tag{white-space:nowrap}
+#arList th,#arList td{padding:7px 8px;font-size:13px}
+#arList td:first-child{min-width:170px}
+#arList td .tag{margin:0 0 3px 0}
+#arList td .ops .btn{padding:2px 7px}
+
+/* ===================================================================
+   响应式（只作用于数据归档页：选择器都带 #arView 前缀，或用 body:has(#arView) 限定本页期间的抽屉 / 弹窗）
+   - 宽屏：全局 .content 有 max-width:1520px（style.css），这里用 :has(#arView) 只在归档页取消；离开页面后 #arView 随页面一起被移除，限制自动恢复
+   - 平板 701–1100：KPI 自适应铺满、表格减少次要列并允许容器内横向滚动、操作按钮横排换行
+   - 手机 ≤700：任务 / 运行 / 备份存储改卡片列表，抽屉和大弹窗全屏，表单单列，点击区域 ≥ 40px，输入框 16px
+   =================================================================== */
+.content:has(#arView){max-width:none}
+#arView{min-width:0}
+#arView .ar-cards .tag{white-space:nowrap}
+
+/* 页签栏：窄屏横向滑动，不换行 */
+@media(max-width:900px){
+  #arView .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #arView .tabs::-webkit-scrollbar{display:none}
+  #arView .tabs a{flex:none;white-space:nowrap}
+}
+
+/* 宽屏：操作按钮一行排开，不叠成两排 */
+@media(min-width:1701px){
+  #arList .ar-tb-tasks td .ops{flex-wrap:nowrap}
+}
+/* 中等宽度（笔记本 / 小屏桌面）：备份去向标签允许换行、收紧间距，避免任务表出现容器内横向滚动把“操作”挤出屏幕 */
+@media(max-width:1600px){
+  #arList .ar-tb-tasks th,#arList .ar-tb-tasks td{padding-left:6px;padding-right:6px}
+  #arList .ar-tb-tasks td:nth-child(4){max-width:210px}
+  #arList .ar-tb-tasks td:nth-child(4) .tag{white-space:normal}
+  #arList .ar-tb-tasks td:nth-child(2) .nowrap{white-space:normal}
+  #arList .ar-tb-tasks td:first-child{min-width:150px}
+}
+
+/* 小屏笔记本（侧栏占 240px，内容区只有 900–1100px）：隐藏次要列，避免表格出现容器内横向滚动把“操作”挤出屏幕 */
+@media(min-width:1101px) and (max-width:1500px){
+  #arView .ar-tb-tasks th:nth-child(9),#arView .ar-tb-tasks td:nth-child(9){display:none}
+}
+@media(min-width:1101px) and (max-width:1350px){
+  #arView .ar-tb-tasks th:nth-child(3),#arView .ar-tb-tasks td:nth-child(3),
+  #arView .ar-tb-tasks th:nth-child(8),#arView .ar-tb-tasks td:nth-child(8),
+  #arView .ar-tb-runs th:nth-child(7),#arView .ar-tb-runs td:nth-child(7),
+  #arView .ar-tb-runs th:nth-child(9),#arView .ar-tb-runs td:nth-child(9),
+  #arView .ar-tb-runs th:nth-child(10),#arView .ar-tb-runs td:nth-child(10){display:none}
+}
+
+/* 平板与更窄：KPI 自适应铺满（最后一张自动拉伸补满整行） */
+@media(max-width:1100px){
+  .ar-kpis{display:flex;flex-wrap:wrap}
+  .ar-kpis>.card{flex:1 1 150px}
+  body:has(#arView) .drawer .tbl-wrap,body:has(#arView) .modal .tbl-wrap{max-width:100%}
+}
+/* 平板：隐藏次要列（详情抽屉里都有），其余允许表格容器内横向滚动 */
+@media(min-width:701px) and (max-width:1100px){
+  #arView .ar-tb-tasks th:nth-child(3),#arView .ar-tb-tasks td:nth-child(3),
+  #arView .ar-tb-tasks th:nth-child(4),#arView .ar-tb-tasks td:nth-child(4),
+  #arView .ar-tb-tasks th:nth-child(8),#arView .ar-tb-tasks td:nth-child(8),
+  #arView .ar-tb-tasks th:nth-child(9),#arView .ar-tb-tasks td:nth-child(9),
+  #arView .ar-tb-runs th:nth-child(7),#arView .ar-tb-runs td:nth-child(7),
+  #arView .ar-tb-runs th:nth-child(9),#arView .ar-tb-runs td:nth-child(9),
+  #arView .ar-tb-runs th:nth-child(10),#arView .ar-tb-runs td:nth-child(10),
+  #arView .ar-tb-runs th:nth-child(8),#arView .ar-tb-runs td:nth-child(8),
+  #arView .ar-tb-stores th:nth-child(4),#arView .ar-tb-stores td:nth-child(4),
+  #arView .ar-tb-stores th:nth-child(7),#arView .ar-tb-stores td:nth-child(7){display:none}
+  #arView .ar-tb-tasks td:first-child{min-width:130px}
+  #arView .ar-tb-tasks td:nth-child(2) .nowrap{white-space:normal}
+  #arView .ar-tb-tasks td:nth-child(5) .small{display:none}
+  #arView .ar-tb-tasks td:nth-child(6){min-width:110px}
+  #arView .ar-tb-tasks td .ops{min-width:150px;max-width:150px}
+  #arView .ar-tb-tasks th,#arView .ar-tb-tasks td,#arView .ar-tb-runs th,#arView .ar-tb-runs td,#arView .ar-tb-stores th,#arView .ar-tb-stores td{padding-left:6px;padding-right:6px}
+}
+
+/* 平板（701–1100）：再收紧一点，让“操作”列尽量完整显示在首屏 */
+@media(min-width:701px) and (max-width:1100px){
+  #arView .ar-tb-tasks th,#arView .ar-tb-tasks td{padding-left:4px;padding-right:4px}
+  #arView .ar-tb-tasks td:first-child{min-width:115px}
+  #arView .ar-tb-tasks td:nth-child(6){min-width:90px}
+  #arView .ar-tb-tasks td .ops{min-width:130px;max-width:130px}
+}
+
+/* 触摸设备（手机 / 平板）：点击区域与输入框字号，避免 iOS 聚焦时自动放大 */
+@media(max-width:700px),(pointer:coarse) and (max-width:1100px){
+  #arView .btn,body:has(#arView) .drawer .btn,body:has(#arView) .modal .btn{min-height:40px;padding-top:0;padding-bottom:0;display:inline-flex;align-items:center;justify-content:center}
+  #arView .tabs a{min-height:44px;display:inline-flex;align-items:center}
+  #arView select,#arView input[type=text],#arView input[type=search],#arView input[type=number],#arView input[type=time],#arView input[type=password],#arView textarea,
+  body:has(#arView) .modal select,body:has(#arView) .modal input[type=text],body:has(#arView) .modal input[type=number],body:has(#arView) .modal input[type=time],body:has(#arView) .modal input[type=password],body:has(#arView) .modal textarea,
+  body:has(#arView) .drawer select,body:has(#arView) .drawer input[type=text],body:has(#arView) .drawer input[type=number],body:has(#arView) .drawer textarea{font-size:16px;min-height:40px}
+  #arView textarea,body:has(#arView) .modal textarea{min-height:80px}
+  #arView input[type=checkbox],#arView input[type=radio],body:has(#arView) .modal input[type=checkbox],body:has(#arView) .modal input[type=radio]{width:20px;height:20px}
+  #arView label.chk{min-height:40px;display:inline-flex;align-items:center;gap:6px}
+  #arView a[data-on]:not(.btn),body:has(#arView) .drawer a[data-on]:not(.btn){display:inline-block;padding:10px 0}
+}
+
+/* 手机 */
+@media(max-width:700px){
+  #arView .card{padding:12px}
+  #arView .toolbar>select{flex:1 1 calc(50% - 8px);min-width:0}
+  #arView .toolbar>input[type=search]{flex:1 1 100%;min-width:0!important}
+  #arView .toolbar>.sp{display:none}
+  #arView .toolbar>.btn.primary{flex:1 1 100%}
+
+  /* 卡片列表：表头隐藏，每行一张卡；单元格用 CSS 标签显示“标签：值” */
+  #arView .tbl-wrap:has(table.ar-cards){border:0;overflow:visible;border-radius:0}
+  #arView table.ar-cards,#arView table.ar-cards tbody,#arView table.ar-cards tr,#arView table.ar-cards td{display:block}
+  #arView table.ar-cards thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  #arView table.ar-cards tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;align-items:start;padding:12px;margin:0 0 10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+  #arView table.ar-cards td{padding:0;border:0;min-width:0!important;max-width:none!important;font-size:13px;white-space:normal;overflow-wrap:anywhere}
+  #arView table.ar-cards td::before{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}
+  #arView table.ar-cards .small[style*="max-width"]{max-width:none!important}
+  #arView table.ar-cards .ar-live{min-width:0}
+  #arView table.ar-cards .ar-prog{min-width:0}
+  #arView table.ar-cards td .tag{white-space:normal}
+  #arView table.ar-cards td .ops{gap:8px}
+  #arView table.ar-cards td .ops .btn{flex:1 1 auto;min-width:72px;font-size:14px}
+  #arView table.ar-cards td:last-child{grid-column:1/-1;order:99;padding-top:10px;border-top:1px solid var(--border)}
+  #arView table.ar-cards td:first-child{grid-column:1/-1;font-size:15px}
+  /* 空列表那一行（只有一个单元格）不做成卡片网格 */
+  #arView table.ar-cards td[colspan]{grid-column:1/-1;padding:12px 0;border-top:0}
+  #arView table.ar-cards td[colspan]::before{display:none}
+
+  /* 任务：名称 / 来源表 / 状态（含进度、限流）→ 调度 · 下次 → 上次 · 累计 → 模式 · 备份去向 → 操作 */
+  #arView .ar-tb-tasks td:nth-child(2)::before{content:"来源表"}
+  #arView .ar-tb-tasks td:nth-child(3)::before{content:"模式"}
+  #arView .ar-tb-tasks td:nth-child(4)::before{content:"备份去向"}
+  #arView .ar-tb-tasks td:nth-child(5)::before{content:"调度"}
+  #arView .ar-tb-tasks td:nth-child(6)::before{content:"状态"}
+  #arView .ar-tb-tasks td:nth-child(7)::before{content:"上次运行"}
+  #arView .ar-tb-tasks td:nth-child(8)::before{content:"下次运行"}
+  #arView .ar-tb-tasks td:nth-child(9)::before{content:"累计归档行数"}
+  #arView .ar-tb-tasks td:nth-child(10)::before,#arView .ar-tb-tasks td:first-child::before{display:none}
+  #arView .ar-tb-tasks td:nth-child(1){order:1}
+  #arView .ar-tb-tasks td:nth-child(2){order:2;grid-column:1/-1}
+  #arView .ar-tb-tasks td:nth-child(6){order:3;grid-column:1/-1}
+  #arView .ar-tb-tasks td:nth-child(5){order:4}
+  #arView .ar-tb-tasks td:nth-child(8){order:5}
+  #arView .ar-tb-tasks td:nth-child(7){order:6}
+  #arView .ar-tb-tasks td:nth-child(9){order:7}
+  #arView .ar-tb-tasks td:nth-child(3){order:8}
+  #arView .ar-tb-tasks td:nth-child(4){order:9;grid-column:1/-1}
+  /* 运行记录：# 与结果并排 → 任务 → 时间 · 触发 → 行数 → 批数 · 耗时 · Threads · 限流 */
+  #arView .ar-tb-runs td:nth-child(2)::before{content:"任务"}
+  #arView .ar-tb-runs td:nth-child(3)::before{content:"开始 / 结束"}
+  #arView .ar-tb-runs td:nth-child(4)::before{content:"触发"}
+  #arView .ar-tb-runs td:nth-child(6)::before{content:"扫描 / 备份 / 删除"}
+  #arView .ar-tb-runs td:nth-child(7)::before{content:"批数"}
+  #arView .ar-tb-runs td:nth-child(8)::before{content:"耗时"}
+  #arView .ar-tb-runs td:nth-child(9)::before{content:"峰值 Threads"}
+  #arView .ar-tb-runs td:nth-child(10)::before{content:"限流"}
+  #arView .ar-tb-runs td:first-child::before,#arView .ar-tb-runs td:nth-child(5)::before,#arView .ar-tb-runs td:nth-child(11)::before{display:none}
+  #arView table.ar-tb-runs td:nth-child(1){order:1;grid-column:span 1}
+  #arView .ar-tb-runs td:nth-child(5){order:2;justify-self:end}
+  #arView .ar-tb-runs td:nth-child(2){order:3;grid-column:1/-1}
+  #arView .ar-tb-runs td:nth-child(3){order:4}
+  #arView .ar-tb-runs td:nth-child(4){order:5}
+  #arView .ar-tb-runs td:nth-child(6){order:6;grid-column:1/-1}
+  #arView .ar-tb-runs td:nth-child(7){order:7}
+  #arView .ar-tb-runs td:nth-child(8){order:8}
+  #arView .ar-tb-runs td:nth-child(9){order:9}
+  #arView .ar-tb-runs td:nth-child(10){order:10}
+  /* 备份存储：名称与状态并排 → 类型 · 保留 → 地址 → AK/SK → 最近测试 → 被引用 */
+  #arView .ar-tb-stores td:nth-child(2)::before{content:"类型"}
+  #arView .ar-tb-stores td:nth-child(3)::before{content:"地址 / 桶 / 前缀"}
+  #arView .ar-tb-stores td:nth-child(4)::before{content:"AK / SK"}
+  #arView .ar-tb-stores td:nth-child(5)::before{content:"保留"}
+  #arView .ar-tb-stores td:nth-child(7)::before{content:"最近测试"}
+  #arView .ar-tb-stores td:nth-child(8)::before{content:"被引用"}
+  #arView .ar-tb-stores td:first-child::before,#arView .ar-tb-stores td:nth-child(6)::before,#arView .ar-tb-stores td:nth-child(9)::before{display:none}
+  #arView table.ar-tb-stores td:nth-child(1){order:1;grid-column:span 1}
+  #arView .ar-tb-stores td:nth-child(6){order:2;justify-self:end}
+  #arView .ar-tb-stores td:nth-child(2){order:3}
+  #arView .ar-tb-stores td:nth-child(5){order:4}
+  #arView .ar-tb-stores td:nth-child(3){order:5;grid-column:1/-1}
+  #arView .ar-tb-stores td:nth-child(4){order:6;grid-column:1/-1}
+  #arView .ar-tb-stores td:nth-child(7){order:7;grid-column:1/-1}
+  #arView .ar-tb-stores td:nth-child(8){order:8}
+
+  /* 向导：步骤条可横向滑动，只有当前步显示名称；底部导航栏吸底 */
+  #arView .steps{flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #arView .steps::-webkit-scrollbar{display:none}
+  #arView .steps .st{flex:none;min-width:0;padding-right:0}
+  #arView .steps .st::after{display:none}
+  #arView .steps .st:not(.on){font-size:0;gap:0}
+  #arView .steps .st b{font-size:12px}
+  #arView .form .fv-inline,#arView .form>div{min-width:0}
+  #arWizNav{position:sticky;bottom:0;z-index:3;margin:14px -12px -12px!important;padding:10px 12px;background:var(--panel);border-top:1px solid var(--border);border-radius:0 0 12px 12px}
+  #arWizNav .sp{display:none}
+  #arWizNav .btn{flex:1 1 calc(50% - 8px);min-width:0}
+  #arWizNav>.small{flex:1 1 100%;order:-1}
+
+  /* 详情键值表：标签在上、值在下 */
+  body:has(#arView) .kv,body:has(#arView) .kv.c2{grid-template-columns:minmax(0,1fr)}
+  body:has(#arView) .kv>div:nth-child(odd),body:has(#arView) .kv.c2>div:nth-child(4n+1),body:has(#arView) .kv.c2>div:nth-child(4n+3){font-size:12px;padding-bottom:2px}
+  body:has(#arView) .kv>div:nth-last-child(-n+2),body:has(#arView) .kv.c2>div:nth-last-child(-n+4){border-bottom:1px solid var(--border)}
+  body:has(#arView) .kv>div:last-child,body:has(#arView) .kv.c2>div:last-child{border-bottom:0}
+
+  /* 弹窗：表单类（wide）全屏，确认类整宽；按钮并排铺满 */
+  body:has(#arView) .mask{padding:12px}
+  body:has(#arView) .mask:has(.modal.wide){padding:0}
+  body:has(#arView) .modal.wide{width:100%;min-height:100%;border-radius:0;display:flex;flex-direction:column}
+  body:has(#arView) .modal.wide .mbody{flex:1;max-height:none}
+  body:has(#arView) .modal footer{position:sticky;bottom:0;background:var(--panel);flex-wrap:wrap;border-radius:0 0 14px 14px}
+  body:has(#arView) .modal footer .btn{flex:1 1 0}
+  body:has(#arView) .modal .mbody{max-height:none}
+  body:has(#arView) pre.code{max-width:100%}
+  body:has(#arView) pre.code .cp{min-height:40px;min-width:52px;font-size:13px}
+  body:has(#arView) .drawer .dbody{padding:12px;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+}
+
+/* 抽屉：窄屏占满整个屏幕（dvh 避开手机浏览器地址栏造成的底部被遮；不支持 dvh 的浏览器退回 100vh） */
+@media(max-width:900px){
+  body:has(#arView) .drawer,body:has(#arView) .drawer.wide{width:100vw;height:100vh;height:100dvh;border-left:0}
+}

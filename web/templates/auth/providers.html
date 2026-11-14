@@ -1,0 +1,270 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: providers.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/auth.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="ap">
+  <div class="page-head">
+    <h1>{{t "登录认证"}}</h1>
+    <span class="spacer"></span>
+    <button class="btn primary" type="button" id="ap-new">{{t "+ 添加登录方式"}}</button>
+  </div>
+  <div id="ap-msg"></div>
+
+  <div class="kpi-row" id="ap-kpis" aria-label="{{t "登录方式概览"}}">
+    <div class="kpi"><span class="kl">{{t "启用中"}}</span><b class="kv ok" id="apk-on">—</b></div>
+    <div class="kpi"><span class="kl">{{t "已停用"}}</span><b class="kv" id="apk-off">—</b></div>
+    <div class="kpi"><span class="kl">{{t "测试通过"}}</span><b class="kv" id="apk-test">—</b><span class="kd" id="apk-test-d">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">{{t "本地账号密码登录"}}</span><b class="kv" id="apk-local">—</b><span class="kd" id="apk-local-d">&nbsp;</span></div>
+  </div>
+
+  <section class="card">
+    <h2>{{t "已定义的登录方式"}}</h2>
+    <table class="list" id="ap-table">
+      <thead><tr>
+        <th scope="col"><span class="sr-only">{{t "排序"}}</span></th><th scope="col">{{t "名称"}}</th><th scope="col">{{t "类型"}}</th><th scope="col">{{t "状态"}}</th>
+        <th scope="col">{{t "登录页按钮"}}</th><th scope="col">{{t "首次登录"}}</th><th scope="col">{{t "默认入组"}}</th><th scope="col">{{t "最近成功登录"}}</th><th scope="col">{{t "操作"}}</th>
+      </tr></thead>
+      <tbody id="ap-rows"><tr><td colspan="9" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="ap-rules">
+    <h2>{{t "通用规则"}}</h2>
+    <div class="form-grid one">
+      <label>{{t "本地账号密码表单"}}
+        <select id="ap-local-mode">
+          <option value="always">{{t "始终显示"}}</option>
+          <option value="collapse">{{t "折叠"}}</option>
+          <option value="hidden">{{t "隐藏（仅 /login?local=1 可用）"}}</option>
+        </select>
+      </label>
+      <div>
+        <span class="lbl" id="ap-match-lbl">{{t "外部账号匹配已有用户的依据"}}</span>
+        <div class="check-list" id="ap-match" role="group" aria-labelledby="ap-match-lbl">
+          <label><input type="checkbox" value="third_id"> {{t "第三方 ID"}}</label>
+          <label><input type="checkbox" value="username"> {{t "用户名"}}</label>
+          <label><input type="checkbox" value="email"> {{t "邮箱"}}</label>
+          <label><input type="checkbox" value="phone"> {{t "手机号"}}</label>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="ap-su-local"> {{t "超级用户只能本地登录"}}</label>
+      <label class="check"><input type="checkbox" id="ap-ext-2fa"> {{t "外部登录后仍要求两步验证"}}</label>
+      <label class="check"><input type="checkbox" id="ap-backfill"> {{t "登录后把第三方 ID 回填到用户资料"}}</label>
+      <label class="check"><input type="checkbox" id="ap-self-bind"> {{t "允许用户自行绑定 / 解绑外部账号"}}</label>
+    </div>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" id="ap-rules-save" disabled>{{t "保存通用规则"}}</button></div>
+  </section>
+
+  <section class="card" id="ap-preview-card">
+    <h2>{{t "登录页预览"}}</h2>
+    <div class="login-prev" id="ap-preview"></div>
+  </section>
+</main>
+
+<!-- 添加登录方式 -->
+<div class="modal-mask" id="m-prov-add" hidden role="dialog" aria-modal="true" aria-labelledby="pa-title">
+  <div class="modal">
+    <h2 id="pa-title">{{t "添加登录方式"}}</h2>
+    <div class="form-grid one">
+      <label>{{t "类型"}}<select id="pa-kind"></select></label>
+      <label>{{t "名称"}}<input type="text" id="pa-name" maxlength="50" autocomplete="off" placeholder="{{t "如 公司 SSO"}}"></label>
+    </div>
+    <div id="pa-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="pa-next">{{t "下一步"}}</button></div>
+  </div>
+</div>
+
+<!-- 本地账号密码（内置） -->
+<div class="modal-mask" id="m-prov-local" hidden role="dialog" aria-modal="true" aria-labelledby="pl-title">
+  <div class="modal">
+    <h2 id="pl-title">{{t "本地账号密码"}}</h2>
+    <p>{{t "内置方式，不可停用或删除。"}}</p>
+    <div class="actions"><span class="spacer"></span><a class="btn" href="/settings/security">{{t "去安全设置"}}</a><button class="btn primary" type="button" data-close>{{t "知道了"}}</button></div>
+  </div>
+</div>
+
+<!-- 配置登录方式 -->
+<div class="modal-mask" id="m-prov" hidden role="dialog" aria-modal="true" aria-labelledby="pv-h">
+  <div class="modal xwide">
+    <h2 id="pv-h">{{t "配置登录方式"}} <small class="muted" id="pv-title"></small></h2>
+    <div class="form-grid">
+      <label>{{t "名称"}}<input type="text" id="pv-name" maxlength="50" autocomplete="off"></label>
+      <label id="pv-btn-box">{{t "登录页按钮文字"}}<input type="text" id="pv-btn" maxlength="50" autocomplete="off"></label>
+      <label>{{t "首次登录策略"}}
+        <select id="pv-first">
+          <option value="existing">{{t "仅已有用户（不自动创建）"}}</option>
+          <option value="create">{{t "自动创建用户"}}</option>
+        </select>
+      </label>
+      <label>{{t "默认权限组（可多选）"}}<select id="pv-ag" multiple size="4"></select></label>
+      <label>{{t "默认资源组（可多选）"}}<select id="pv-rg" multiple size="4"></select></label>
+    </div>
+
+    <details class="acc" open>
+      <summary>{{t "连接参数"}}</summary>
+      <div class="prov-body">
+        <div class="prov-fields form-grid" data-kind="ldap" hidden>
+          <label class="full">{{t "服务器地址"}}<input type="text" class="mono" data-cfg="server_uri" placeholder="ldaps://ldap.example.com:636"></label>
+          <label>{{t "连接方式"}}
+            <select data-cfg="conn_security">
+              <option value="ldaps">LDAPS（SSL）</option>
+              <option value="starttls">StartTLS</option>
+              <option value="none">{{t "明文（不建议）"}}</option>
+            </select>
+          </label>
+          <label>{{t "超时（秒）"}}<input type="text" inputmode="numeric" class="mono" data-cfg="timeout_sec" data-num placeholder="10"></label>
+          <label>{{t "绑定 DN（查询账号）"}}<input type="text" class="mono" data-cfg="bind_dn" placeholder="cn=svc-dba,ou=svc,dc=example,dc=com"></label>
+          <label>{{t "绑定密码"}}<input type="password" autocomplete="new-password" data-cfg="bind_password" data-secret></label>
+          <label>{{t "用户搜索 Base"}}<input type="text" class="mono" data-cfg="search_base" placeholder="ou=people,dc=example,dc=com"></label>
+          <label>{{t "用户搜索过滤"}}<input type="text" class="mono" data-cfg="search_filter" placeholder="(sAMAccountName=%(user)s)"></label>
+          <label class="full">{{t "用户 DN 模板（与搜索二选一）"}}<input type="text" class="mono" data-cfg="user_dn_template" placeholder="uid=%(user)s,ou=people,dc=example,dc=com"></label>
+          <label class="check"><input type="checkbox" data-cfg="skip_verify" data-invert> {{t "校验服务端证书"}}</label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="oidc" hidden>
+          <label class="full">Wellknown URL<input type="text" class="mono" data-cfg="wellknown_url" placeholder="https://sso.example.com/.well-known/openid-configuration"></label>
+          <label>Client ID<input type="text" class="mono" data-cfg="client_id" autocomplete="off"></label>
+          <label>Client Secret<input type="password" autocomplete="new-password" data-cfg="client_secret" data-secret></label>
+          <label>Scopes<input type="text" class="mono" data-cfg="scopes" placeholder="openid profile email"></label>
+          <label>{{t "签名算法"}}
+            <select data-cfg="sign_alg"><option value="RS256">RS256</option><option value="ES256">ES256</option></select>
+          </label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="dingtalk" hidden>
+          <label>AppKey<input type="text" class="mono" data-cfg="client_id" autocomplete="off"></label>
+          <label>AppSecret<input type="password" autocomplete="new-password" data-cfg="client_secret" data-secret></label>
+          <label>{{t "企业 CorpId（可空）"}}<input type="text" class="mono" data-cfg="corp_id" autocomplete="off"></label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="cas" hidden>
+          <label class="full">{{t "CAS 服务地址"}}<input type="text" class="mono" data-cfg="cas_url" placeholder="https://cas.example.com/cas/"></label>
+          <label>{{t "协议版本"}}
+            <select data-cfg="cas_version"><option value="3">3</option><option value="2">2</option><option value="1">1</option></select>
+          </label>
+          <label class="check"><input type="checkbox" data-cfg="skip_verify" data-invert> {{t "校验 CAS 服务端证书"}}</label>
+          <label class="check"><input type="checkbox" data-cfg="force_https"> {{t "强制 service URL 使用 https"}}</label>
+          <label class="check full"><input type="checkbox" data-cfg="global_logout"> {{t "退出时同时退出 CAS（全局登出）"}}</label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="feishu" hidden>
+          <label>App ID<input type="text" class="mono" data-cfg="client_id" placeholder="cli_xxx" autocomplete="off"></label>
+          <label>App Secret<input type="password" autocomplete="new-password" data-cfg="client_secret" data-secret></label>
+          <label>{{t "站点"}}
+            <select data-cfg="site">
+              <option value="feishu">{{t "飞书（open.feishu.cn）"}}</option>
+              <option value="lark">{{t "Lark 国际版（open.larksuite.com）"}}</option>
+            </select>
+          </label>
+          <label>{{t "租户限制 tenant_key（可空）"}}<input type="text" class="mono" data-cfg="tenant_key" autocomplete="off"></label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="slack" hidden>
+          <label>Client ID<input type="text" class="mono" data-cfg="client_id" autocomplete="off"></label>
+          <label>Client Secret<input type="password" autocomplete="new-password" data-cfg="client_secret" data-secret></label>
+          <label>{{t "限制工作区 Team ID（可空）"}}<input type="text" class="mono" data-cfg="team_id" placeholder="T0123ABCD" autocomplete="off"></label>
+        </div>
+
+        <div class="prov-fields form-grid" data-kind="wecom" hidden>
+          <label>{{t "企业 CorpId"}}<input type="text" class="mono" data-cfg="corp_id" placeholder="ww…" autocomplete="off"></label>
+          <label>{{t "应用 AgentId"}}<input type="text" class="mono" data-cfg="agent_id" autocomplete="off"></label>
+          <label>{{t "应用 Secret"}}<input type="password" autocomplete="new-password" data-cfg="client_secret" data-secret></label>
+          <label>{{t "授权方式"}}
+            <select data-cfg="wecom_mode">
+              <option value="auto">{{t "企业微信内免登 + 浏览器扫码"}}</option>
+              <option value="qr">{{t "仅浏览器扫码"}}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label class="check"><input type="checkbox" data-cfg="update_on_login"> {{t "每次登录同步更新姓名 / 邮箱"}}</label>
+          <label class="check" id="pv-backfill-box"><input type="checkbox" data-cfg="backfill"> <span id="pv-backfill-text">{{t "登录后回填第三方 ID"}}</span></label>
+          <div class="full" id="pv-cb-box" hidden>
+            <label for="pv-cb">{{t "回调地址（填到身份提供方）"}}</label>
+            <div class="copy-row"><input type="text" class="mono" id="pv-cb" readonly><button class="btn" type="button" id="pv-cb-copy">{{t "复制"}}</button></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>{{t "用户属性映射"}}</summary>
+      <table class="list">
+        <thead><tr><th scope="col">{{t "平台字段"}}</th><th scope="col">{{t "外部属性"}}</th><th scope="col">{{t "必填"}}</th></tr></thead>
+        <tbody>
+          <tr><td><label for="pv-attr-user">{{t "用户名 username"}}</label></td><td><input type="text" class="mono" id="pv-attr-user" data-cfg="attr_username"></td><td>{{t "是"}}</td></tr>
+          <tr><td><label for="pv-attr-display">{{t "姓名 display"}}</label></td><td><input type="text" class="mono" id="pv-attr-display" data-cfg="attr_display"></td><td>{{t "是"}}</td></tr>
+          <tr><td><label for="pv-attr-email">{{t "邮箱 email"}}</label></td><td><input type="text" class="mono" id="pv-attr-email" data-cfg="attr_email"></td><td>{{t "否"}}</td></tr>
+          <tr><td><label for="pv-attr-phone">{{t "手机号 phone"}}</label></td><td><input type="text" class="mono" id="pv-attr-phone" data-cfg="attr_phone"></td><td>{{t "否"}}</td></tr>
+        </tbody>
+      </table>
+    </details>
+
+    <details class="acc" open>
+      <summary>{{t "匹配依据"}}</summary>
+      <div class="prov-body">
+        <label class="check-inline"><input type="radio" name="pv-match-mode" id="pv-match-global" value="global"> {{t "沿用“通用规则”里的全局设置"}} <span class="muted small" id="pv-match-global-text"></span></label>
+        <label class="check-inline"><input type="radio" name="pv-match-mode" id="pv-match-own" value="own"> {{t "只对这个登录方式使用下面的设置"}}</label>
+        <div class="check-list" id="pv-match" role="group" aria-label="{{t "本登录方式的匹配依据"}}">
+          <label><input type="checkbox" value="third_id"> {{t "第三方 ID"}}</label>
+          <label><input type="checkbox" value="username"> {{t "用户名"}}</label>
+          <label><input type="checkbox" value="email"> {{t "邮箱"}}</label>
+          <label><input type="checkbox" value="phone"> {{t "手机号"}}</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>{{t "入组规则"}}</summary>
+      <table class="list rule-table">
+        <thead><tr><th scope="col">{{t "外部属性"}}</th><th scope="col">{{t "比较"}}</th><th scope="col">{{t "值"}}</th><th scope="col">{{t "加入权限组"}}</th><th scope="col">{{t "加入资源组"}}</th><th scope="col"><span class="sr-only">{{t "操作"}}</span></th></tr></thead>
+        <tbody id="pv-rules"></tbody>
+      </table>
+      <div class="prov-body">
+        <div class="toolbar">
+          <button class="btn" type="button" id="pv-add-rule">{{t "+ 添加规则"}}</button>
+          <label class="check-inline"><input type="checkbox" data-cfg="sync_groups"> {{t "每次登录都按规则同步"}}</label>
+        </div>
+      </div>
+    </details>
+
+    <div id="pv-msg"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="pv-test">{{t "测试登录"}}</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" data-close>{{t "取消"}}</button>
+      <button class="btn primary" type="button" id="pv-save">{{t "保存"}}</button>
+    </div>
+  </div>
+</div>
+
+<!-- 测试登录 / 测试连接 -->
+<div class="modal-mask" id="m-prov-test" hidden role="dialog" aria-modal="true" aria-labelledby="pt-h">
+  <div class="modal wide">
+    <h2 id="pt-h">{{t "测试"}} <small class="muted" id="pt-title"></small></h2>
+    <p class="small" id="pt-last"></p>
+    <div id="pt-ldap" hidden>
+      <div class="form-grid">
+        <label>{{t "测试账号（可空）"}}<input type="text" id="pt-user" autocomplete="off"></label>
+        <label>{{t "密码（不保存）"}}<input type="password" id="pt-pass" autocomplete="new-password"></label>
+      </div>
+    </div>
+    <div id="pt-note"></div>
+    <div class="toolbar">
+      <button class="btn primary" type="button" id="pt-run">{{t "测试连接"}}</button>
+      <button class="btn" type="button" id="pt-open" hidden>{{t "测试登录（打开授权页）"}}</button>
+      <button class="btn" type="button" id="pt-refresh" hidden>{{t "刷新结果"}}</button>
+    </div>
+    <div id="pt-result" aria-live="polite"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "关闭"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/auth/providers.js"></script>{{end}}

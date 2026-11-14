@@ -1,0 +1,51 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysconfig.css">{{end}}
+
+{{define "content"}}
+<main class="page st" id="st-main">
+  <div class="page-head">
+    <h1>{{t "系统配置"}}</h1>
+    <span class="spacer"></span>
+    <button type="button" class="btn ghost" id="st-hist-all">{{t "变更记录"}}</button>
+  </div>
+
+  <div id="st-alerts"></div>
+
+  <div class="st-layout">
+    <nav class="st-nav" id="st-nav" aria-label="{{t "设置分组"}}"></nav>
+    <section class="st-body" aria-live="polite">
+      <div class="st-search">
+        <input id="st-q" type="search" placeholder="{{t "搜索设置：名称 / 键 / 说明"}}" aria-label="{{t "搜索设置"}}" autocomplete="off">
+        <label class="st-chk"><input type="checkbox" id="st-only-mod"> {{t "只看已修改"}}</label>
+      </div>
+      <div id="st-content"></div>
+    </section>
+  </div>
+
+  <div class="st-bar" id="st-bar" hidden role="region" aria-label="{{t "未保存的修改"}}">
+    <span id="st-bar-text"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn ghost" id="st-discard">{{t "放弃修改"}}</button>
+    <button type="button" class="btn pri" id="st-save">{{t "保存修改"}}</button>
+  </div>
+
+  <div class="st-drawer" id="st-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="st-drawer-title">
+    <div class="st-drawer-panel">
+      <div class="st-drawer-head">
+        <h2 id="st-drawer-title">{{t "变更记录"}}</h2>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" id="st-drawer-close" aria-label="{{t "关闭"}}">✕</button>
+      </div>
+      <div class="st-drawer-body" id="st-drawer-body"></div>
+      <div class="st-drawer-foot"><button type="button" class="btn ghost" id="st-drawer-more" hidden>{{t "加载更多"}}</button></div>
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysconfig/main.js"></script>{{end}}

@@ -1,0 +1,897 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: masking-admin.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据脱敏管理 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*，与正式页面一致 ===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-amber-soft: rgba(255, 181, 71, .13);
+  --dt-ok: #37d99a; --dt-ok-soft: rgba(55, 217, 154, .12);
+  --dt-crit: #ff5577; --dt-crit-soft: rgba(255, 85, 119, .14);
+  --dt-input: #0a111c; --dt-sunken: rgba(0, 0, 0, .2); --dt-on-accent: #04121a;
+  --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-amber-soft: rgba(219, 140, 20, .12);
+  --dt-ok: #1a8f5c; --dt-ok-soft: rgba(26, 143, 92, .1);
+  --dt-crit: #cf2c46; --dt-crit-soft: rgba(207, 44, 70, .09);
+  --dt-input: #f8fafc; --dt-sunken: #f5f7fa; --dt-on-accent: #ffffff; --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3f7d3a; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #b2443a; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-on-accent: #fbf7ec; --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 13.5px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; }
+.muted { color: var(--dt-muted); } .dim { color: var(--dt-dim); } .small { font-size: 12px; }
+
+/* 顶栏（仅示意位置，正式页面用全局顶栏） */
+.top { flex: none; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 20px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); }
+.top .sp { flex: 1; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); }
+.seg button[aria-pressed="true"], .seg button.on { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 0; gap: 12px; overflow: hidden; }
+.head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 19px; }
+.head .tag { font-size: 12px; color: var(--dt-muted); }
+.btn { height: 30px; padding: 0 12px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-panel); }
+.btn:hover { border-color: var(--dt-cyan); }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+.btn.ghost { background: none; }
+.btn.danger { color: var(--dt-crit); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.ipt, select.ipt { height: 30px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); min-width: 0; }
+.ipt:focus, button:focus-visible, select:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.tabs button { height: 34px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--dt-muted); }
+.tabs button[aria-selected="true"] { color: var(--dt-cyan); border-bottom-color: var(--dt-cyan); font-weight: 600; }
+.badge { display: inline-block; padding: 0 7px; font-size: 11.5px; line-height: 18px; border: 1px solid var(--dt-line-hi); border-radius: 9px; color: var(--dt-muted); white-space: nowrap; }
+.badge.ok { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.badge.warn { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.info { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.badge.crit { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+
+/* 工作台：左 选字段 | 右 选规则 */
+.bench { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr); gap: 12px; }
+.panel { min-height: 0; display: flex; flex-direction: column; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.panel > h2 { margin: 0; padding: 10px 14px; font-size: 14px; border-bottom: 1px solid var(--dt-line); display: flex; align-items: center; gap: 8px; flex: none; }
+.step { width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--dt-cyan-soft); color: var(--dt-cyan); font-size: 12px; font-weight: 700; }
+.toolbar { flex: none; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--dt-line); }
+.toolbar .grow { flex: 1; min-width: 140px; }
+.chips { display: inline-flex; gap: 4px; }
+.chip { height: 26px; padding: 0 10px; border: 1px solid var(--dt-line-hi); border-radius: 13px; background: none; color: var(--dt-muted); font-size: 12.5px; }
+.chip[aria-pressed="true"] { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.scroll { flex: 1; min-height: 0; overflow: auto; }
+
+/* 树 */
+.tbl { border-bottom: 1px solid var(--dt-line); }
+.tbl-row { display: flex; align-items: center; gap: 8px; padding: 7px 14px; }
+.tbl-row:hover { background: var(--dt-cyan-soft); }
+.tbl-row .caret { width: 18px; height: 18px; border: 0; background: none; color: var(--dt-muted); transition: transform .12s; }
+.tbl.open > .tbl-row .caret { transform: rotate(90deg); }
+.tbl-row .name { font-weight: 600; }
+.tbl-row .cnt { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.db-head { position: sticky; top: 0; z-index: 1; padding: 6px 14px; background: var(--dt-raise); color: var(--dt-muted); font-size: 12px; letter-spacing: .04em; border-bottom: 1px solid var(--dt-line); }
+.cols { display: none; background: var(--dt-sunken); }
+.tbl.open > .cols { display: block; }
+.col-row { display: grid; grid-template-columns: 22px minmax(120px, 1.1fr) 120px minmax(80px, 1fr) auto; align-items: center; gap: 8px; padding: 5px 14px 5px 40px; border-top: 1px solid var(--dt-line); }
+.col-row:hover { background: var(--dt-cyan-soft); }
+.col-row.sel { background: var(--dt-cyan-soft); }
+.col-row .cm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--dt-cyan); }
+.empty { padding: 36px 16px; text-align: center; color: var(--dt-muted); }
+
+/* 右侧：规则 */
+.rule-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+.kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.kind { text-align: left; padding: 9px 11px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: none; }
+.kind b { display: block; margin-bottom: 2px; }
+.kind[aria-pressed="true"] { border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.kind[aria-pressed="true"] b { color: var(--dt-cyan); }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.num { display: inline-flex; align-items: center; border: 1px solid var(--dt-line-hi); border-radius: 5px; overflow: hidden; background: var(--dt-input); }
+.num button { width: 28px; height: 30px; border: 0; background: none; font-size: 16px; }
+.num button:hover { background: var(--dt-cyan-soft); }
+.num input { width: 44px; height: 30px; border: 0; border-inline: 1px solid var(--dt-line-hi); background: none; text-align: center; }
+.formula { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px dashed var(--dt-line-hi); border-radius: 8px; flex-wrap: wrap; }
+.formula .mid { padding: 2px 10px; border-radius: 4px; background: var(--dt-raise); color: var(--dt-muted); letter-spacing: .1em; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview { border: 1px solid var(--dt-line); border-radius: 8px; overflow: hidden; }
+.preview table { width: 100%; border-collapse: collapse; }
+.preview th, .preview td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--dt-line); }
+.preview th { color: var(--dt-muted); font-weight: 500; font-size: 12px; background: var(--dt-sunken); }
+.preview tr:last-child td { border-bottom: 0; }
+.preview td.out { color: var(--dt-cyan); }
+.preview input { width: 100%; height: 26px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); padding: 0 6px; }
+.impact { padding: 10px 12px; border-radius: 8px; background: var(--dt-sunken); border: 1px solid var(--dt-line); }
+.impact ul { margin: 6px 0 0; padding-left: 18px; }
+.impact li.warn { color: var(--dt-amber); }
+label.radio { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; }
+label.radio input { margin-top: 3px; }
+
+/* 底部固定条 */
+.bar { flex: none; margin: 0 -20px; padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--dt-panel); border-top: 1px solid var(--dt-line); box-shadow: 0 -6px 18px rgba(0, 0, 0, .12); }
+.bar .sum { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bar .sp { flex: 1; }
+
+/* 已配置 */
+.cfg { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+table.list { width: 100%; border-collapse: collapse; }
+table.list th, table.list td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--dt-line); vertical-align: middle; }
+table.list th { position: sticky; top: 0; background: var(--dt-raise); color: var(--dt-muted); font-weight: 500; font-size: 12px; z-index: 1; }
+table.list tr:hover td { background: var(--dt-cyan-soft); }
+.switch { position: relative; width: 34px; height: 18px; border-radius: 9px; border: 1px solid var(--dt-line-hi); background: var(--dt-raise); padding: 0; }
+.switch::after { content: ""; position: absolute; top: 1px; left: 1px; width: 14px; height: 14px; border-radius: 50%; background: var(--dt-muted); transition: left .12s; }
+.switch[aria-checked="true"] { background: var(--dt-cyan-soft); border-color: var(--dt-cyan); }
+.switch[aria-checked="true"]::after { left: 17px; background: var(--dt-cyan); }
+
+/* 弹窗 / 抽屉 */
+.mask { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .5); display: grid; place-items: center; padding: 20px; }
+[hidden] { display: none !important; }
+.dlg { width: min(720px, 100%); max-height: 86vh; display: flex; flex-direction: column; background: var(--dt-panel); border: 1px solid var(--dt-line-hi); border-radius: 10px; box-shadow: var(--dt-shadow); }
+.dlg h3 { margin: 0; padding: 14px 18px; font-size: 16px; border-bottom: 1px solid var(--dt-line); }
+.dlg .bd { padding: 14px 18px; overflow: auto; }
+.dlg .ft { padding: 12px 18px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--dt-line); }
+.dlg textarea { width: 100%; min-height: 150px; padding: 8px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-input); }
+.toast { position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; border-radius: 8px; background: var(--dt-panel); border: 1px solid var(--dt-ok); color: var(--dt-ok); box-shadow: var(--dt-shadow); }
+.toast[hidden] { display: none; }
+.proto-note { flex: none; padding: 6px 12px; border: 1px dashed var(--dt-amber); border-radius: 6px; color: var(--dt-amber); background: var(--dt-amber-soft); font-size: 12px; }
+/* 引擎标签条 */
+.engine { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 8px 12px; border: 1px solid var(--dt-line); border-radius: 8px; background: var(--dt-panel); font-size: 12.5px; }
+.engine .item { display: inline-flex; gap: 6px; align-items: baseline; }
+.engine .k { color: var(--dt-muted); }
+.addpath { flex: none; padding: 8px 14px; border-bottom: 1px solid var(--dt-line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+.addpath .ipt { flex: 1; min-width: 180px; }
+@media (max-width: 1100px) { .bench { grid-template-columns: 1fr; overflow: auto; } .panel { min-height: 420px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="crumb">系统管理 / <b>数据脱敏</b></span>
+  <span class="sp"></span>
+  <div class="seg" role="group" aria-label="主题">
+    <button type="button" data-skin="light" aria-pressed="false">明亮</button>
+    <button type="button" data-skin="dark" aria-pressed="true">深空</button>
+    <button type="button" data-skin="sepia" aria-pressed="false">护眼</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="head">
+    <h1>数据脱敏</h1><span class="tag mono">menu_data_masking</span>
+    <span style="flex:1"></span>
+    <label class="muted small" for="inst">实例</label>
+    <select id="inst" class="ipt" style="min-width:210px"></select>
+    <button class="btn" id="b-paste" type="button">粘贴清单选字段</button>
+  </div>
+  <div class="engine" id="engine"></div>
+  <div class="proto-note">原型 · 模拟数据，操作只改页面内存，刷新即还原</div>
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="t-wiz" aria-selected="true">配置向导</button>
+    <button type="button" role="tab" id="t-cfg" aria-selected="false">已配置字段 <span class="badge" id="cfg-count">0</span></button>
+  </div>
+
+  <!-- ===== 配置向导 ===== -->
+  <section id="wiz" class="bench">
+    <div class="panel">
+      <h2><span class="step">1</span>选择字段</h2>
+      <div class="toolbar">
+        <select id="db" class="ipt"></select>
+        <input id="q" class="ipt grow" type="search" placeholder="筛选表 / 字段 / 注释" aria-label="筛选">
+        <div class="seg" role="group" aria-label="视图">
+          <button type="button" id="v-table" aria-pressed="true">按表</button>
+          <button type="button" id="v-name" aria-pressed="false">按字段名</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="chips" role="group" aria-label="状态筛选">
+          <button class="chip" data-f="all" aria-pressed="true" type="button">全部</button>
+          <button class="chip" data-f="sus" aria-pressed="false" type="button">疑似敏感</button>
+          <button class="chip" data-f="un" aria-pressed="false" type="button">未脱敏</button>
+          <button class="chip" data-f="ok" aria-pressed="false" type="button">已脱敏</button>
+        </div>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="b-sus" type="button">选中疑似敏感</button>
+        <button class="btn ghost" id="b-all" type="button">全选当前结果</button>
+        <button class="btn ghost" id="b-none" type="button">清空</button>
+      </div>
+      <div class="addpath" id="addpath" hidden>
+        <span class="muted">补充字段路径</span>
+        <input id="ap-in" class="ipt mono" placeholder="集合.字段路径" aria-label="手动添加字段路径">
+        <button class="btn" id="ap-add" type="button">添加</button>
+      </div>
+      <div class="scroll" id="tree"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">2</span>选择脱敏方式</h2>
+      <div class="scroll"><div class="rule-body">
+        <div class="kinds" id="kinds" role="group" aria-label="规则类型"></div>
+        <div id="params"></div>
+        <div>
+          <div class="muted small" style="margin-bottom:6px">常用预设</div>
+          <div class="presets" id="presets"></div>
+        </div>
+        <div>
+          <div class="muted small" style="margin-bottom:6px">试算</div>
+          <div class="preview"><table id="prev"></table></div>
+        </div>
+        <div>
+          <div class="muted small" style="margin-bottom:2px">生效范围</div>
+          <label class="radio"><input type="radio" name="scope" value="exact" checked><span><b id="sc-exact">只对所选的“库.表.字段”</b></span></label>
+          <label class="radio"><input type="radio" name="scope" value="name"><span><b id="sc-name">该实例所有表里的同名字段</b></span></label>
+        </div>
+        <div class="impact" id="impact"></div>
+        <button class="btn primary" id="b-apply" type="button">应用到所选字段</button>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===== 已配置字段 ===== -->
+  <section id="cfgsec" class="cfg" hidden>
+    <div class="panel" style="flex:1">
+      <div class="toolbar">
+        <input id="cq" class="ipt grow" type="search" placeholder="筛选 库.表.字段 / 规则" aria-label="筛选已配置">
+        <select id="cf-rule" class="ipt"><option value="">全部规则</option></select>
+        <select id="cf-state" class="ipt"><option value="">全部状态</option><option value="1">已启用</option><option value="0">已停用</option></select>
+        <span style="flex:1"></span>
+        <button class="btn" id="c-on" type="button">批量启用</button>
+        <button class="btn" id="c-off" type="button">批量停用</button>
+        <button class="btn" id="c-edit" type="button">用所选字段改规则</button>
+        <button class="btn danger" id="c-del" type="button">批量移除</button>
+      </div>
+      <div class="scroll"><table class="list" id="ctable"></table></div>
+    </div>
+  </section>
+
+  <div class="bar" id="bar"></div>
+</main>
+
+<!-- 粘贴清单 -->
+<div class="mask" id="m-paste" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="paste-t">
+    <h3 id="paste-t">粘贴清单选字段</h3>
+    <div class="bd">
+      <textarea id="paste" class="mono" placeholder="shop.users.phone&#10;orders.receiver_phone&#10;id_card"></textarea>
+      <div id="paste-res" class="small muted" style="margin-top:8px"></div>
+    </div>
+    <div class="ft"><button class="btn" id="p-close" type="button">取消</button><button class="btn primary" id="p-ok" type="button">选中匹配到的字段</button></div>
+  </div>
+</div>
+
+<!-- 保存前确认 -->
+<div class="mask" id="m-save" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="save-t">
+    <h3 id="save-t">确认保存脱敏配置</h3>
+    <div class="bd" id="save-body"></div>
+    <div class="ft"><button class="btn" id="s-cancel" type="button">再看看</button><button class="btn primary" id="s-ok" type="button">确认并生效</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  /* ------------------------------------------------------------------ 演示数据 */
+  var C = function (n, t, c) { return { n: n, t: t, c: c || '' }; };
+  var INSTANCES = [
+    { id: 1, name: 'prod-mysql-01', eng: 'mysql', type: 'MySQL', dbs: [
+      { name: 'shop', tables: [
+        { name: 'users', comment: '用户', rows: 1280000, cols: [C('id', 'bigint', '主键'), C('user_name', 'varchar(64)', '用户名'), C('real_name', 'varchar(32)', '真实姓名'), C('phone', 'varchar(20)', '手机号'), C('id_card', 'varchar(18)', '身份证号'), C('email', 'varchar(128)', '邮箱'), C('address', 'varchar(255)', '收货地址'), C('created_at', 'datetime', '创建时间')] },
+        { name: 'orders', comment: '订单', rows: 9420000, cols: [C('id', 'bigint', '主键'), C('user_id', 'bigint', '用户'), C('receiver_name', 'varchar(32)', '收件人'), C('receiver_phone', 'varchar(20)', '收件电话'), C('receiver_addr', 'varchar(255)', '收件地址'), C('amount', 'decimal(12,2)', '金额'), C('pay_no', 'varchar(40)', '支付流水'), C('created_at', 'datetime', '')] },
+        { name: 'payment_card', comment: '支付卡', rows: 380000, cols: [C('id', 'bigint', ''), C('user_id', 'bigint', ''), C('card_no', 'varchar(24)', '银行卡号'), C('holder_name', 'varchar(32)', '持卡人'), C('bank_phone', 'varchar(20)', '预留手机号'), C('expire', 'char(4)', '有效期')] },
+        { name: 'sys_log', comment: '系统日志', rows: 55000000, cols: [C('id', 'bigint', ''), C('level', 'varchar(8)', ''), C('message', 'text', ''), C('created_at', 'datetime', '')] },
+      ] },
+      { name: 'crm', tables: [
+        { name: 'customers', comment: '客户', rows: 210000, cols: [C('id', 'bigint', ''), C('name', 'varchar(64)', '客户名'), C('mobile', 'varchar(20)', '手机'), C('email', 'varchar(128)', ''), C('wechat', 'varchar(64)', '微信号'), C('company', 'varchar(128)', '公司')] },
+        { name: 'contacts', comment: '联系人', rows: 480000, cols: [C('id', 'bigint', ''), C('customer_id', 'bigint', ''), C('contact_name', 'varchar(32)', '联系人'), C('mobile', 'varchar(20)', '手机'), C('tel', 'varchar(20)', '座机'), C('email', 'varchar(128)', '')] },
+      ] },
+    ] },
+    { id: 2, name: '(生产) 商城SaaS [PolarDB]-basic', eng: 'polardb', type: 'PolarDB', dbs: [
+      { name: 'pay_db', tables: [
+        { name: 'pay_order', comment: '支付订单表', rows: 797, cols: [C('id', 'bigint', ''), C('user_id', 'bigint', ''), C('mobile', 'varchar(20)', '手机号'), C('order_no', 'varchar(40)', ''), C('amount', 'decimal(12,2)', ''), C('channel_account', 'varchar(64)', '渠道账号')] },
+        { name: 'refund_order', comment: '退款订单表', rows: 345, cols: [C('id', 'bigint', ''), C('user_id', 'bigint', ''), C('real_name', 'varchar(32)', '收款人'), C('bank_card_no', 'varchar(24)', '银行卡号'), C('mobile', 'varchar(20)', '手机号'), C('amount', 'decimal(12,2)', '')] },
+      ] },
+    ] },
+    { id: 3, name: 'test-mysql-01', eng: 'mysql', type: 'MySQL', dbs: [
+      { name: 'demo', tables: [
+        { name: 'people', comment: '', rows: 120, cols: [C('id', 'int', ''), C('name', 'varchar(32)', ''), C('phone', 'varchar(20)', ''), C('email', 'varchar(64)', '')] },
+      ] },
+    ] },
+  ];
+  // 其他引擎的演示实例（层级与字段命名各不相同）
+  INSTANCES.push(
+    { id: 4, name: 'erp-sqlserver-01', eng: 'mssql', type: 'SQL Server', dbs: [
+      { name: 'ERP', tables: [
+        { name: 'dbo.Buyer', comment: '买家', rows: 8200, cols: [C('BuyerId', 'int', '主键'), C('BuyerName', 'nvarchar(50)', '姓名'), C('IdCardNo', 'varchar(18)', '身份证号'), C('Mobile', 'varchar(20)', '手机'), C('Email', 'nvarchar(128)', '邮箱'), C('HomeAddr', 'nvarchar(200)', '收货地址'), C('Balance', 'decimal(12,2)', '账户余额'), C('RegDate', 'date', '注册日期')] },
+        { name: 'dbo.Customer', comment: '客户', rows: 156000, cols: [C('CustId', 'int', ''), C('CustName', 'nvarchar(100)', '客户名称'), C('Contact', 'nvarchar(50)', '联系人'), C('Mobile', 'varchar(20)', '手机'), C('Email', 'nvarchar(128)', '')] },
+        { name: 'fin.Settlement', comment: '商家结算', rows: 990000, cols: [C('Id', 'bigint', ''), C('BuyerId', 'int', ''), C('BankCardNo', 'varchar(24)', '银行卡号'), C('NetAmount', 'decimal(12,2)', '实发'), C('PayMonth', 'char(6)', '')] },
+      ] },
+      { name: 'ERP_Archive', tables: [
+        { name: 'dbo.Buyer_2022', comment: '买家历史', rows: 7600, cols: [C('BuyerId', 'int', ''), C('BuyerName', 'nvarchar(50)', '姓名'), C('IdCardNo', 'varchar(18)', '身份证号'), C('Mobile', 'varchar(20)', '手机')] },
+      ] },
+    ] },
+    { id: 5, name: 'risk-pgsql-01', eng: 'pgsql', type: 'PgSQL', dbs: [
+      { name: 'riskdb', tables: [
+        { name: 'public.account', comment: '账户', rows: 3600000, cols: [C('id', 'bigint', ''), C('full_name', 'text', '姓名'), C('phone', 'varchar(20)', '手机号'), C('email', 'text', '邮箱'), C('id_number', 'varchar(18)', '证件号'), C('balance', 'numeric(14,2)', '余额'), C('ext', 'jsonb', '扩展信息（含手机号等）'), C('created_at', 'timestamptz', '')] },
+        { name: 'public.kyc_record', comment: 'KYC 记录', rows: 910000, cols: [C('id', 'bigint', ''), C('account_id', 'bigint', ''), C('real_name', 'text', '真实姓名'), C('id_number', 'varchar(18)', '证件号'), C('address', 'text', '住址'), C('verified_at', 'timestamptz', '')] },
+        { name: 'audit.login_event', comment: '登录日志', rows: 42000000, cols: [C('id', 'bigint', ''), C('account_id', 'bigint', ''), C('mobile', 'varchar(20)', '登录手机'), C('ip', 'inet', ''), C('ua', 'text', '')] },
+      ] },
+    ] },
+    { id: 6, name: 'events-clickhouse-01', eng: 'clickhouse', type: 'ClickHouse', dbs: [
+      { name: 'events', tables: [
+        { name: 'user_events', comment: '用户行为', rows: 2100000000, cols: [C('event_time', 'DateTime', ''), C('user_id', 'UInt64', ''), C('phone', 'String', '手机号'), C('email', 'Nullable(String)', '邮箱'), C('event_name', 'LowCardinality(String)', ''), C('props', 'Map(String,String)', '事件属性')] },
+        { name: 'orders_wide', comment: '订单宽表', rows: 85000000, cols: [C('order_id', 'UInt64', ''), C('receiver_name', 'String', '收件人'), C('receiver_phone', 'String', '收件电话'), C('receiver_addr', 'String', '收件地址'), C('amount', 'Decimal(18,2)', '')] },
+      ] },
+    ] },
+    { id: 7, name: 'app-mongo-01', eng: 'mongo', type: 'MongoDB', dbs: [
+      { name: 'appdb', tables: [
+        { name: 'users', comment: '用户', rows: 1200000, cols: [C('_id', 'objectId', ''), C('name', 'string', '姓名'), C('email', 'string', '邮箱'), C('profile.phone', 'string|int', '手机号（个别文档是数字）'), C('profile.id_card', 'string', '身份证号'), C('profile.address.detail', 'string', '详细地址'), C('profile.address.city', 'string', '城市'), C('contacts[].mobile', 'string', '联系人手机（数组元素）'), C('contacts[].name', 'string', '联系人姓名'), C('age', 'int', ''), C('created_at', 'date', '')] },
+        { name: 'orders', comment: '订单', rows: 8800000, cols: [C('_id', 'objectId', ''), C('user_id', 'objectId', ''), C('receiver.name', 'string', '收件人'), C('receiver.phone', 'string', '收件电话'), C('receiver.addr', 'string', '收件地址'), C('amount', 'decimal128', ''), C('items[].sku', 'string', '')] },
+      ] },
+      { name: 'logs', tables: [
+        { name: 'login_trace', comment: '登录轨迹', rows: 52000000, cols: [C('_id', 'objectId', ''), C('mobile', 'string', '手机号'), C('ip', 'string', ''), C('ts', 'date', '')] },
+      ] },
+    ] },
+    { id: 8, name: 'dw-selectdb-01', eng: 'selectdb', type: 'SelectDB', dbs: [
+      { name: 'dw', tables: [
+        { name: 'dim_user', comment: '用户维表', rows: 4800000, cols: [C('user_id', 'bigint', ''), C('mobile', 'varchar(20)', '手机'), C('real_name', 'varchar(32)', '姓名'), C('email', 'varchar(128)', ''), C('reg_city', 'varchar(32)', '')] },
+        { name: 'dws_order_day', comment: '订单日汇总', rows: 1200000, cols: [C('dt', 'date', ''), C('user_id', 'bigint', ''), C('order_cnt', 'int', ''), C('amount', 'decimal(18,2)', '')] },
+      ] },
+    ] }
+  );
+  // 不在脱敏范围内的实例类型：下拉里灰显
+  var UNSUPPORTED = [
+    { name: 'cache-redis-01', type: 'Redis' },
+    { name: 'search-es-01', type: 'Elasticsearch' },
+  ];
+  // 各引擎的字段单位与结果列定位精度（精确 / 保守 / 字段路径）
+  var MY = { path: '库.表.字段', tbl: '表', tblCnt: '张表', col: '字段', row: '行', acc: 'exact' };
+  function ext(base, o) { var r = {}; Object.keys(base).forEach(function (k) { r[k] = base[k]; }); Object.keys(o).forEach(function (k) { r[k] = o[k]; }); return r; }
+  var ENGINES = {
+    mysql: ext(MY, { label: 'MySQL' }),
+    polardb: ext(MY, { label: 'PolarDB' }),
+    adb: ext(MY, { label: 'ADB' }),
+    selectdb: ext(MY, { label: 'SelectDB / Doris', acc: 'name' }),
+    mssql: ext(MY, { label: 'SQL Server', path: '库.架构.表.列', col: '列', acc: 'exact' }),
+    pgsql: ext(MY, { label: 'PostgreSQL', path: '库.架构.表.列', col: '列', acc: 'exact' }),
+    clickhouse: ext(MY, { label: 'ClickHouse', path: '库.表.列', col: '列', acc: 'name' }),
+    mongo: ext(MY, { label: 'MongoDB', path: '库.集合.字段路径', tbl: '集合', tblCnt: '个集合', col: '字段', row: '文档', acc: 'path' }),
+  };
+  // 疑似敏感：按字段名猜（只是提示，不会自动脱敏）
+  var SUS = [
+    [/(phone|mobile|tel|手机|电话)/i, '手机号', { kind: 'keep', n: 3, m: 4 }],
+    [/(id_?card|idcard|cert_?no|id_?number|身份证)/i, '身份证', { kind: 'keep', n: 3, m: 4 }],
+    [/(bank_?card|card_?no|银行卡)/i, '银行卡', { kind: 'keep', n: 6, m: 4 }],
+    [/(e_?mail|邮箱)/i, '邮箱', { kind: 'keep', n: 2, m: 0 }],
+    [/(real_?name|full_?name|emp_?name|cust_?name|holder_?name|receiver_?name|contact_?name|user_?name|(^|\.)name$|姓名)/i, '姓名', { kind: 'keep', n: 1, m: 0 }],
+    [/(addr|address|地址)/i, '地址', { kind: 'keep', n: 6, m: 0 }],
+    [/(wechat|weixin|微信)/i, '社交账号', { kind: 'keep', n: 2, m: 0 }],
+  ];
+  var PRESETS = [
+    { name: '手机号 3+4', rule: { kind: 'keep', n: 3, m: 4 }, sample: '13812345678' },
+    { name: '身份证 3+4', rule: { kind: 'keep', n: 3, m: 4 }, sample: '110101199003071234' },
+    { name: '银行卡 6+4', rule: { kind: 'keep', n: 6, m: 4 }, sample: '6222021234567890123' },
+    { name: '姓名 1+0', rule: { kind: 'keep', n: 1, m: 0 }, sample: '张三丰' },
+    { name: '邮箱 2+0', rule: { kind: 'keep', n: 2, m: 0 }, sample: 'zhangsan@corp.com' },
+    { name: '地址 6+0', rule: { kind: 'keep', n: 6, m: 0 }, sample: '北京市海淀区中关村大街1号' },
+  ];
+  var KIND_META = {
+    keep: ['保留首尾'],
+    three: ['三段式'],
+    whole: ['整列隐藏'],
+    regex: ['自定义正则'],
+  };
+
+  /* ------------------------------------------------------------------ 状态 */
+  var S = {
+    inst: INSTANCES[0], db: '', view: 'table', filter: 'all', q: '',
+    open: {}, sel: {},                       // 展开的表、选中的字段键 "db.table.col"
+    rule: { kind: 'keep', n: 3, m: 4, hide: 2, regex: '^(\\d{3})(\\d+)(\\d{4})$', group: 2 },
+    scope: 'exact', tab: 'wiz', cfgSel: {}, sample: '13812345678',
+    samples: ['13812345678', '110101199003071234', '张三丰'],
+  };
+  // 已配置（按实例）与暂存：键 "db.table.col"，通配 "*.*.col"
+  var CFG = {}; var STAGED = {};
+  INSTANCES.forEach(function (i) { CFG[i.id] = {}; STAGED[i.id] = {}; });
+  CFG[1]['shop.users.phone'] = mk({ kind: 'keep', n: 3, m: 4 }, true, '张伟', '10-08 14:20');
+  CFG[1]['shop.users.id_card'] = mk({ kind: 'three', hide: 2 }, true, '张伟', '10-08 14:20');
+  CFG[1]['*.*.email'] = mk({ kind: 'keep', n: 2, m: 0 }, true, 'admin', '10-09 09:12');
+  CFG[1]['crm.customers.mobile'] = mk({ kind: 'whole' }, false, 'admin', '10-09 09:15');
+  CFG[2]['pay_db.refund_order.bank_card_no'] = mk({ kind: 'keep', n: 6, m: 4 }, true, 'admin', '10-10 16:02');
+  CFG[4]['ERP.dbo.Buyer.IdCardNo'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-11 10:05');
+  CFG[4]['ERP.dbo.Buyer.Mobile'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-11 10:05');
+  CFG[4]['*.*.BankCardNo'] = mk({ kind: 'keep', n: 6, m: 4 }, true, 'admin', '10-11 10:07');
+  CFG[5]['riskdb.public.account.phone'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-11 11:30');
+  CFG[5]['riskdb.public.kyc_record.id_number'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-11 11:30');
+  CFG[6]['events.user_events.phone'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-11 15:42');
+  CFG[7]['appdb.users.profile.phone'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-12 09:20');
+  CFG[7]['appdb.users.profile.id_card'] = mk({ kind: 'three', hide: 2 }, true, 'admin', '10-12 09:20');
+  CFG[7]['*.*.receiver.phone'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-12 09:22');
+  CFG[8]['dw.dim_user.mobile'] = mk({ kind: 'keep', n: 3, m: 4 }, true, 'admin', '10-12 10:11');
+  function mk(rule, active, by, at) { return { rule: clone(rule), active: active, by: by, at: at }; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  /* ------------------------------------------------------------------ 脱敏算法（与服务端同一套语义，保证所见即所得） */
+  function runes(s) { return Array.from(String(s)); }
+  function keepEnds(v, n, m) {
+    var a = runes(v), L = a.length;
+    if (!L) return v;
+    var p = Math.max(0, Math.min(n, L - 1));        // 至少隐藏 1 个字符：值太短就缩小保留位，优先缩后面
+    var s = Math.max(0, Math.min(m, L - 1 - p));
+    return a.slice(0, p).join('') + '***' + (s ? a.slice(L - s).join('') : '');
+  }
+  function threeSeg(v, hide) {
+    var a = runes(v), n = a.length, avg = Math.floor(n / 3), rem = n % 3, lens = [avg, avg, avg];
+    if (rem > 0) lens[1]++; if (rem > 1) lens[2]++;
+    var pos = 0, out = '';
+    for (var g = 1; g <= 3; g++) {
+      var seg = a.slice(pos, pos + lens[g - 1]); pos += lens[g - 1];
+      out += g === hide ? '*'.repeat(seg.length) : seg.join('');
+    }
+    return out;
+  }
+  function maskValue(v, r) {
+    if (v === '' || v == null) return v;
+    if (r.kind === 'keep') return keepEnds(v, r.n, r.m);
+    if (r.kind === 'three') return threeSeg(v, r.hide);
+    if (r.kind === 'whole') return '***';
+    try {
+      var m = new RegExp(r.regex, 'i').exec(String(v));
+      if (!m) return '（正则未匹配，原样返回）' + v;
+      var out = '';
+      for (var g = 1; g < m.length; g++) out += g === r.group ? '*'.repeat(runes(m[g] || '').length) : (m[g] || '');
+      return out;
+    } catch (e) { return '（正则不合法）'; }
+  }
+  function ruleText(r) {
+    if (r.kind === 'keep') return '保留前 ' + r.n + ' 位 + *** + 后 ' + r.m + ' 位';
+    if (r.kind === 'three') return '三段式：隐藏' + ['前', '中', '后'][r.hide - 1] + '段';
+    if (r.kind === 'whole') return '整体显示 ***';
+    return '正则：隐藏第 ' + r.group + ' 组';
+  }
+  function sameRule(a, b) { return a.kind === b.kind && (a.kind === 'whole' || (a.kind === 'keep' ? a.n === b.n && a.m === b.m : a.kind === 'three' ? a.hide === b.hide : a.regex === b.regex && a.group === b.group)); }
+
+  /* ------------------------------------------------------------------ 工具 */
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmtRows(n) { return n >= 1e8 ? (n / 1e8).toFixed(1) + ' 亿' : n >= 1e4 ? (n / 1e4).toFixed(n >= 1e6 ? 0 : 1) + ' 万' : String(n); }
+  function ENG(inst) { return ENGINES[inst.eng]; }
+  function kindName(k) { return k === 'whole' ? (S.inst.eng === 'mongo' ? '整字段隐藏' : '整列隐藏') : KIND_META[k][0]; }
+  function suspect(col) { for (var i = 0; i < SUS.length; i++) if (SUS[i][0].test(col)) return SUS[i]; return null; }
+  function baseType(t) { var m; while ((m = /^(nullable|lowcardinality)\((.*)\)$/i.exec(t))) t = m[2]; return t; }
+  function isMixed(t) { return /\|/.test(t); }
+  function isNum(t) { t = baseType(t); return !isMixed(t) && /^(u?int|bigint|decimal|tinyint|smallint|mediumint|double|float|numeric|number|money|real|long)/i.test(t); }
+  function isDoc(t) { return /^(json|jsonb|object|array|map|tuple|nested)/i.test(baseType(t)); }
+  function terms(q) { return q.toLowerCase().split(/\s+/).filter(Boolean); }
+  function hay(s, ts) { s = s.toLowerCase(); return ts.every(function (t) { return s.indexOf(t) >= 0; }); }
+
+  // 某字段当前“有效”的脱敏状态：先看暂存（含移除），再看已配置；精确键优先，其次同名通配
+  function effective(k, col) {
+    var st = STAGED[S.inst.id], cf = CFG[S.inst.id];
+    var wk = '*.*.' + col;
+    var pick = function (key) { if (st[key]) return st[key].op === 'remove' ? { none: true, staged: true } : { e: st[key], staged: true }; if (cf[key]) return { e: cf[key], staged: false }; return null; };
+    return pick(k) || pick(wk) || null;
+  }
+
+  /* ------------------------------------------------------------------ 渲染：左侧 */
+  function allTables() {
+    var out = [];
+    S.inst.dbs.forEach(function (d) { if (S.db && S.db !== d.name) return; d.tables.forEach(function (t) { out.push({ db: d.name, t: t }); }); });
+    return out;
+  }
+  function colKey(db, t, c) { return db + '.' + t.name + '.' + c.n; }
+  function colPass(db, t, c, ts) {
+    var k = colKey(db, t, c), ef = effective(k, c.n);
+    var masked = !!(ef && ef.e);
+    if (S.filter === 'ok' && !masked) return false;
+    if (S.filter === 'un' && masked) return false;
+    if (S.filter === 'sus' && !(suspect(c.n) && !masked)) return false;
+    if (ts.length && !hay(db + '.' + t.name + ' ' + t.comment + ' ' + c.n + ' ' + c.c, ts)) return false;
+    return true;
+  }
+  function renderTree() {
+    var box = $('tree'), ts = terms(S.q), html = '', shown = 0;
+    if (S.view === 'name') return renderByName(box, ts);
+    var lastDb = null;
+    allTables().forEach(function (x) {
+      var cols = x.t.cols.filter(function (c) { return colPass(x.db, x.t, c, ts); });
+      if (!cols.length) return;
+      shown++;
+      if (!S.db && x.db !== lastDb) { html += '<div class="db-head mono">' + esc(x.db) + '</div>'; lastDb = x.db; }
+      var tk = x.db + '|' + x.t.name;
+      var selN = cols.filter(function (c) { return S.sel[colKey(x.db, x.t, c)]; }).length;
+      var maskedN = x.t.cols.filter(function (c) { var e = effective(colKey(x.db, x.t, c), c.n); return e && e.e; }).length;
+      var open = S.open[tk] || (ts.length > 0 && S.filter !== 'all') || (ts.length > 0);
+      html += '<div class="tbl' + (open ? ' open' : '') + '" data-t="' + esc(tk) + '">' +
+        '<div class="tbl-row"><button class="caret" data-act="toggle" aria-label="展开" type="button">▸</button>' +
+        '<input type="checkbox" data-act="tsel" aria-label="选择 ' + esc(x.t.name) + ' 的全部字段"' + (selN && selN === cols.length ? ' checked' : '') + (selN && selN < cols.length ? ' data-ind="1"' : '') + '>' +
+        '<span class="name mono">' + esc(x.t.name) + '</span><span class="muted small">' + esc(x.t.comment) + '</span>' +
+        '<span class="cnt">' + (x.t.rows ? '<span class="muted small">≈ ' + fmtRows(x.t.rows) + ' ' + ENG(S.inst).row + '</span>' : '') +
+        (maskedN ? '<span class="badge ok">已脱敏 ' + maskedN + '/' + x.t.cols.length + '</span>' : '') +
+        (selN ? '<span class="badge info">已选 ' + selN + '</span>' : '') + '</span></div>' +
+        '<div class="cols">' + cols.map(function (c) { return colRow(x.db, x.t, c); }).join('') + '</div></div>';
+    });
+    box.innerHTML = html || '<div class="empty">没有符合条件的表或字段</div>';
+    box.querySelectorAll('input[data-ind]').forEach(function (i) { i.indeterminate = true; });
+  }
+  function colRow(db, t, c) {
+    var k = colKey(db, t, c), ef = effective(k, c.n), sus = suspect(c.n);
+    var state = '';
+    if (ef && ef.e) state = '<span class="badge ' + (ef.e.active === false ? '' : 'ok') + '">' + esc(ruleText(ef.e.rule)) + (ef.staged ? ' · 待保存' : '') + (ef.e.active === false ? ' · 已停用' : '') + '</span>';
+    else if (ef && ef.none) state = '<span class="badge warn">待移除</span>';
+    else if (sus) state = '<span class="badge warn">疑似' + sus[1] + '</span>';
+    return '<div class="col-row' + (S.sel[k] ? ' sel' : '') + '" data-k="' + esc(k) + '">' +
+      '<input type="checkbox" data-act="csel" aria-label="选择 ' + esc(c.n) + '"' + (S.sel[k] ? ' checked' : '') + '>' +
+      '<span class="mono">' + esc(c.n) + '</span><span class="muted small mono">' + esc(c.t) + '</span>' +
+      '<span class="cm muted small" title="' + esc(c.c) + '">' + esc(c.c) + '</span><span>' + state + '</span></div>';
+  }
+  function renderByName(box, ts) {
+    var map = {};
+    allTables().forEach(function (x) { x.t.cols.forEach(function (c) {
+      if (!colPass(x.db, x.t, c, ts)) return;
+      (map[c.n] = map[c.n] || { n: c.n, types: {}, items: [] });
+      map[c.n].types[c.t] = 1; map[c.n].items.push({ db: x.db, t: x.t, c: c, k: colKey(x.db, x.t, c) });
+    }); });
+    var names = Object.keys(map).sort(function (a, b) { return map[b].items.length - map[a].items.length || a.localeCompare(b); });
+    var html = names.map(function (n) {
+      var g = map[n], selN = g.items.filter(function (i) { return S.sel[i.k]; }).length;
+      var sus = suspect(n), open = S.open['n:' + n];
+      var maskedN = g.items.filter(function (i) { var e = effective(i.k, i.c.n); return e && e.e; }).length;
+      return '<div class="tbl' + (open ? ' open' : '') + '" data-n="' + esc(n) + '"><div class="tbl-row">' +
+        '<button class="caret" data-act="ntoggle" aria-label="展开" type="button">▸</button>' +
+        '<input type="checkbox" data-act="nsel" aria-label="选择所有名为 ' + esc(n) + ' 的字段"' + (selN === g.items.length ? ' checked' : '') + (selN && selN < g.items.length ? ' data-ind="1"' : '') + '>' +
+        '<span class="name mono">' + esc(n) + '</span><span class="muted small mono">' + Object.keys(g.types).join(' / ') + '</span>' +
+        '<span class="cnt">' + (sus ? '<span class="badge warn">疑似' + sus[1] + '</span>' : '') +
+        '<span class="muted small">出现在 ' + g.items.length + ' ' + ENG(S.inst).tblCnt + '</span>' +
+        (maskedN ? '<span class="badge ok">已脱敏 ' + maskedN + '</span>' : '') + (selN ? '<span class="badge info">已选 ' + selN + '</span>' : '') + '</span></div>' +
+        '<div class="cols">' + g.items.map(function (i) { return colRow(i.db, i.t, Object.assign({}, i.c, { n: i.c.n })).replace('<span class="mono">' + esc(i.c.n) + '</span>', '<span class="mono">' + esc(i.db + '.' + i.t.name) + '</span>'); }).join('') + '</div></div>';
+    }).join('');
+    box.innerHTML = html || '<div class="empty">没有符合条件的字段</div>';
+    box.querySelectorAll('input[data-ind]').forEach(function (i) { i.indeterminate = true; });
+  }
+  function visibleKeys() {
+    var ts = terms(S.q), out = [];
+    allTables().forEach(function (x) { x.t.cols.forEach(function (c) { if (colPass(x.db, x.t, c, ts)) out.push({ k: colKey(x.db, x.t, c), db: x.db, t: x.t, c: c }); }); });
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ 渲染：右侧 */
+  function renderRule() {
+    $('kinds').innerHTML = Object.keys(KIND_META).map(function (k) {
+      return '<button class="kind" type="button" data-kind="' + k + '" aria-pressed="' + (S.rule.kind === k) + '"><b>' + kindName(k) + '</b></button>';
+    }).join('');
+    var r = S.rule, p = '';
+    if (r.kind === 'keep') {
+      p = '<div class="formula"><span>保留前</span>' + stepper('n', r.n) + '<span>位</span><span class="mid mono">***</span><span>保留后</span>' + stepper('m', r.m) + '<span>位</span></div>';
+    } else if (r.kind === 'three') {
+      p = '<div class="row"><span>按长度三等分，隐藏</span><div class="seg" role="group">' +
+        [1, 2, 3].map(function (g) { return '<button type="button" data-hide="' + g + '" class="' + (r.hide === g ? 'on' : '') + '">' + ['前段', '中段', '后段'][g - 1] + '</button>'; }).join('') +
+        '</div></div>';
+    } else if (r.kind === 'whole') {
+      p = '<div class="formula"><span>所有值显示为</span><span class="mid mono">***</span></div>';
+    } else {
+      p = '<div class="row"><input id="rx" class="ipt mono" style="flex:1;min-width:200px" value="' + esc(r.regex) + '" aria-label="正则"><span>隐藏第</span>' + stepper('group', r.group) + '<span>组</span></div>' +
+        '<div class="muted small" style="margin-top:6px">正则不匹配时原值原样返回。</div>';
+    }
+    $('params').innerHTML = p;
+    $('presets').innerHTML = PRESETS.map(function (x, i) { return '<button class="chip" type="button" data-preset="' + i + '">' + esc(x.name) + '</button>'; }).join('');
+    renderPreview();
+  }
+  function stepper(key, v) {
+    return '<span class="num"><button type="button" data-step="' + key + '" data-d="-1" aria-label="减一">−</button><input data-num="' + key + '" value="' + v + '" inputmode="numeric" aria-label="' + key + '"><button type="button" data-step="' + key + '" data-d="1" aria-label="加一">+</button></span>';
+  }
+  function renderPreview() {
+    var rows = S.samples.map(function (s, i) {
+      return '<tr><td><input data-sample="' + i + '" value="' + esc(s) + '" class="mono"></td><td class="out mono">' + esc(String(maskValue(s, S.rule))) + '</td></tr>';
+    }).join('');
+    $('prev').innerHTML = '<tr><th style="width:55%">原值</th><th>脱敏后</th></tr>' + rows;
+  }
+  function selectedList() {
+    var out = [];
+    S.inst.dbs.forEach(function (d) { d.tables.forEach(function (t) { t.cols.forEach(function (c) { var k = colKey(d.name, t, c); if (S.sel[k]) out.push({ k: k, db: d.name, t: t, c: c }); }); }); });
+    return out;
+  }
+  function renderImpact() {
+    var list = selectedList(), box = $('impact');
+    if (!list.length) { box.innerHTML = '<span class="muted">尚未选择字段</span>'; $('b-apply').disabled = true; $('b-apply').textContent = '应用到所选字段'; return; }
+    var tables = {}; list.forEach(function (x) { tables[x.db + '.' + x.t.name] = 1; });
+    var over = 0, same = 0, num = 0, mixed = 0, doc = 0, whole = S.scope === 'name', E = ENG(S.inst);
+    list.forEach(function (x) {
+      var e = effective(whole ? '*.*.' + x.c.n : x.k, x.c.n);
+      if (e && e.e) { if (sameRule(e.e.rule, S.rule)) same++; else over++; }
+      if (isNum(x.c.t)) num++;
+      if (isMixed(x.c.t)) mixed++;
+      if (isDoc(x.c.t)) doc++;
+    });
+    var li = '<li>规则：<b>' + esc(ruleText(S.rule)) + '</b>' + (whole ? '；范围：该实例所有' + E.tbl + '的同名' + E.col : '') + '</li>';
+    if (over) li += '<li class="warn">' + over + ' 个字段已有别的规则，应用后会被覆盖</li>';
+    if (same) li += '<li class="muted">' + same + ' 个字段已是同一规则，无变化</li>';
+    if (num) li += '<li class="warn">' + num + ' 个是数值类型：脱敏后以文本返回（如金额 / 数字列通常不需要脱敏）</li>';
+    if (mixed) li += '<li class="warn">' + mixed + ' 个' + E.col + '的类型不统一（如部分文档里是数字）：数字会先转成文本再脱敏，结果一律按文本返回</li>';
+    if (doc) li += '<li class="warn">' + doc + ' 个是 JSON / Map 类型：对其中所有文本值逐个按规则处理，不区分键名</li>';
+    var kinds = {}; list.forEach(function (x) { var u = suspect(x.c.n); if (u) kinds[u[1]] = (kinds[u[1]] || 0) + 1; });
+    var kn = Object.keys(kinds), smart = '';
+    if (kn.length > 1) {
+      li += '<li class="warn">所选字段含 ' + kn.length + ' 类疑似敏感数据（' + kn.map(function (n) { return n + ' ' + kinds[n]; }).join('、') + '），同一个规则不一定都合适</li>';
+      smart = '<div style="margin-top:8px"><button class="btn" id="b-smart" type="button">改为：每类用各自的推荐规则（手机号 3+4、姓名 1+0 …）</button></div>';
+    }
+    box.innerHTML = '将对 <b>' + Object.keys(tables).length + '</b> ' + E.tblCnt + '的 <b>' + list.length + '</b> 个' + E.col + '设置脱敏<ul>' + li + '</ul>' + smart;
+    $('b-apply').disabled = false;
+    $('b-apply').textContent = '应用到所选 ' + list.length + ' 个字段';
+  }
+
+  /* ------------------------------------------------------------------ 渲染：底栏 / 已配置 */
+  function stagedCounts() {
+    var st = STAGED[S.inst.id], cf = CFG[S.inst.id], add = 0, over = 0, rm = 0;
+    Object.keys(st).forEach(function (k) { if (st[k].op === 'remove') rm++; else if (cf[k]) over++; else add++; });
+    return { add: add, over: over, rm: rm, n: add + over + rm };
+  }
+  function renderBar() {
+    var c = stagedCounts(), sel = Object.keys(S.sel).length;
+    $('bar').innerHTML = '<div class="sum"><span>已选 <b>' + sel + '</b> 个字段</span><span class="dim">|</span>' +
+      (c.n ? '<span class="badge warn">待保存 ' + c.n + ' 项</span><span class="muted small">新增 ' + c.add + ' · 覆盖 ' + c.over + ' · 移除 ' + c.rm + '</span>' : '<span class="muted small">没有未保存的变更</span>') + '</div><span class="sp"></span>' +
+      '<button class="btn" id="bar-discard" type="button"' + (c.n ? '' : ' disabled') + '>放弃变更</button>' +
+      '<button class="btn primary" id="bar-save" type="button"' + (c.n ? '' : ' disabled') + '>保存并生效…</button>';
+    $('cfg-count').textContent = Object.keys(CFG[S.inst.id]).length;
+  }
+  function renderCfg() {
+    var cf = CFG[S.inst.id], q = terms($('cq').value), rf = $('cf-rule').value, sf = $('cf-state').value;
+    var keys = Object.keys(cf).filter(function (k) {
+      var e = cf[k];
+      if (q.length && !hay(k + ' ' + ruleText(e.rule), q)) return false;
+      if (rf && e.rule.kind !== rf) return false;
+      if (sf !== '' && String(e.active ? 1 : 0) !== sf) return false;
+      return true;
+    }).sort();
+    var head = '<thead><tr><th style="width:34px"><input type="checkbox" id="c-all" aria-label="全选"></th><th>' + esc(ENG(S.inst).path) + '</th><th>范围</th><th>脱敏方式</th><th>示例</th><th>状态</th><th>更新</th></tr></thead>';
+    var ex = { keep: '13812345678', three: '13812345678', whole: '13812345678', regex: '13812345678' };
+    var body = keys.map(function (k) {
+      var e = cf[k], wild = k.indexOf('*.*.') === 0;
+      return '<tr data-k="' + esc(k) + '"><td><input type="checkbox" data-act="ccsel" aria-label="选择"' + (S.cfgSel[k] ? ' checked' : '') + '></td>' +
+        '<td class="mono">' + esc(wild ? k.slice(4) : k) + '</td><td>' + (wild ? '<span class="badge info">任意库表的同名字段</span>' : '<span class="badge">精确</span>') + '</td>' +
+        '<td>' + esc(ruleText(e.rule)) + '</td><td class="mono muted">' + esc(String(maskValue(ex[e.rule.kind], e.rule))) + '</td>' +
+        '<td><button class="switch" role="switch" data-act="cswitch" aria-checked="' + e.active + '" aria-label="启用"></button></td>' +
+        '<td class="muted small">' + esc(e.by) + ' · ' + esc(e.at) + '</td></tr>';
+    }).join('');
+    $('ctable').innerHTML = head + '<tbody>' + (body || '<tr><td colspan="7" class="empty">没有符合条件的配置</td></tr>') + '</tbody>';
+  }
+
+  /* ------------------------------------------------------------------ 事件 */
+  function refresh() { renderTree(); renderImpact(); renderBar(); if (S.tab === 'cfg') renderCfg(); }
+  function setSel(keys, on) { keys.forEach(function (k) { if (on) S.sel[k] = true; else delete S.sel[k]; }); }
+  function toast(t) { var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { el.hidden = true; }, 2600); }
+  function tableKeys(tk, onlyVisible) {
+    var parts = tk.split('|'), out = [], ts = terms(S.q);
+    S.inst.dbs.forEach(function (d) { if (d.name !== parts[0]) return; d.tables.forEach(function (t) { if (t.name !== parts[1]) return; t.cols.forEach(function (c) { if (!onlyVisible || colPass(d.name, t, c, ts)) out.push(colKey(d.name, t, c)); }); }); });
+    return out;
+  }
+
+  $('tree').addEventListener('click', function (e) {
+    var act = e.target.dataset.act, row = e.target.closest('.tbl');
+    if (act === 'toggle') { var tk = row.dataset.t; S.open[tk] = !row.classList.contains('open'); row.classList.toggle('open'); return; }
+    if (act === 'ntoggle') { var nk = 'n:' + row.dataset.n; S.open[nk] = !row.classList.contains('open'); row.classList.toggle('open'); return; }
+  });
+  $('tree').addEventListener('change', function (e) {
+    var act = e.target.dataset.act, row = e.target.closest('.tbl');
+    if (act === 'csel') { setSel([e.target.closest('.col-row').dataset.k], e.target.checked); }
+    else if (act === 'tsel') { setSel(tableKeys(row.dataset.t, true), e.target.checked); }
+    else if (act === 'nsel') {
+      var n = row.dataset.n; var ks = visibleKeys().filter(function (x) { return x.c.n === n; }).map(function (x) { return x.k; });
+      setSel(ks, e.target.checked);
+    } else return;
+    refresh();
+  });
+  $('inst').addEventListener('change', function () {
+    S.inst = INSTANCES.filter(function (i) { return String(i.id) === $('inst').value; })[0]; S.db = ''; S.sel = {}; S.open = {}; S.cfgSel = {};
+    fillDb(); renderEngine(); applyUnits(); renderRule(); refresh();
+  });
+  $('db').addEventListener('change', function () { S.db = $('db').value; refresh(); });
+  $('q').addEventListener('input', function () { S.q = $('q').value; renderTree(); });
+  $('v-table').addEventListener('click', function () { S.view = 'table'; $('v-table').setAttribute('aria-pressed', 'true'); $('v-name').setAttribute('aria-pressed', 'false'); renderTree(); });
+  $('v-name').addEventListener('click', function () { S.view = 'name'; $('v-name').setAttribute('aria-pressed', 'true'); $('v-table').setAttribute('aria-pressed', 'false'); renderTree(); });
+  document.querySelectorAll('[data-f]').forEach(function (b) { b.addEventListener('click', function () {
+    S.filter = b.dataset.f; document.querySelectorAll('[data-f]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); renderTree();
+  }); });
+  $('b-all').addEventListener('click', function () { setSel(visibleKeys().map(function (x) { return x.k; }), true); refresh(); });
+  $('b-none').addEventListener('click', function () { S.sel = {}; refresh(); });
+  $('b-sus').addEventListener('click', function () {
+    var ks = [];
+    allTables().forEach(function (x) { x.t.cols.forEach(function (c) { var k = colKey(x.db, x.t, c), e = effective(k, c.n); if (suspect(c.n) && !(e && e.e)) ks.push(k); }); });
+    setSel(ks, true); refresh(); toast('已选中 ' + ks.length + ' 个疑似敏感且还没脱敏的字段');
+  });
+
+  // 右侧：规则编辑
+  $('kinds').addEventListener('click', function (e) { var b = e.target.closest('[data-kind]'); if (!b) return; S.rule.kind = b.dataset.kind; renderRule(); renderImpact(); });
+  $('params').addEventListener('click', function (e) {
+    var st = e.target.closest('[data-step]'), hd = e.target.closest('[data-hide]');
+    if (st) { var key = st.dataset.step; var max = key === 'group' ? 9 : 32, min = key === 'group' ? 1 : 0; S.rule[key] = Math.max(min, Math.min(max, S.rule[key] + Number(st.dataset.d))); renderRule(); renderImpact(); }
+    if (hd) { S.rule.hide = Number(hd.dataset.hide); renderRule(); renderImpact(); }
+  });
+  $('params').addEventListener('input', function (e) {
+    var num = e.target.dataset.num;
+    if (num) { var v = parseInt(e.target.value, 10); if (!isNaN(v)) { S.rule[num] = Math.max(num === 'group' ? 1 : 0, Math.min(num === 'group' ? 9 : 32, v)); renderPreview(); renderImpact(); } }
+    if (e.target.id === 'rx') { S.rule.regex = e.target.value; renderPreview(); }
+  });
+  $('params').addEventListener('change', function (e) { if (e.target.dataset.num) { renderRule(); } });
+  $('presets').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-preset]'); if (!b) return;
+    var p = PRESETS[Number(b.dataset.preset)];
+    S.rule = Object.assign({}, S.rule, clone(p.rule));
+    S.samples = [p.sample].concat(S.samples.filter(function (x) { return x !== p.sample; })).slice(0, 3);   // 预设的示例放第一行，其余保留
+    renderRule(); renderImpact();
+  });
+  $('prev').addEventListener('input', function (e) { var i = e.target.dataset.sample; if (i == null) return; S.samples[Number(i)] = e.target.value; e.target.closest('tr').querySelector('.out').textContent = String(maskValue(e.target.value, S.rule)); });
+  document.querySelectorAll('input[name=scope]').forEach(function (r) { r.addEventListener('change', function () { S.scope = r.value; renderImpact(); }); });
+
+  // 应用：暂存
+  $('b-apply').addEventListener('click', function () {
+    var list = selectedList(), st = STAGED[S.inst.id], cf = CFG[S.inst.id], n = 0;
+    list.forEach(function (x) {
+      var key = S.scope === 'name' ? '*.*.' + x.c.n : x.k;
+      var cur = st[key] ? (st[key].op === 'remove' ? null : st[key]) : cf[key];
+      if (cur && sameRule(cur.rule, S.rule) && cur.active !== false) return;
+      st[key] = { op: 'set', rule: clone(S.rule), active: true, by: 'admin', at: '刚刚' }; n++;
+    });
+    S.sel = {};
+    refresh(); toast('已暂存 ' + n + ' 项变更，点“保存并生效”后才会真正生效');
+  });
+  $('impact').addEventListener('click', function (e) {
+    if (e.target.id !== 'b-smart') return;
+    var list = selectedList(), st = STAGED[S.inst.id], n = 0, skip = 0;
+    list.forEach(function (x) {
+      var u = suspect(x.c.n); if (!u) { skip++; return; }
+      st[S.scope === 'name' ? '*.*.' + x.c.n : x.k] = { op: 'set', rule: clone(u[2]), active: true, by: 'admin', at: '刚刚' }; n++;
+    });
+    S.sel = {}; refresh(); toast('已按类型暂存 ' + n + ' 项' + (skip ? '，' + skip + ' 个非疑似字段未处理' : ''));
+  });
+  $('bar').addEventListener('click', function (e) {
+    if (e.target.id === 'bar-discard') { STAGED[S.inst.id] = {}; refresh(); toast('已放弃未保存的变更'); }
+    if (e.target.id === 'bar-save') openSave();
+  });
+
+  // 保存前确认（变更差异）
+  function openSave() {
+    var st = STAGED[S.inst.id], cf = CFG[S.inst.id], keys = Object.keys(st).sort();
+    var rows = keys.map(function (k) {
+      var n = st[k], o = cf[k], wild = k.indexOf('*.*.') === 0;
+      var kind = n.op === 'remove' ? '<span class="badge crit">移除</span>' : o ? '<span class="badge warn">覆盖</span>' : '<span class="badge ok">新增</span>';
+      return '<tr><td>' + kind + '</td><td class="mono">' + esc(wild ? k.slice(4) + '（所有库表）' : k) + '</td><td class="muted">' + (o ? esc(ruleText(o.rule)) : '—') + '</td><td>' + (n.op === 'remove' ? '—' : esc(ruleText(n.rule))) + '</td></tr>';
+    }).join('');
+    $('save-body').innerHTML = '<p style="margin-top:0">实例 <b>' + esc(S.inst.name) + '</b>，共 <b>' + keys.length + '</b> 项变更。保存后立即生效，并写入系统审计。</p>' +
+      '<div class="preview"><table><tr><th>类型</th><th>' + esc(ENG(S.inst).path) + '</th><th>原规则</th><th>新规则</th></tr>' + rows + '</table></div>';
+    $('m-save').hidden = false;
+  }
+  $('s-cancel').addEventListener('click', function () { $('m-save').hidden = true; });
+  $('s-ok').addEventListener('click', function () {
+    var st = STAGED[S.inst.id], cf = CFG[S.inst.id], n = Object.keys(st).length;
+    Object.keys(st).forEach(function (k) { if (st[k].op === 'remove') delete cf[k]; else cf[k] = { rule: st[k].rule, active: st[k].active, by: 'admin', at: '刚刚' }; });
+    STAGED[S.inst.id] = {}; $('m-save').hidden = true; refresh(); toast('已保存并生效：' + n + ' 项（已写入系统审计）');
+  });
+
+  // 已配置
+  function setTab(t) {
+    S.tab = t; $('wiz').hidden = t !== 'wiz'; $('cfgsec').hidden = t !== 'cfg';
+    $('t-wiz').setAttribute('aria-selected', String(t === 'wiz')); $('t-cfg').setAttribute('aria-selected', String(t === 'cfg'));
+    if (t === 'cfg') renderCfg();
+  }
+  $('t-wiz').addEventListener('click', function () { setTab('wiz'); });
+  $('t-cfg').addEventListener('click', function () { setTab('cfg'); });
+  ['cq', 'cf-rule', 'cf-state'].forEach(function (id) { $(id).addEventListener('input', renderCfg); });
+  $('ctable').addEventListener('change', function (e) {
+    var act = e.target.dataset.act;
+    if (e.target.id === 'c-all') { var on = e.target.checked; $('ctable').querySelectorAll('tbody tr[data-k]').forEach(function (tr) { if (on) S.cfgSel[tr.dataset.k] = true; else delete S.cfgSel[tr.dataset.k]; }); renderCfg(); return; }
+    if (act === 'ccsel') { var k = e.target.closest('tr').dataset.k; if (e.target.checked) S.cfgSel[k] = true; else delete S.cfgSel[k]; }
+  });
+  $('ctable').addEventListener('click', function (e) {
+    if (e.target.dataset.act !== 'cswitch') return;
+    var k = e.target.closest('tr').dataset.k, cf = CFG[S.inst.id][k]; cf.active = !cf.active; renderCfg(); toast(cf.active ? '已启用' : '已停用');
+  });
+  function cfgKeys() { return Object.keys(S.cfgSel); }
+  $('c-on').addEventListener('click', function () { cfgKeys().forEach(function (k) { CFG[S.inst.id][k].active = true; }); renderCfg(); });
+  $('c-off').addEventListener('click', function () { cfgKeys().forEach(function (k) { CFG[S.inst.id][k].active = false; }); renderCfg(); });
+  $('c-del').addEventListener('click', function () {
+    var ks = cfgKeys(); if (!ks.length) return;
+    ks.forEach(function (k) { STAGED[S.inst.id][k] = { op: 'remove' }; }); S.cfgSel = {}; setTab('wiz'); refresh(); toast('已把 ' + ks.length + ' 项加入“待移除”，保存后生效');
+  });
+  $('c-edit').addEventListener('click', function () {
+    var ks = cfgKeys().filter(function (k) { return k.indexOf('*.*.') !== 0; });
+    if (!ks.length) { toast('请先勾选要改规则的字段（通配项请在向导里按字段名选）'); return; }
+    S.sel = {}; ks.forEach(function (k) { S.sel[k] = true; }); S.filter = 'all'; setTab('wiz'); refresh(); toast('已把 ' + ks.length + ' 个字段带回向导，选好新规则后应用');
+  });
+
+  // 粘贴清单
+  $('b-paste').addEventListener('click', function () { $('m-paste').hidden = false; $('paste').focus(); });
+  $('p-close').addEventListener('click', function () { $('m-paste').hidden = true; });
+  function parsePaste() {
+    var lines = $('paste').value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean), hit = [], miss = [];
+    var all = []; S.inst.dbs.forEach(function (d) { d.tables.forEach(function (t) { t.cols.forEach(function (c) { all.push({ k: colKey(d.name, t, c) }); }); }); });
+    lines.forEach(function (l) {
+      var tail = '.' + l.replace(/[`"']/g, '').toLowerCase();   // 与完整路径从右往左按点号边界匹配，表名带架构、Mongo 路径带点都一样处理
+      var m = all.filter(function (x) { var k = '.' + x.k.toLowerCase(); return k.length >= tail.length && k.slice(k.length - tail.length) === tail; });
+      if (m.length) m.forEach(function (x) { hit.push(x.k); }); else miss.push(l);
+    });
+    return { hit: hit, miss: miss, n: lines.length };
+  }
+  $('paste').addEventListener('input', function () {
+    var r = parsePaste();
+    $('paste-res').innerHTML = r.n ? '共 ' + r.n + ' 行，匹配到 <b>' + r.hit.length + '</b> 个字段' + (r.miss.length ? '；<span style="color:var(--dt-amber)">未匹配 ' + r.miss.length + ' 行：' + esc(r.miss.slice(0, 5).join('、')) + (r.miss.length > 5 ? '…' : '') + '</span>' : '') : '';
+  });
+  $('p-ok').addEventListener('click', function () {
+    var r = parsePaste(); setSel(r.hit, true); $('m-paste').hidden = true; setTab('wiz'); refresh();
+    toast('已选中 ' + r.hit.length + ' 个字段' + (r.miss.length ? '，' + r.miss.length + ' 行没匹配到' : ''));
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('m-paste').hidden = true; $('m-save').hidden = true; } });
+
+  // 引擎标签条
+  function renderEngine() {
+    var e = ENG(S.inst), cls = { exact: 'ok', name: 'warn', path: 'info' }[e.acc], txt = { exact: '精确定位', name: '保守匹配', path: '字段路径匹配' }[e.acc];
+    $('engine').innerHTML = '<span class="badge info">' + esc(e.label) + '</span>' +
+      '<span class="item"><span class="k">结果列定位</span><span class="badge ' + cls + '">' + txt + '</span></span>';
+  }
+  function applyUnits() {
+    var e = ENG(S.inst);
+    $('v-table').textContent = '按' + e.tbl;
+    $('q').placeholder = '筛选' + e.tbl + ' / ' + e.col + ' / 注释';
+    $('sc-exact').textContent = '只对所选的“' + e.path + '”';
+    $('sc-name').textContent = '该实例所有' + e.tbl + '里的同名' + e.col;
+    $('addpath').hidden = S.inst.eng !== 'mongo';
+  }
+  $('ap-add').addEventListener('click', function () {
+    var v = $('ap-in').value.trim(), i = v.indexOf('.');
+    if (i < 1 || i === v.length - 1) { toast('格式：集合.字段路径，例如 users.profile.wechat'); return; }
+    var coll = v.slice(0, i), path = v.slice(i + 1), dbn = S.db || S.inst.dbs[0].name;
+    var d = S.inst.dbs.filter(function (x) { return x.name === dbn; })[0];
+    var t = d.tables.filter(function (x) { return x.name === coll; })[0];
+    if (!t) { t = { name: coll, comment: '（手动添加）', rows: 0, cols: [] }; d.tables.push(t); }
+    if (t.cols.some(function (c) { return c.n === path; })) { toast('该路径已存在'); return; }
+    t.cols.push(C(path, 'string', '手动添加'));
+    S.open[dbn + '|' + coll] = true; S.sel[colKey(dbn, t, { n: path })] = true; $('ap-in').value = '';
+    refresh(); toast('已添加 ' + dbn + '.' + coll + '.' + path + ' 并选中');
+  });
+
+  // 主题
+  document.querySelectorAll('[data-skin]').forEach(function (b) { b.addEventListener('click', function () {
+    document.documentElement.setAttribute('data-skin', b.dataset.skin);
+    document.querySelectorAll('[data-skin]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+  }); });
+
+  /* ------------------------------------------------------------------ 初始化 */
+  function fillDb() {
+    $('db').innerHTML = '<option value="">全部库（' + S.inst.dbs.length + '）</option>' + S.inst.dbs.map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.name) + '</option>'; }).join('');
+    $('db').value = S.db;
+  }
+  $('inst').innerHTML = INSTANCES.map(function (i) { return '<option value="' + i.id + '">' + esc(i.name) + '（' + i.type + '）</option>'; }).join('') +
+    UNSUPPORTED.map(function (u) { return '<option disabled>' + esc(u.name) + '（' + u.type + '）— 不在脱敏范围</option>'; }).join('');
+  $('cf-rule').innerHTML += Object.keys(KIND_META).map(function (k) { return '<option value="' + k + '">' + KIND_META[k][0] + '</option>'; }).join('');
+  fillDb(); renderEngine(); applyUnits(); renderRule(); refresh();
+})();
+</script>
+</body>
+</html>

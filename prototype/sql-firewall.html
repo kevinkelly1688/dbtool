@@ -1,0 +1,750 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: sql-firewall.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL 防火墙 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*，与正式页面一致 ===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-amber-soft: rgba(255, 181, 71, .13);
+  --dt-ok: #37d99a; --dt-ok-soft: rgba(55, 217, 154, .12);
+  --dt-crit: #ff5577; --dt-crit-soft: rgba(255, 85, 119, .14);
+  --dt-info: #6aa8ff; --dt-violet: #b79cff;
+  --dt-input: #0a111c; --dt-sunken: rgba(0, 0, 0, .2); --dt-on-accent: #04121a;
+  --dt-code-kw: #6cc4e6; --dt-code-str: #86d3a6; --dt-code-num: #e3b46c; --dt-code-cm: #5d6f88;
+  --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-amber-soft: rgba(219, 140, 20, .12);
+  --dt-ok: #1a8f5c; --dt-ok-soft: rgba(26, 143, 92, .1);
+  --dt-crit: #cf2c46; --dt-crit-soft: rgba(207, 44, 70, .09);
+  --dt-info: #2f6fd0; --dt-violet: #7a52e0;
+  --dt-input: #f8fafc; --dt-sunken: #f5f7fa; --dt-on-accent: #ffffff;
+  --dt-code-kw: #1f5fbf; --dt-code-str: #1a7f4b; --dt-code-num: #b05a00; --dt-code-cm: #8a96a6;
+  --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3f7d3a; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #b2443a; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-info: #3c6f96; --dt-violet: #7d55b8;
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-on-accent: #fbf7ec;
+  --dt-code-kw: #2f6f8f; --dt-code-str: #4f7a2f; --dt-code-num: #a2611a; --dt-code-cm: #a3967b;
+  --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 13.5px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono, code { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; }
+code { padding: 0 4px; border-radius: 3px; background: var(--dt-raise); font-size: 12px; }
+.muted { color: var(--dt-muted); } .dim { color: var(--dt-dim); } .small { font-size: 12px; }
+[hidden] { display: none !important; }
+
+/* 顶栏（仅示意位置，正式页面用全局顶栏） */
+.top { flex: none; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 20px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); }
+.top .sp { flex: 1; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+.seg.warn button[aria-pressed="true"] { background: var(--dt-amber-soft); color: var(--dt-amber); }
+
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 16px; gap: 12px; overflow: auto; }
+.head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 19px; }
+.btn { height: 30px; padding: 0 12px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-panel); white-space: nowrap; }
+.btn:hover { border-color: var(--dt-cyan); }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+.btn.ghost { background: none; }
+.btn.sm { height: 24px; padding: 0 8px; font-size: 12px; }
+.btn.danger { color: var(--dt-crit); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.link { border: 0; background: none; color: var(--dt-cyan); padding: 0 4px; }
+.link:hover { text-decoration: underline; }
+.link.danger { color: var(--dt-crit); }
+.ipt, select.ipt, textarea.ipt { height: 30px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); min-width: 0; }
+textarea.ipt { height: auto; padding: 8px; resize: vertical; }
+.ipt:focus, button:focus-visible, select:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+input[type=checkbox], input[type=radio] { width: 15px; height: 15px; accent-color: var(--dt-cyan); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.tabs button { height: 36px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--dt-muted); }
+.tabs button[aria-selected="true"] { color: var(--dt-cyan); border-bottom-color: var(--dt-cyan); font-weight: 600; }
+.tabs .n { margin-left: 6px; padding: 0 6px; border-radius: 9px; background: var(--dt-raise); color: var(--dt-muted); font-size: 11.5px; }
+.badge { display: inline-block; padding: 0 7px; font-size: 11.5px; line-height: 18px; border: 1px solid var(--dt-line-hi); border-radius: 9px; color: var(--dt-muted); white-space: nowrap; }
+.badge.ok { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.badge.warn { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.info { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.badge.crit { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.alert { padding: 8px 12px; border-radius: 6px; border: 1px solid; }
+.alert.warn { background: var(--dt-amber-soft); border-color: var(--dt-amber); color: var(--dt-amber); }
+.alert.info { background: var(--dt-cyan-soft); border-color: var(--dt-cyan); color: var(--dt-cyan); }
+
+/* 概览 */
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.stat { padding: 10px 14px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.stat .k { color: var(--dt-muted); font-size: 12px; }
+.stat .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .d { font-size: 12px; color: var(--dt-muted); }
+.stat.crit .v { color: var(--dt-crit); } .stat.warn .v { color: var(--dt-amber); } .stat.ok .v { color: var(--dt-ok); }
+
+/* 表格 */
+.panel { background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--dt-line); }
+.toolbar .grow { flex: 1; min-width: 160px; }
+table.list { width: 100%; border-collapse: collapse; }
+table.list th { text-align: left; padding: 8px 12px; font-weight: 600; font-size: 12.5px; color: var(--dt-muted); background: var(--dt-raise); border-bottom: 1px solid var(--dt-line); white-space: nowrap; }
+table.list td { padding: 9px 12px; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+table.list tr:hover td { background: var(--dt-cyan-soft); }
+table.list tr.off td { opacity: .55; }
+.rname { font-weight: 600; }
+.cond { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cond span { padding: 0 6px; font-size: 11.5px; line-height: 18px; border-radius: 4px; background: var(--dt-raise); color: var(--dt-muted); }
+.cond span.k { color: var(--dt-code-kw); }
+.cond span.j { background: none; color: var(--dt-dim); padding: 0 1px; }
+.seg.mode button[data-m="enforce"][aria-pressed="true"] { background: var(--dt-ok-soft); color: var(--dt-ok); }
+.sp7 { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; margin-left: 8px; vertical-align: middle; }
+.sp7 i { width: 4px; background: var(--dt-cyan); opacity: .7; border-radius: 1px; min-height: 2px; }
+.sw { position: relative; display: inline-block; width: 34px; height: 18px; }
+.sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.sw b { position: absolute; inset: 0; border-radius: 9px; background: var(--dt-line-hi); transition: background .12s; pointer-events: none; }
+.sw b::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--dt-fg); opacity: .85; transition: transform .12s; }
+.sw input:checked + b { background: var(--dt-ok); }
+.sw input:checked + b::after { transform: translateX(16px); background: #fff; opacity: 1; }
+.empty { padding: 36px 16px; text-align: center; color: var(--dt-muted); }
+
+/* SQL 展示 */
+pre.sql { margin: 0; padding: 10px 12px; border: 1px solid var(--dt-line); border-radius: 6px; background: var(--dt-sunken); font: 12.5px/1.6 "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; white-space: pre-wrap; word-break: break-all; }
+.sqlc { font: 12px "JetBrains Mono", Consolas, "Microsoft YaHei", monospace; color: var(--dt-fg); max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+mark { background: var(--dt-crit-soft); color: var(--dt-crit); border-radius: 2px; padding: 0 1px; outline: 1px solid var(--dt-crit); }
+
+/* 抽屉 / 弹窗 */
+.mask { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .45); display: flex; justify-content: flex-end; }
+.drawer { width: min(640px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--dt-panel); border-left: 1px solid var(--dt-line-hi); box-shadow: var(--dt-shadow); }
+.drawer > h3 { margin: 0; padding: 14px 18px; font-size: 16px; border-bottom: 1px solid var(--dt-line); display: flex; align-items: center; gap: 10px; }
+.drawer .bd { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 16px; }
+.drawer .ft { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--dt-line); }
+.sec > h4 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.sec > h4 .step { width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--dt-cyan-soft); color: var(--dt-cyan); font-size: 12px; font-weight: 700; }
+.fgrid { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 8px 12px; align-items: center; }
+.fgrid > label { color: var(--dt-muted); font-size: 12.5px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.checks label { display: inline-flex; align-items: center; gap: 5px; }
+.crow { display: grid; grid-template-columns: 150px minmax(0, 1fr) 28px; gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--dt-line); border-radius: 6px; background: var(--dt-sunken); }
+.crow + .crow { margin-top: 6px; }
+.joiner { margin: 6px 0; font-size: 12px; color: var(--dt-muted); }
+.acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.act { text-align: left; padding: 8px 10px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: none; }
+.act b { display: block; }
+.act[aria-pressed="true"] { border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.act[aria-pressed="true"] b { color: var(--dt-cyan); }
+.act.crit[aria-pressed="true"] { border-color: var(--dt-crit); background: var(--dt-crit-soft); } .act.crit[aria-pressed="true"] b { color: var(--dt-crit); }
+.act.warn[aria-pressed="true"] { border-color: var(--dt-amber); background: var(--dt-amber-soft); } .act.warn[aria-pressed="true"] b { color: var(--dt-amber); }
+.replay { border: 1px dashed var(--dt-line-hi); border-radius: 8px; padding: 10px 12px; }
+.replay ul { margin: 6px 0 0; padding-left: 18px; }
+
+/* 测试台 */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.bench .panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.verdict { padding: 12px 14px; border-radius: 8px; border: 1px solid; display: flex; align-items: center; gap: 12px; }
+.verdict .big { font-size: 20px; font-weight: 700; flex: none; white-space: nowrap; }
+.verdict.deny { background: var(--dt-crit-soft); border-color: var(--dt-crit); color: var(--dt-crit); }
+.verdict.pass { background: var(--dt-ok-soft); border-color: var(--dt-ok); color: var(--dt-ok); }
+.verdict.mid { background: var(--dt-amber-soft); border-color: var(--dt-amber); color: var(--dt-amber); }
+.hit { padding: 8px 10px; border: 1px solid var(--dt-line); border-radius: 6px; }
+.hit + .hit { margin-top: 6px; }
+.hit .why { margin-top: 4px; color: var(--dt-muted); font-size: 12.5px; }
+
+/* 模板 */
+.tpls { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; padding: 12px 14px; }
+.tpl { border: 1px solid var(--dt-line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--dt-panel); }
+.tpl h5 { margin: 0; font-size: 13.5px; }
+.tpl .cat { font-size: 11.5px; color: var(--dt-muted); letter-spacing: .06em; }
+.tpl p { margin: 0; color: var(--dt-muted); font-size: 12.5px; flex: 1; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; padding: 8px 16px; border-radius: 8px; background: var(--dt-raise); border: 1px solid var(--dt-line-hi); box-shadow: var(--dt-shadow); }
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, 1fr); } .bench { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="crumb">系统管理 / <b>SQL 防火墙</b></span>
+  <span class="sp"></span>
+  <span class="muted small">原型 · 数据均为示意</span>
+  <div class="seg" id="skins">
+    <button type="button" data-s="light">明亮</button><button type="button" data-s="dark">深空</button><button type="button" data-s="sepia">护眼</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="head">
+    <h1>SQL 防火墙</h1>
+    <span style="flex:1"></span>
+    <span class="muted small">全局模式</span>
+    <div class="seg warn" id="gmode">
+      <button type="button" data-m="observe">观察</button><button type="button" data-m="enforce">拦截</button>
+    </div>
+    <button class="btn" id="b-test" type="button">语句测试台</button>
+    <button class="btn primary" id="b-new" type="button">新建规则</button>
+  </div>
+
+  <div id="gbanner"></div>
+  <div class="stats" id="stats"></div>
+  <div class="tabs" id="tabs" role="tablist">
+    <button type="button" role="tab" data-t="rules">规则<span class="n" id="n-rules"></span></button>
+    <button type="button" role="tab" data-t="bench">语句测试台</button>
+    <button type="button" role="tab" data-t="hits">命中记录<span class="n" id="n-hits"></span></button>
+    <button type="button" role="tab" data-t="exc">例外名单<span class="n" id="n-exc"></span></button>
+    <button type="button" role="tab" data-t="tpl">规则模板</button>
+  </div>
+  <section id="p-rules"></section>
+  <section id="p-bench" hidden></section>
+  <section id="p-hits" hidden></section>
+  <section id="p-exc" hidden></section>
+  <section id="p-tpl" hidden></section>
+</main>
+
+<div class="mask" id="mask" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var Q = new URLSearchParams(location.search);
+
+  // ===================== 词表 =====================
+  var SCENES = { query: '在线查询', workflow: 'SQL 工单', export: '数据导出' };
+  var GROUPS = ['DBA', '组长', '研发', '测试', '审计'];
+  var ACTIONS = {
+    deny: { t: '拒绝', cls: 'crit', sev: 5 },
+    escalate: { t: '升级为工单审批', cls: 'warn', sev: 4 },
+    reason: { t: '要求填写原因', cls: 'info', sev: 3 },
+    limit: { t: '限制返回行数', cls: 'info', sev: 2 },
+    mask: { t: '强制脱敏', cls: 'info', sev: 2 },
+    warn: { t: '仅告警', cls: '', sev: 1 }
+  };
+  var STMT = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'TRUNCATE'];
+  var FEATURES = { no_where: '没有 WHERE', no_limit: '没有 LIMIT', cartesian: '笛卡尔积', multi_stmt: '一次提交多条语句', select_star: 'SELECT *', leading_wildcard: 'LIKE 以 % 开头', big_in: 'IN 列表超过 1000 项' };
+  var CT = { stmt: '语句类型', feature: '结构特征', keyword: '关键字 / 函数', regex: '正则（SQL 文本）', object: '涉及库表（列）', scan_rows: '预估扫描行数 ≥', affect_rows: '预估影响行数 ≥', time: '时间', fingerprint: 'SQL 指纹 =' };
+
+  // ===================== 示例数据 =====================
+  var seq = 100;
+  var RULES = [
+    { id: 1, name: '禁止不带 WHERE 的 UPDATE / DELETE', desc: '误操作导致整表被改 / 删，是线上事故的头号来源。', prio: 10, mode: 'enforce', enabled: true, scenes: ['workflow'], env: 'prod', gmode: 'all', groups: [], match: 'all',
+      conds: [{ t: 'stmt', v: ['UPDATE', 'DELETE'] }, { t: 'feature', v: 'no_where' }], action: 'deny', arg: 0, msg: '生产库不允许不带 WHERE 的 UPDATE / DELETE，请补充条件，或分批执行。', hits7: 3, spark: [0, 0, 1, 0, 1, 0, 1] },
+    { id: 2, name: '禁止危险函数', desc: 'SLEEP / BENCHMARK 制造长时间占用，LOAD_FILE 读服务器文件，GET_LOCK 占用命名锁。', prio: 20, mode: 'enforce', enabled: true, scenes: ['query', 'workflow', 'export'], env: 'all', gmode: 'all', groups: [], match: 'any',
+      conds: [{ t: 'keyword', v: ['SLEEP', 'BENCHMARK', 'LOAD_FILE', 'GET_LOCK'] }], action: 'deny', arg: 0, msg: '语句里包含不允许使用的函数。', hits7: 12, spark: [1, 2, 0, 3, 2, 1, 3] },
+    { id: 3, name: '禁止写出文件', desc: 'INTO OUTFILE / DUMPFILE 可以把数据写到数据库服务器磁盘。', prio: 21, mode: 'enforce', enabled: true, scenes: ['query', 'workflow', 'export'], env: 'all', gmode: 'all', groups: [], match: 'any',
+      conds: [{ t: 'regex', v: 'into\\s+(outfile|dumpfile)' }], action: 'deny', arg: 0, msg: '不允许把查询结果写出到服务器文件。', hits7: 1, spark: [0, 0, 0, 0, 0, 1, 0] },
+    { id: 4, name: '系统视图探测', desc: 'processlist 能看到别人正在执行的 SQL（含明文条件值），只允许 DBA。', prio: 30, mode: 'enforce', enabled: true, scenes: ['query'], env: 'all', gmode: 'except', groups: ['DBA'], match: 'any',
+      conds: [{ t: 'regex', v: 'information_schema\\.(processlist|user_privileges)|performance_schema\\.' }], action: 'deny', arg: 0, msg: '该系统视图仅 DBA 可查询。', hits7: 8, spark: [1, 0, 2, 1, 0, 3, 1] },
+    { id: 5, name: '敏感表访问要求写原因', desc: '用户表、证件表的查询与导出，要求说明用途，原因进审计。', prio: 40, mode: 'enforce', enabled: true, scenes: ['query', 'export'], env: 'prod', gmode: 'except', groups: ['DBA', '审计'], match: 'any',
+      conds: [{ t: 'object', v: ['*.sys_users', '*.user_card'] }], action: 'reason', arg: 0, msg: '该表含敏感数据，请说明查询用途。', hits7: 31, spark: [3, 5, 4, 6, 2, 4, 7] },
+    { id: 6, name: '非工作时间的生产 DDL', desc: '夜间 / 周末的结构变更没人盯着，改为走审批并加签 DBA。', prio: 50, mode: 'enforce', enabled: true, scenes: ['workflow'], env: 'prod', gmode: 'all', groups: [], match: 'all',
+      conds: [{ t: 'stmt', v: ['CREATE', 'ALTER', 'DROP', 'TRUNCATE'] }, { t: 'time', v: 'offhours' }], action: 'escalate', arg: 0, msg: '非工作时间的 DDL 需要 DBA 加签。', hits7: 5, spark: [0, 1, 0, 2, 0, 1, 1] },
+    { id: 7, name: '笛卡尔积', desc: 'JOIN 缺少连接条件，结果行数是两表行数之积，几秒内能打满 CPU。', prio: 60, mode: 'enforce', enabled: true, scenes: ['query', 'workflow'], env: 'all', gmode: 'all', groups: [], match: 'all',
+      conds: [{ t: 'feature', v: 'cartesian' }], action: 'deny', arg: 0, msg: '多表查询缺少连接条件。', hits7: 2, spark: [0, 1, 0, 0, 0, 1, 0] },
+    { id: 8, name: '大范围扫描预警', desc: 'EXPLAIN 预估扫描超过 100 万行的生产查询，先只告警，观察一周再决定要不要拦。', prio: 70, mode: 'observe', observeDays: 3, enabled: true, scenes: ['query'], env: 'prod', gmode: 'all', groups: [], match: 'all',
+      conds: [{ t: 'stmt', v: ['SELECT'] }, { t: 'scan_rows', v: 1000000 }], action: 'warn', arg: 0, msg: '本次查询预计扫描超过 100 万行。', hits7: 47, spark: [4, 6, 8, 5, 9, 7, 8] },
+    { id: 9, name: '无条件的超大表全扫', desc: '没有 WHERE 且预估扫描超过 500 万行：先观察，确认没有误伤正常报表再生效。', prio: 71, mode: 'observe', observeDays: 5, enabled: true, scenes: ['query'], env: 'prod', gmode: 'except', groups: ['DBA'], match: 'all',
+      conds: [{ t: 'feature', v: 'no_where' }, { t: 'scan_rows', v: 5000000 }], action: 'deny', arg: 0, msg: '大表查询请带条件，或改走数据导出。', hits7: 9, spark: [1, 2, 0, 2, 1, 1, 2] },
+    { id: 10, name: 'IN 列表过长', desc: '一次塞上千个值的 IN 往往是应用在循环拼接，优化器和网络都吃不消。', prio: 80, mode: 'enforce', enabled: false, scenes: ['query', 'workflow'], env: 'all', gmode: 'all', groups: [], match: 'all',
+      conds: [{ t: 'feature', v: 'big_in' }], action: 'warn', arg: 0, msg: 'IN 列表超过 1000 项，建议改用临时表 JOIN。', hits7: 0, spark: [0, 0, 0, 0, 0, 0, 0] },
+    { id: 11, name: '已知故障 SQL（指纹黑名单）', desc: '10-08 的慢查询事故里导致主从延迟的那条 SQL。', prio: 5, mode: 'enforce', enabled: true, scenes: ['query', 'workflow', 'export'], env: 'all', gmode: 'all', groups: [], match: 'any',
+      conds: [{ t: 'fingerprint', v: 'f5a0b6c2' }], action: 'deny', arg: 0, msg: '这条语句已被确认会拖垮实例，请联系 DBA。', hits7: 4, spark: [0, 0, 0, 1, 1, 2, 0] }
+  ];
+  var HITS = [
+    { id: 1, time: '10-12 11:02', user: 'rd_zhao', group: '研发', inst: 'prod-mysql-01', db: 'shop', scene: 'workflow', rule: 1, eff: 'deny', sql: 'DELETE FROM orders_tmp' },
+    { id: 2, time: '10-12 10:41', user: 'qa_sun', group: '测试', inst: 'prod-mysql-01', db: 'shopbasic', scene: 'query', rule: 5, eff: 'reason', sql: 'SELECT UserId, UserName, Password FROM sys_users WHERE UserId = 20318' },
+    { id: 3, time: '10-12 10:12', user: 'rd_li', group: '研发', inst: 'prod-mysql-02', db: 'report', scene: 'query', rule: 8, eff: 'observe', sql: 'SELECT user_id, SUM(amount) FROM order_item GROUP BY user_id' },
+    { id: 4, time: '10-12 09:58', user: 'rd_zhao', group: '研发', inst: 'prod-mysql-01', db: 'shop', scene: 'query', rule: 2, eff: 'deny', sql: 'SELECT id, SLEEP(30) FROM orders LIMIT 1' },
+    { id: 5, time: '10-12 03:20', user: 'tl_wang', group: '组长', inst: 'prod-mysql-01', db: 'shop', scene: 'workflow', rule: 6, eff: 'escalate', sql: 'ALTER TABLE orders ADD INDEX idx_user_created (user_id, created_at)' },
+    { id: 6, time: '10-11 18:44', user: 'rd_li', group: '研发', inst: 'prod-mysql-02', db: 'report', scene: 'query', rule: 9, eff: 'observe', sql: 'SELECT * FROM order_item' },
+    { id: 7, time: '10-11 16:30', user: 'qa_sun', group: '测试', inst: 'prod-mysql-01', db: 'mysql', scene: 'query', rule: 4, eff: 'deny', sql: 'SELECT * FROM information_schema.processlist' },
+    { id: 8, time: '10-11 15:02', user: 'rd_zhao', group: '研发', inst: 'prod-mysql-01', db: 'shop', scene: 'query', rule: 7, eff: 'deny', sql: 'SELECT o.id, u.name FROM orders o, users u' },
+    { id: 9, time: '10-11 11:20', user: 'rd_li', group: '研发', inst: 'prod-mysql-02', db: 'report', scene: 'query', rule: 11, eff: 'deny', sql: 'SELECT a.*, b.cnt FROM t_user a JOIN (SELECT uid, COUNT(*) cnt FROM t_log GROUP BY uid) b ON a.id = b.uid' },
+    { id: 10, time: '10-10 22:15', user: 'rd_zhao', group: '研发', inst: 'prod-mysql-01', db: 'shop', scene: 'query', rule: 3, eff: 'deny', sql: "SELECT * FROM users INTO OUTFILE '/tmp/u.csv'" },
+    { id: 11, time: '10-10 14:08', user: 'qa_sun', group: '测试', inst: 'prod-mysql-01', db: 'shopbasic', scene: 'export', rule: 5, eff: 'reason', sql: 'SELECT UserId, UserName FROM sys_users WHERE CreateTime >= \'2026-10-01\'' },
+    { id: 12, time: '10-10 09:30', user: 'rd_li', group: '研发', inst: 'prod-mysql-02', db: 'report', scene: 'query', rule: 8, eff: 'observe', sql: 'SELECT * FROM t_log WHERE created_at > \'2026-09-01\'' }
+  ];
+  var EXC = [
+    { id: 1, rule: 8, who: '用户 rd_li', why: '月度对账报表，已评估过', until: '2026-10-31', by: 'admin' },
+    { id: 2, rule: 5, who: '权限组 审计', why: '审计取证需要，已在制度里备案', until: '长期', by: 'admin' },
+    { id: 3, rule: 1, who: 'SQL 指纹 3e91ab07', why: '历史数据清理任务，每周一次，已有备份', until: '2026-12-31', by: 'dba_li' },
+    { id: 4, rule: 6, who: '实例 staging-mysql-03', why: '预发布环境不限制时间', until: '长期', by: 'dba_li' }
+  ];
+  var HIST = [
+    { sql: 'SELECT id, status FROM orders WHERE id = 1', user: 'rd_zhao', group: '研发', env: 'prod', scene: 'query', scan: 1, affect: 0, hour: 10 },
+    { sql: 'SELECT * FROM order_item', user: 'rd_li', group: '研发', env: 'prod', scene: 'query', scan: 8200000, affect: 0, hour: 18 },
+    { sql: 'SELECT UserId, Password FROM sys_users WHERE UserId = 20318', user: 'qa_sun', group: '测试', env: 'prod', scene: 'query', scan: 1, affect: 0, hour: 10 },
+    { sql: 'UPDATE orders SET status = 3 WHERE id = 99', user: 'rd_zhao', group: '研发', env: 'prod', scene: 'workflow', scan: 1, affect: 1, hour: 15 },
+    { sql: 'DELETE FROM orders_tmp', user: 'rd_zhao', group: '研发', env: 'prod', scene: 'workflow', scan: 120000, affect: 120000, hour: 11 },
+    { sql: 'ALTER TABLE orders ADD COLUMN remark varchar(200)', user: 'tl_wang', group: '组长', env: 'prod', scene: 'workflow', scan: 0, affect: 0, hour: 23 },
+    { sql: 'SELECT a.id, b.name FROM a, b', user: 'rd_li', group: '研发', env: 'test', scene: 'query', scan: 50000, affect: 0, hour: 16 },
+    { sql: 'SELECT COUNT(*) FROM t_log WHERE created_at > \'2026-10-01\'', user: 'rd_li', group: '研发', env: 'prod', scene: 'query', scan: 2400000, affect: 0, hour: 14 },
+    { sql: 'SELECT SLEEP(5)', user: 'qa_sun', group: '测试', env: 'test', scene: 'query', scan: 0, affect: 0, hour: 13 },
+    { sql: 'SELECT * FROM information_schema.processlist', user: 'qa_sun', group: '测试', env: 'prod', scene: 'query', scan: 0, affect: 0, hour: 16 },
+    { sql: 'SELECT id FROM users WHERE phone LIKE \'%8888\'', user: 'rd_zhao', group: '研发', env: 'prod', scene: 'query', scan: 900000, affect: 0, hour: 11 },
+    { sql: 'TRUNCATE TABLE t_tmp', user: 'dba_li', group: 'DBA', env: 'prod', scene: 'workflow', scan: 0, affect: 0, hour: 2 }
+  ];
+  var TEMPLATES = [
+    { cat: '防误操作', name: '禁止不带 WHERE 的 UPDATE / DELETE', desc: '生产库的整表更新 / 删除直接拒绝。', rule: { scenes: ['workflow'], env: 'prod', match: 'all', conds: [{ t: 'stmt', v: ['UPDATE', 'DELETE'] }, { t: 'feature', v: 'no_where' }], action: 'deny', msg: '请补充 WHERE 条件，或分批执行。' } },
+    { cat: '防误操作', name: '单条 DML 影响行数超过 10 万', desc: '预估影响行数过大的变更，升级为审批并加签 DBA。', rule: { scenes: ['workflow'], env: 'prod', match: 'all', conds: [{ t: 'stmt', v: ['UPDATE', 'DELETE'] }, { t: 'affect_rows', v: 100000 }], action: 'escalate', msg: '影响行数较大，需要 DBA 加签。' } },
+    { cat: '防误操作', name: 'DROP / TRUNCATE 一律升级审批', desc: '不可逆的结构操作，不允许单人完成。', rule: { scenes: ['workflow'], env: 'prod', match: 'all', conds: [{ t: 'stmt', v: ['DROP', 'TRUNCATE'] }], action: 'escalate', msg: 'DROP / TRUNCATE 需要加签。' } },
+    { cat: '防大查询', name: '预估扫描超过 500 万行', desc: '大表查询先只告警，评估后再拦截。', rule: { scenes: ['query'], env: 'prod', match: 'all', conds: [{ t: 'stmt', v: ['SELECT'] }, { t: 'scan_rows', v: 5000000 }], action: 'warn', msg: '本次查询预计扫描超过 500 万行。' } },
+    { cat: '防大查询', name: '没有 LIMIT 的明细查询', desc: '要求明细查询带 LIMIT，避免一次拉回百万行。', rule: { scenes: ['query'], env: 'prod', match: 'all', conds: [{ t: 'stmt', v: ['SELECT'] }, { t: 'feature', v: 'no_limit' }, { t: 'scan_rows', v: 100000 }], action: 'limit', arg: 1000, msg: '已自动限制为最多 1000 行。' } },
+    { cat: '防拖库', name: '敏感列查询强制脱敏', desc: '命中指定列时，不论是否配置过脱敏，一律整体隐藏。', rule: { scenes: ['query', 'export'], env: 'prod', match: 'any', conds: [{ t: 'object', v: ['*.*.Password', '*.*.id_card'] }], action: 'mask', msg: '敏感列已被隐藏。' } },
+    { cat: '防探测', name: '禁止读取权限与会话视图', desc: 'information_schema.user_privileges、processlist 仅 DBA。', rule: { scenes: ['query'], env: 'all', match: 'any', conds: [{ t: 'regex', v: 'information_schema\\.(processlist|user_privileges)' }], action: 'deny', msg: '仅 DBA 可查询。' } },
+    { cat: '合规', name: '非工作时间访问生产敏感库', desc: '夜间访问敏感表要求写原因并通知安全群。', rule: { scenes: ['query', 'export'], env: 'prod', match: 'all', conds: [{ t: 'object', v: ['*.sys_users'] }, { t: 'time', v: 'offhours' }], action: 'reason', msg: '非工作时间访问敏感表，请说明原因。' } }
+  ];
+
+  var S = { tab: 'rules', gmode: 'enforce', rules: RULES, hits: HITS, exc: EXC, f: { q: '', action: '', scene: '', state: '' }, bench: { sql: "DELETE FROM orders", scene: 'workflow', env: 'prod', group: '研发', hour: 14, scan: 120000, affect: 120000, res: null }, draft: null, hitOpen: null };
+
+  // ===================== SQL 分析与规则求值（原型用的极简实现；正式实现走 goInception 语法树 / EXPLAIN）=====================
+  function fingerprint(sql) {
+    var s = sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ').toLowerCase();
+    s = s.replace(/'(?:[^'\\]|\\.|'')*'/g, '?').replace(/\b\d+(\.\d+)?\b/g, '?').replace(/in\s*\((\s*\?\s*,?)+\)/g, 'in (?)').replace(/\s+/g, ' ').trim().replace(/;$/, '');
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return { text: s, id: ('00000000' + h.toString(16)).slice(-8) };
+  }
+  function analyze(sql) {
+    var noCmt = sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(--|#)[^\n]*/g, ' ');
+    var text = noCmt.replace(/'(?:[^'\\]|\\.|'')*'/g, "'?'");
+    var low = text.toLowerCase();
+    var stmts = text.split(';').map(function (x) { return x.trim(); }).filter(Boolean);
+    var kw = ((stmts[0] || '').toLowerCase().match(/^\(?\s*(\w+)/) || [0, ''])[1];
+    var kindMap = { select: 'SELECT', with: 'SELECT', insert: 'INSERT', replace: 'INSERT', update: 'UPDATE', delete: 'DELETE', create: 'CREATE', alter: 'ALTER', rename: 'ALTER', drop: 'DROP', truncate: 'TRUNCATE' };
+    var tables = [], m, re = /\b(?:from|join|update|into|table)\s+`?([\w$]+(?:\.[\w$]+)?)`?/g;
+    while ((m = re.exec(low))) tables.push(m[1]);
+    var fromList = low.match(/\bfrom\s+([\w$.`]+(?:\s+(?:as\s+)?\w+)?(?:\s*,\s*[\w$.`]+(?:\s+(?:as\s+)?\w+)?)+)/);
+    var joins = (low.match(/\bjoin\b/g) || []).length, ons = (low.match(/\b(on|using)\b/g) || []).length;
+    var inList = low.match(/\bin\s*\(([^)]*)\)/g) || [];
+    return {
+      raw: sql, noCmt: noCmt, low: low, kind: kindMap[kw] || kw.toUpperCase(), tables: tables, multi: stmts.length > 1,
+      hasWhere: /\bwhere\b/.test(low), hasLimit: /\blimit\b/.test(low), star: /select\s+(distinct\s+)?\*/.test(low),
+      cartesian: (!!fromList && !/\bwhere\b/.test(low)) || joins > ons,
+      leadingWild: /like\s+'%/.test(low) || /like\s+'\?'/.test(low) && /like\s+'%/.test(noCmt.toLowerCase()),
+      bigIn: inList.some(function (x) { return x.split(',').length > 1000; })
+    };
+  }
+  function esc2re(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function evalCond(c, a, ctx) {
+    var fp, i, r;
+    switch (c.t) {
+      case 'stmt': return c.v.indexOf(a.kind) >= 0 ? { ok: true, why: '语句类型是 ' + a.kind } : { ok: false };
+      case 'feature':
+        r = { no_where: !a.hasWhere && ['UPDATE', 'DELETE', 'SELECT'].indexOf(a.kind) >= 0, no_limit: !a.hasLimit && a.kind === 'SELECT', cartesian: a.cartesian, multi_stmt: a.multi, select_star: a.star, leading_wildcard: a.leadingWild, big_in: a.bigIn }[c.v];
+        return r ? { ok: true, why: '语句' + FEATURES[c.v] } : { ok: false };
+      case 'keyword':
+        for (i = 0; i < c.v.length; i++) if (new RegExp('\\b' + esc2re(c.v[i].trim()) + '\\b', 'i').test(a.noCmt)) return { ok: true, why: '包含 ' + c.v[i].trim().toUpperCase(), hl: c.v[i].trim() };
+        return { ok: false };
+      case 'regex':
+        try { m = new RegExp(c.v, 'i').exec(a.noCmt); } catch (e) { return { ok: false, err: '正则无效：' + e.message }; }
+        return m ? { ok: true, why: '匹配正则 /' + c.v + '/', hl: m[0] } : { ok: false };
+      case 'object':
+        for (i = 0; i < c.v.length; i++) {
+          var parts = c.v[i].trim().split('.'), col = parts.length === 3 ? parts[2] : null, tb = parts.length === 3 ? parts[1] : parts[parts.length - 1];
+          var hit = a.tables.some(function (t) { var tt = t.split('.').pop(); return tb === '*' || tt === tb.toLowerCase(); });
+          if (tb === '*' && col) hit = true;
+          if (hit && col && col !== '*' && !new RegExp('\\b' + esc2re(col) + '\\b', 'i').test(a.noCmt)) hit = false;
+          if (hit) return { ok: true, why: '涉及 ' + c.v[i].trim(), hl: col || tb };
+        }
+        return { ok: false };
+      case 'scan_rows': return ctx.scan >= c.v ? { ok: true, why: '预估扫描 ' + ctx.scan.toLocaleString() + ' 行 ≥ ' + Number(c.v).toLocaleString() } : { ok: false };
+      case 'affect_rows': return ctx.affect >= c.v ? { ok: true, why: '预估影响 ' + ctx.affect.toLocaleString() + ' 行 ≥ ' + Number(c.v).toLocaleString() } : { ok: false };
+      case 'time':
+        var off = ctx.hour < 9 || ctx.hour >= 19;
+        return (c.v === 'offhours') === off ? { ok: true, why: (off ? '非工作时间' : '工作时间') + '（' + ctx.hour + ' 点）' } : { ok: false };
+      case 'fingerprint': fp = fingerprint(a.raw).id; return fp === String(c.v).trim() ? { ok: true, why: '指纹 ' + fp + ' 在黑名单里' } : { ok: false };
+    }
+    return { ok: false };
+  }
+  function inScope(r, ctx) {
+    if (r.scenes.indexOf(ctx.scene) < 0) return false;
+    if (r.env !== 'all' && r.env !== ctx.env) return false;
+    if (r.gmode === 'only' && r.groups.indexOf(ctx.group) < 0) return false;
+    if (r.gmode === 'except' && r.groups.indexOf(ctx.group) >= 0) return false;
+    return true;
+  }
+  function evaluate(sql, ctx, rules, gmode) {
+    var a = analyze(sql), hits = [], skipped = 0;
+    rules.slice().sort(function (x, y) { return x.prio - y.prio; }).forEach(function (r) {
+      if (!r.enabled) return;
+      if (!inScope(r, ctx)) { skipped++; return; }
+      var results = r.conds.map(function (c) { return evalCond(c, a, ctx); });
+      var ok = r.match === 'all' ? results.every(function (x) { return x.ok; }) : results.some(function (x) { return x.ok; });
+      if (!r.conds.length) ok = false;
+      if (ok) hits.push({ rule: r, why: results.filter(function (x) { return x.ok; }), observe: r.mode === 'observe' || gmode === 'observe' });
+    });
+    var live = hits.filter(function (h) { return !h.observe; });
+    var top = live.slice().sort(function (x, y) { return ACTIONS[y.rule.action].sev - ACTIONS[x.rule.action].sev; })[0];
+    return { hits: hits, top: top ? top.rule.action : null, topRule: top ? top.rule : null, observed: hits.filter(function (h) { return h.observe; }).length, fp: fingerprint(sql), kind: a.kind, tables: a.tables, skipped: skipped };
+  }
+
+  // ===================== 文案 =====================
+  function condText(c) {
+    var v = c.v;
+    switch (c.t) {
+      case 'stmt': return '<span class="k">语句</span><span>' + v.join(' / ') + '</span>';
+      case 'feature': return '<span>' + esc(FEATURES[v]) + '</span>';
+      case 'keyword': return '<span class="k">含</span><span>' + esc(v.join(' / ')) + '</span>';
+      case 'regex': return '<span class="k">正则</span><span class="mono">' + esc(v) + '</span>';
+      case 'object': return '<span class="k">涉及</span><span class="mono">' + esc(v.join(' , ')) + '</span>';
+      case 'scan_rows': return '<span class="k">预估扫描 ≥</span><span>' + Number(v).toLocaleString() + ' 行</span>';
+      case 'affect_rows': return '<span class="k">预估影响 ≥</span><span>' + Number(v).toLocaleString() + ' 行</span>';
+      case 'time': return '<span>' + (v === 'offhours' ? '非工作时间' : '工作时间') + '</span>';
+      case 'fingerprint': return '<span class="k">指纹</span><span class="mono">' + esc(v) + '</span>';
+    }
+    return '';
+  }
+  function scopeText(r) {
+    var s = r.scenes.map(function (x) { return SCENES[x]; }).join(' · ');
+    var env = r.env === 'all' ? '全部实例' : r.env === 'prod' ? '仅生产实例' : '仅测试实例';
+    var g = r.gmode === 'all' ? '' : (r.gmode === 'only' ? '仅 ' : '排除 ') + r.groups.join('、');
+    return '<div>' + esc(s) + '</div><div class="muted small">' + esc(env) + (g ? ' · ' + esc(g) : '') + '</div>';
+  }
+  function actionBadge(a, arg) {
+    var x = ACTIONS[a];
+    return '<span class="badge ' + x.cls + '">' + x.t + (a === 'limit' && arg ? ' ' + arg : '') + '</span>';
+  }
+  function modeBadge(r) {
+    if (S.gmode === 'observe') return '<span class="badge warn" title="全局观察模式生效中">观察中（全局）</span>';
+    return r.mode === 'observe' ? '<span class="badge warn">观察中 · 第 ' + r.observeDays + ' 天</span>' : '<span class="badge ok">已生效</span>';
+  }
+  function spark(a) {
+    var max = Math.max.apply(null, a.concat([1]));
+    return '<span class="sp7">' + a.map(function (n) { return '<i style="height:' + Math.max(2, Math.round(n / max * 20)) + 'px"></i>'; }).join('') + '</span>';
+  }
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+  function ruleById(id) { return S.rules.filter(function (r) { return r.id === id; })[0]; }
+  function highlight(sql, words) {
+    var out = esc(sql);
+    (words || []).filter(Boolean).forEach(function (w) {
+      try { out = out.replace(new RegExp('(' + esc2re(esc(String(w))) + ')', 'ig'), '<mark>$1</mark>'); } catch (e) { /* 忽略无法高亮的正则片段 */ }
+    });
+    return out;
+  }
+
+  // ===================== 渲染：概览 / 横幅 / 标签 =====================
+  function renderHead() {
+    $('#gmode').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.m === S.gmode)); });
+    $('#skins').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.s === document.documentElement.dataset.skin)); });
+    $('#gbanner').innerHTML = S.gmode === 'observe'
+      ? '<div class="alert warn"><b>全局观察模式：</b>所有规则只记录命中，不拦截任何语句。</div>' : '';
+    var on = S.rules.filter(function (r) { return r.enabled; }).length;
+    $('#stats').innerHTML = [
+      ['今日评估语句', '8,214', '在线查询 6,902 · 工单 1,128 · 导出 184', ''],
+      ['命中规则', '23', '涉及 9 位用户 · 6 条规则', ''],
+      ['已拦截', '5', '拒绝 4 · 升级审批 1', 'crit'],
+      ['观察 / 告警', '14', '若全部生效，会多拦 9 条', 'warn'],
+      ['启用中的规则', on + ' / ' + S.rules.length, S.rules.filter(function (r) { return r.mode === 'observe'; }).length + ' 条仍在观察期', 'ok']
+    ].map(function (x) { return '<div class="stat ' + x[3] + '"><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="d">' + x[2] + '</div></div>'; }).join('');
+    $('#n-rules').textContent = S.rules.length;
+    $('#n-hits').textContent = S.hits.length;
+    $('#n-exc').textContent = S.exc.length;
+  }
+  function renderTabs() {
+    $('#tabs').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.t === S.tab)); });
+    ['rules', 'bench', 'hits', 'exc', 'tpl'].forEach(function (t) { $('#p-' + t).hidden = t !== S.tab; });
+  }
+
+  // ===================== 规则列表 =====================
+  function renderRules() {
+    var f = S.f, list = S.rules.slice().sort(function (a, b) { return a.prio - b.prio; }).filter(function (r) {
+      if (f.q && (r.name + r.desc).toLowerCase().indexOf(f.q.toLowerCase()) < 0) return false;
+      if (f.action && r.action !== f.action) return false;
+      if (f.scene && r.scenes.indexOf(f.scene) < 0) return false;
+      if (f.state === 'on' && !r.enabled) return false;
+      if (f.state === 'off' && r.enabled) return false;
+      if (f.state === 'observe' && r.mode !== 'observe') return false;
+      return true;
+    });
+    var opt = function (obj, cur, all) { return '<option value="">' + all + '</option>' + Object.keys(obj).map(function (k) { return '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + esc(obj[k].t || obj[k]) + '</option>'; }).join(''); };
+    $('#p-rules').innerHTML = '<div class="panel"><div class="toolbar">' +
+      '<input id="f-q" class="ipt grow" type="search" placeholder="筛选规则名称 / 说明" value="' + esc(f.q) + '">' +
+      '<select id="f-a" class="ipt">' + opt(ACTIONS, f.action, '全部动作') + '</select>' +
+      '<select id="f-s" class="ipt">' + opt(SCENES, f.scene, '全部场景') + '</select>' +
+      '<select id="f-st" class="ipt"><option value="">全部状态</option><option value="on"' + (f.state === 'on' ? ' selected' : '') + '>已启用</option><option value="off"' + (f.state === 'off' ? ' selected' : '') + '>已停用</option><option value="observe"' + (f.state === 'observe' ? ' selected' : '') + '>观察中</option></select></div>' +
+      '<table class="list"><thead><tr><th style="width:56px">优先级</th><th>规则 / 命中条件</th><th>适用范围</th><th>动作</th><th>状态</th><th>近 7 天命中</th><th style="width:56px">启用</th><th style="width:150px">操作</th></tr></thead><tbody>' +
+      (list.length ? list.map(function (r) {
+        return '<tr class="' + (r.enabled ? '' : 'off') + '" data-id="' + r.id + '"><td class="mono">' + r.prio + '</td>' +
+          '<td><div class="rname">' + esc(r.name) + '</div><div class="muted small">' + esc(r.desc) + '</div>' +
+          '<div class="cond">' + r.conds.map(condText).join('<span class="j">' + (r.match === 'all' ? '且' : '或') + '</span>') + '</div></td>' +
+          '<td>' + scopeText(r) + '</td><td>' + actionBadge(r.action, r.arg) + '</td><td>' + modeBadge(r) + '</td>' +
+          '<td><b class="mono">' + r.hits7 + '</b>' + spark(r.spark) + '</td>' +
+          '<td><label class="sw"><input type="checkbox" data-act="toggle"' + (r.enabled ? ' checked' : '') + ' aria-label="启用"><b></b></label></td>' +
+          '<td><button class="link" data-act="edit">编辑</button><button class="link" data-act="replay">回放</button><button class="link danger" data-act="del">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="8" class="empty">没有符合筛选条件的规则</td></tr>') + '</tbody></table></div>';
+  }
+
+  // ===================== 规则编辑器（抽屉）=====================
+  function blankRule() {
+    return { id: 0, name: '', desc: '', prio: 100, mode: 'observe', observeDays: 0, enabled: true, scenes: ['query'], env: 'prod', gmode: 'all', groups: [], match: 'all', conds: [{ t: 'stmt', v: ['SELECT'] }], action: 'warn', arg: 0, msg: '', hits7: 0, spark: [0, 0, 0, 0, 0, 0, 0] };
+  }
+  function openEditor(r) {
+    S.draft = JSON.parse(JSON.stringify(r || blankRule()));
+    S.draft.__new = !r;
+    renderEditor();
+  }
+  function condEditor(c, i) {
+    var typeSel = '<select class="ipt" data-i="' + i + '" data-f="t">' + Object.keys(CT).map(function (k) { return '<option value="' + k + '"' + (c.t === k ? ' selected' : '') + '>' + CT[k] + '</option>'; }).join('') + '</select>';
+    var p;
+    switch (c.t) {
+      case 'stmt': p = '<div class="checks">' + STMT.map(function (k) { return '<label><input type="checkbox" data-i="' + i + '" data-f="stmt" value="' + k + '"' + (c.v.indexOf(k) >= 0 ? ' checked' : '') + '>' + k + '</label>'; }).join('') + '</div>'; break;
+      case 'feature': p = '<select class="ipt" style="width:100%" data-i="' + i + '" data-f="v">' + Object.keys(FEATURES).map(function (k) { return '<option value="' + k + '"' + (c.v === k ? ' selected' : '') + '>' + esc(FEATURES[k]) + '</option>'; }).join('') + '</select>'; break;
+      case 'keyword': p = '<input class="ipt" style="width:100%" data-i="' + i + '" data-f="list" value="' + esc(c.v.join(', ')) + '" placeholder="逗号分隔，如 SLEEP, BENCHMARK">'; break;
+      case 'regex': p = '<input class="ipt mono" style="width:100%" data-i="' + i + '" data-f="v" value="' + esc(c.v) + '" placeholder="如 information_schema\\.processlist">'; break;
+      case 'object': p = '<input class="ipt mono" style="width:100%" data-i="' + i + '" data-f="list" value="' + esc(c.v.join(', ')) + '" placeholder="shop.orders, *.*.phone">'; break;
+      case 'scan_rows': case 'affect_rows': p = '<input class="ipt" type="number" min="1" data-i="' + i + '" data-f="num" value="' + esc(c.v) + '"> 行'; break;
+      case 'time': p = '<select class="ipt" data-i="' + i + '" data-f="v"><option value="offhours"' + (c.v === 'offhours' ? ' selected' : '') + '>非工作时间</option><option value="workhours"' + (c.v === 'workhours' ? ' selected' : '') + '>工作时间</option></select>'; break;
+      case 'fingerprint': p = '<input class="ipt mono" data-i="' + i + '" data-f="v" value="' + esc(c.v) + '" placeholder="8 位指纹">'; break;
+    }
+    return '<div class="crow">' + typeSel + '<div>' + p + '</div><button class="link danger" data-act="rmcond" data-i="' + i + '" aria-label="删除条件">✕</button></div>';
+  }
+  function renderEditor() {
+    var d = S.draft, m = $('#mask');
+    var chk = function (arr, val) { return arr.indexOf(val) >= 0 ? ' checked' : ''; };
+    m.hidden = false;
+    m.innerHTML = '<div class="drawer" role="dialog" aria-modal="true" aria-label="编辑规则"><h3>' + (d.__new ? '新建规则' : '编辑规则') + '<span class="badge ' + (d.mode === 'observe' ? 'warn' : 'ok') + '">' + (d.mode === 'observe' ? '观察模式' : '已生效') + '</span></h3>' +
+      '<div class="bd">' +
+      '<div class="sec"><h4><span class="step">1</span>基本信息</h4><div class="fgrid">' +
+      '<label>名称</label><input class="ipt" data-f="name" value="' + esc(d.name) + '" placeholder="如：禁止无条件 DELETE">' +
+      '<label>说明</label><input class="ipt" data-f="desc" value="' + esc(d.desc) + '" placeholder="说明（可选）">' +
+      '<label>优先级（小的先求值）</label><div><input class="ipt" style="width:90px" type="number" data-f="prio" value="' + d.prio + '"></div>' +
+      '<label>模式</label><div class="seg warn mode"><button type="button" data-act="mode" data-m="observe" aria-pressed="' + (d.mode === 'observe') + '">观察：只记录，不拦截</button><button type="button" data-act="mode" data-m="enforce" aria-pressed="' + (d.mode === 'enforce') + '">生效：执行动作</button></div>' +
+      '</div></div>' +
+      '<div class="sec"><h4><span class="step">2</span>适用范围</h4><div class="fgrid">' +
+      '<label>场景</label><div class="checks">' + Object.keys(SCENES).map(function (k) { return '<label><input type="checkbox" data-f="scene" value="' + k + '"' + chk(d.scenes, k) + '>' + SCENES[k] + '</label>'; }).join('') + '</div>' +
+      '<label>实例</label><select class="ipt" data-f="env"><option value="all"' + (d.env === 'all' ? ' selected' : '') + '>全部实例</option><option value="prod"' + (d.env === 'prod' ? ' selected' : '') + '>仅生产实例</option><option value="test"' + (d.env === 'test' ? ' selected' : '') + '>仅测试实例</option></select>' +
+      '<label>用户</label><div><select class="ipt" data-f="gmode"><option value="all"' + (d.gmode === 'all' ? ' selected' : '') + '>全部用户</option><option value="only"' + (d.gmode === 'only' ? ' selected' : '') + '>仅这些权限组</option><option value="except"' + (d.gmode === 'except' ? ' selected' : '') + '>排除这些权限组</option></select>' +
+      '<div class="checks" style="margin-top:6px"' + (d.gmode === 'all' ? ' hidden' : '') + '>' + GROUPS.map(function (g) { return '<label><input type="checkbox" data-f="group" value="' + g + '"' + chk(d.groups, g) + '>' + g + '</label>'; }).join('') + '</div></div>' +
+      '</div></div>' +
+      '<div class="sec"><h4><span class="step">3</span>命中条件 <span class="seg" style="margin-left:auto"><button type="button" data-act="match" data-m="all" aria-pressed="' + (d.match === 'all') + '">全部满足</button><button type="button" data-act="match" data-m="any" aria-pressed="' + (d.match === 'any') + '">任一满足</button></span></h4>' +
+      d.conds.map(condEditor).join('') +
+      '<div style="margin-top:8px"><button class="btn sm" type="button" data-act="addcond">＋ 添加条件</button></div></div>' +
+      '<div class="sec"><h4><span class="step">4</span>命中后的动作</h4><div class="acts">' +
+      Object.keys(ACTIONS).map(function (k) { return '<button type="button" class="act ' + ACTIONS[k].cls + '" data-act="action" data-a="' + k + '" aria-pressed="' + (d.action === k) + '"><b>' + ACTIONS[k].t + '</b></button>'; }).join('') + '</div>' +
+      '<div class="fgrid" style="margin-top:10px">' +
+      (d.action === 'limit' ? '<label>最多返回</label><div><input class="ipt" style="width:110px" type="number" data-f="arg" value="' + (d.arg || 1000) + '"> 行</div>' : '') +
+      '<label>提示文案</label><input class="ipt" data-f="msg" value="' + esc(d.msg) + '" placeholder="被拦截时用户看到的说明">' +
+      '<label>通知</label><div class="checks"><label><input type="checkbox" checked>钉钉安全群</label><label><input type="checkbox">邮件给 DBA</label></div></div></div>' +
+      '<div class="sec"><h4><span class="step">5</span>上线前：用历史语句回放</h4><div class="replay" id="replay"><button class="btn sm" type="button" data-act="backtest">开始回放</button></div></div>' +
+      '</div><div class="ft"><button class="btn ghost" type="button" data-act="close">取消</button><button class="btn primary" type="button" data-act="save">保存</button></div></div>';
+  }
+  function runBacktest(rule) {
+    var hit = [];
+    HIST.forEach(function (h) {
+      var r = evaluate(h.sql, { scene: h.scene, env: h.env, group: h.group, hour: h.hour, scan: h.scan, affect: h.affect }, [Object.assign({}, rule, { enabled: true, prio: 1 })], 'enforce');
+      if (r.hits.length) hit.push({ h: h, why: r.hits[0].why.map(function (w) { return w.why; }).join('；') });
+    });
+    return hit;
+  }
+  function backtestHtml(rule) {
+    var hit = runBacktest(rule), users = {};
+    hit.forEach(function (x) { users[x.h.user] = 1; });
+    return '<div><b>近 7 天 ' + HIST.length + ' 条语句（样本）中，命中 ' + hit.length + ' 条，涉及 ' + Object.keys(users).length + ' 位用户</b>' +
+      (hit.length ? '，其中 ' + hit.filter(function (x) { return x.h.group === 'DBA'; }).length + ' 条来自 DBA。' : '：不会影响任何人。') + '</div>' +
+      (hit.length ? '<ul>' + hit.slice(0, 5).map(function (x) { return '<li><span class="mono small">' + esc(x.h.sql.length > 70 ? x.h.sql.slice(0, 70) + '…' : x.h.sql) + '</span><div class="muted small">' + esc(x.h.user + '（' + x.h.group + '）· ' + SCENES[x.h.scene] + ' · ' + x.why) + '</div></li>'; }).join('') + '</ul>' : '') +
+      (hit.length > 3 ? '<div class="alert warn" style="margin-top:8px">命中较多：建议先用「观察」模式跑一周，再决定是否生效。</div>' : '');
+  }
+
+  // ===================== 语句测试台 =====================
+  var PRESETS = [
+    ['整表删除', 'DELETE FROM orders', 'workflow', 'prod', '研发', 14, 120000, 120000],
+    ['带条件的更新', 'UPDATE orders SET status = 3 WHERE id = 99', 'workflow', 'prod', '研发', 14, 1, 1],
+    ['查询敏感表的密码列', 'SELECT UserId, UserName, Password FROM sys_users WHERE UserId = 20318', 'query', 'prod', '测试', 10, 1, 0],
+    ['危险函数', 'SELECT id, SLEEP(30) FROM orders LIMIT 1', 'query', 'prod', '研发', 11, 1, 0],
+    ['笛卡尔积', 'SELECT o.id, u.name FROM orders o, users u', 'query', 'prod', '研发', 15, 800000, 0],
+    ['夜间加索引', 'ALTER TABLE orders ADD INDEX idx_user_created (user_id, created_at)', 'workflow', 'prod', '组长', 3, 0, 0],
+    ['大表全扫', 'SELECT * FROM order_item', 'query', 'prod', '研发', 18, 8200000, 0],
+    ['看别人在跑什么', 'SELECT * FROM information_schema.processlist', 'query', 'prod', '测试', 16, 0, 0]
+  ];
+  function renderBench() {
+    var b = S.bench, r = b.res;
+    var sel = function (id, arr, cur) { return '<select id="' + id + '" class="ipt">' + arr.map(function (x) { var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>'; };
+    var left = '<div class="panel"><div class="row" style="display:flex;gap:8px;align-items:center"><b>语句</b><select id="b-pre" class="ipt" style="margin-left:auto"><option value="">示例语句…</option>' + PRESETS.map(function (p, i) { return '<option value="' + i + '">' + esc(p[0]) + '</option>'; }).join('') + '</select></div>' +
+      '<textarea id="b-sql" class="ipt mono" rows="6" placeholder="粘贴要测试的 SQL">' + esc(b.sql) + '</textarea>' +
+      '<div class="fgrid" style="grid-template-columns:80px 1fr 80px 1fr">' +
+      '<label>场景</label>' + sel('b-scene', Object.keys(SCENES).map(function (k) { return [k, SCENES[k]]; }), b.scene) +
+      '<label>实例环境</label>' + sel('b-env', [['prod', '生产'], ['test', '测试']], b.env) +
+      '<label>用户权限组</label>' + sel('b-group', GROUPS, b.group) +
+      '<label>时间</label>' + sel('b-hour', [[14, '工作日 14 点'], [3, '凌晨 3 点'], [22, '晚上 22 点']], b.hour) +
+      '<label>预估扫描</label><input id="b-scan" class="ipt" type="number" value="' + b.scan + '">' +
+      '<label>预估影响</label><input id="b-aff" class="ipt" type="number" value="' + b.affect + '"></div>' +
+      '<div><button class="btn primary" id="b-run" type="button">评估这条语句</button></div></div>';
+    var right = '<div class="panel">';
+    if (!r) right += '<div class="empty">输入语句后点“评估这条语句”，结果显示在这里</div>';
+    else {
+      var verdict = r.top ? (ACTIONS[r.top].sev >= 4 ? 'deny' : 'mid') : 'pass';
+      right += '<div class="verdict ' + verdict + '"><span class="big">' + (r.top ? ACTIONS[r.top].t : '放行') + '</span><span>' + (r.top ? '由规则「' + esc(r.topRule.name) + '」决定' + (r.topRule.msg ? '：' + esc(r.topRule.msg) : '') : (r.observed ? '没有会生效的规则命中；观察命中 ' + r.observed + ' 条（仅记录）' : '没有规则命中')) + '</span></div>' +
+        '<div class="muted small">语句类型 <b>' + esc(r.kind) + '</b> · 涉及 <span class="mono">' + esc(r.tables.join('、') || '—') + '</span> · 指纹 <code>' + r.fp.id + '</code> · 另有 ' + r.skipped + ' 条规则因范围不符被跳过</div>' +
+        (r.hits.length ? r.hits.map(function (h) {
+          var words = h.why.map(function (w) { return w.hl; });
+          return '<div class="hit"><div>' + actionBadge(h.rule.action, h.rule.arg) + ' <b>' + esc(h.rule.name) + '</b> <span class="muted small">优先级 ' + h.rule.prio + '</span> ' + (h.observe ? '<span class="badge warn">观察，不执行</span>' : '') + '</div>' +
+            '<div class="why">命中：' + esc(h.why.map(function (w) { return w.why; }).join('；')) + '</div></div>';
+        }).join('') : '<div class="empty" style="padding:18px">没有任何规则命中</div>') +
+        '<div><div class="muted small" style="margin-bottom:4px">命中位置</div><pre class="sql">' + highlight(b.sql, r.hits.reduce(function (a, h) { return a.concat(h.why.map(function (w) { return w.hl; })); }, [])) + '</pre></div>' +
+        '<div style="display:flex;gap:8px"><button class="btn" type="button" data-act="fp-bl" data-fp="' + r.fp.id + '">把这个指纹加入黑名单…</button><button class="btn" type="button" data-act="fp-wl" data-fp="' + r.fp.id + '">为这个指纹添加例外…</button></div>';
+    }
+    right += '</div>';
+    $('#p-bench').innerHTML = '<div class="bench">' + left + right + '</div>';
+  }
+  function runBench() {
+    var b = S.bench;
+    b.sql = $('#b-sql').value; b.scene = $('#b-scene').value; b.env = $('#b-env').value; b.group = $('#b-group').value;
+    b.hour = Number($('#b-hour').value); b.scan = Number($('#b-scan').value) || 0; b.affect = Number($('#b-aff').value) || 0;
+    b.res = evaluate(b.sql, { scene: b.scene, env: b.env, group: b.group, hour: b.hour, scan: b.scan, affect: b.affect }, S.rules, S.gmode);
+    renderBench();
+  }
+
+  // ===================== 命中记录 / 例外 / 模板 =====================
+  function renderHits() {
+    $('#p-hits').innerHTML = '<div class="panel"><div class="toolbar"><input class="ipt grow" type="search" placeholder="筛选用户 / 语句 / 规则"><select class="ipt"><option>全部规则</option></select><select class="ipt"><option>全部动作</option><option>已拦截</option><option>观察命中</option></select><select class="ipt"><option>近 7 天</option><option>今天</option><option>近 30 天</option></select><span style="flex:1"></span><button class="btn" type="button">导出</button></div>' +
+      '<table class="list"><thead><tr><th>时间</th><th>用户</th><th>实例 / 库</th><th>场景</th><th>规则</th><th>结果</th><th>语句</th><th style="width:70px"></th></tr></thead><tbody>' +
+      S.hits.map(function (h) {
+        var r = ruleById(h.rule);
+        return '<tr data-hit="' + h.id + '"><td class="mono small">' + h.time + '</td><td>' + esc(h.user) + '<div class="muted small">' + h.group + '</div></td><td>' + esc(h.inst) + '<div class="muted small">' + esc(h.db) + '</div></td><td>' + SCENES[h.scene] + '</td>' +
+          '<td>' + esc(r ? r.name : '（已删除）') + '</td><td>' + (h.eff === 'observe' ? '<span class="badge warn">观察命中</span>' : actionBadge(h.eff)) + '</td>' +
+          '<td><span class="sqlc" title="' + esc(h.sql) + '">' + esc(h.sql) + '</span></td><td><button class="link" data-act="hit">详情</button></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function renderHitDetail(h) {
+    var r = ruleById(h.rule), a = evaluate(h.sql, { scene: h.scene, env: 'prod', group: h.group, hour: 10, scan: 2000000, affect: 0 }, r ? [Object.assign({}, r, { enabled: true, env: 'all', gmode: 'all', scenes: ['query', 'workflow', 'export'], conds: r.conds.map(function (c) { return c.t === 'time' ? { t: 'time', v: 'workhours' } : c; }) })] : [], 'enforce');
+    var words = []; a.hits.forEach(function (x) { x.why.forEach(function (w) { words.push(w.hl); }); });
+    var m = $('#mask'); m.hidden = false;
+    m.innerHTML = '<div class="drawer" role="dialog" aria-modal="true"><h3>命中详情' + (h.eff === 'observe' ? '<span class="badge warn">观察命中</span>' : actionBadge(h.eff)) + '</h3><div class="bd">' +
+      '<div class="fgrid"><label>时间</label><div>' + h.time + '</div><label>用户</label><div>' + esc(h.user) + '（' + h.group + '）</div><label>实例 / 库</label><div>' + esc(h.inst) + ' / ' + esc(h.db) + '</div><label>场景</label><div>' + SCENES[h.scene] + '</div><label>规则</label><div>' + esc(r ? r.name : '—') + '</div><label>指纹</label><div><code>' + fingerprint(h.sql).id + '</code></div></div>' +
+      '<div><div class="muted small" style="margin-bottom:4px">语句</div><pre class="sql">' + highlight(h.sql, words) + '</pre></div>' +
+      '<div class="alert info">' + (h.eff === 'observe' ? '规则处于观察模式：这条语句<b>已正常执行</b>，只留下这条记录。若规则已生效，将被' + (r ? ACTIONS[r.action].t : '处理') + '。' : '这条语句没有执行。用户看到的说明：' + esc(r ? r.msg : '')) + '</div>' +
+      '</div><div class="ft"><button class="btn" type="button" data-act="exc-new" data-hit="' + h.id + '">为该用户添加例外…</button><button class="btn" type="button" data-act="close">关闭</button></div></div>';
+  }
+  function renderExc() {
+    $('#p-exc').innerHTML = '<div class="panel"><div class="toolbar"><span style="flex:1"></span><button class="btn primary" type="button" data-act="exc-new">添加例外</button></div>' +
+      '<table class="list"><thead><tr><th>规则</th><th>豁免对象</th><th>原因</th><th>有效期至</th><th>创建人</th><th style="width:70px"></th></tr></thead><tbody>' +
+      S.exc.map(function (e) { var r = ruleById(e.rule); return '<tr><td>' + esc(r ? r.name : '—') + '</td><td>' + esc(e.who) + '</td><td>' + esc(e.why) + '</td><td>' + esc(e.until) + '</td><td>' + esc(e.by) + '</td><td><button class="link danger" data-act="exc-del" data-id="' + e.id + '">撤销</button></td></tr>'; }).join('') + '</tbody></table></div>';
+  }
+  function renderTpl() {
+    $('#p-tpl').innerHTML = '<div class="panel"><div class="tpls">' +
+      TEMPLATES.map(function (t, i) {
+        return '<div class="tpl"><span class="cat">' + t.cat + '</span><h5>' + esc(t.name) + '</h5><p>' + esc(t.desc) + '</p><div class="cond">' + t.rule.conds.map(condText).join('') + '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px">' + actionBadge(t.rule.action, t.rule.arg) + '<span style="flex:1"></span><button class="btn sm" type="button" data-act="tpl" data-i="' + i + '">添加（观察模式）</button></div></div>';
+      }).join('') + '</div></div>';
+  }
+  function excDialog(hit) {
+    var m = $('#mask'); m.hidden = false;
+    var h = hit ? S.hits.filter(function (x) { return x.id === hit; })[0] : null;
+    m.innerHTML = '<div class="drawer" style="width:min(520px,100%)" role="dialog" aria-modal="true"><h3>添加例外</h3><div class="bd"><div class="fgrid">' +
+      '<label>规则</label><select class="ipt" id="x-rule">' + S.rules.map(function (r) { return '<option value="' + r.id + '"' + (h && h.rule === r.id ? ' selected' : '') + '>' + esc(r.name) + '</option>'; }).join('') + '</select>' +
+      '<label>豁免对象</label><select class="ipt" id="x-who"><option>' + (h ? '用户 ' + esc(h.user) : '用户 …') + '</option><option>权限组 …</option><option>实例 …</option><option>SQL 指纹 …</option></select>' +
+      '<label>有效期</label><select class="ipt" id="x-until"><option>7 天</option><option>30 天</option><option>90 天</option><option>长期</option></select>' +
+      '<label>原因</label><textarea class="ipt" id="x-why" rows="3" placeholder="原因（必填）"></textarea></div></div>' +
+      '<div class="ft"><button class="btn ghost" type="button" data-act="close">取消</button><button class="btn primary" type="button" data-act="exc-save">保存</button></div></div>';
+  }
+
+  // ===================== 事件 =====================
+  function closeMask() { $('#mask').hidden = true; $('#mask').innerHTML = ''; S.draft = null; }
+  function render() { renderHead(); renderTabs(); renderRules(); renderBench(); renderHits(); renderExc(); renderTpl(); }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act],[data-t],[data-m],[data-s]');
+    if (!el) { if (e.target.id === 'mask') closeMask(); return; }
+    var act = el.dataset.act, d = S.draft, tr = el.closest('tr'), id = tr && Number(tr.dataset.id);
+    if (el.dataset.t && el.parentNode.id === 'tabs') { S.tab = el.dataset.t; renderTabs(); return; }
+    if (el.parentNode.id === 'gmode') { S.gmode = el.dataset.m; render(); toast(S.gmode === 'observe' ? '已切到全局观察模式：只记录，不拦截' : '已切到拦截模式'); return; }
+    if (el.parentNode.id === 'skins') { document.documentElement.dataset.skin = el.dataset.s; renderHead(); return; }
+    switch (act) {
+      case 'edit': openEditor(ruleById(id)); break;
+      case 'replay': openEditor(ruleById(id)); $('#replay').innerHTML = backtestHtml(S.draft); break;
+      case 'del': if (confirm('删除这条规则？已有的命中记录会保留。')) { S.rules = S.rules.filter(function (r) { return r.id !== id; }); render(); toast('已删除'); } break;
+      case 'close': closeMask(); break;
+      case 'mode': d.mode = el.dataset.m; renderEditor(); break;
+      case 'match': d.match = el.dataset.m; renderEditor(); break;
+      case 'action': d.action = el.dataset.a; renderEditor(); break;
+      case 'addcond': d.conds.push({ t: 'keyword', v: [] }); renderEditor(); break;
+      case 'rmcond': d.conds.splice(Number(el.dataset.i), 1); renderEditor(); break;
+      case 'backtest': $('#replay').innerHTML = backtestHtml(d); break;
+      case 'save':
+        if (!d.name.trim()) { toast('请填写规则名称'); return; }
+        if (!d.conds.length) { toast('至少要有一个命中条件'); return; }
+        if (!d.scenes.length) { toast('至少选择一个适用场景'); return; }
+        delete d.__new;
+        if (!d.id) { d.id = ++seq; S.rules.push(d); } else S.rules = S.rules.map(function (r) { return r.id === d.id ? d : r; });
+        closeMask(); render(); toast('规则已保存' + (d.mode === 'observe' ? '（观察模式，不会拦截）' : '，立即生效'));
+        break;
+      case 'hit': renderHitDetail(S.hits.filter(function (h) { return h.id === Number(tr.dataset.hit); })[0]); break;
+      case 'exc-new': excDialog(Number(el.dataset.hit) || 0); break;
+      case 'exc-save': if (!$('#x-why').value.trim()) { toast('请填写原因'); return; } S.exc.unshift({ id: ++seq, rule: Number($('#x-rule').value), who: $('#x-who').value, why: $('#x-why').value, until: $('#x-until').value, by: 'admin' }); closeMask(); render(); toast('例外已添加'); break;
+      case 'exc-del': S.exc = S.exc.filter(function (x) { return x.id !== Number(el.dataset.id); }); render(); toast('已撤销例外'); break;
+      case 'tpl':
+        var t = TEMPLATES[Number(el.dataset.i)], nr = Object.assign(blankRule(), JSON.parse(JSON.stringify(t.rule)), { name: t.name, desc: t.desc, id: ++seq, mode: 'observe', observeDays: 0, gmode: 'all', groups: [] });
+        S.rules.push(nr); render(); toast('已添加「' + t.name + '」（观察模式）'); S.tab = 'rules'; renderTabs();
+        break;
+      case 'fp-bl': toast('已为指纹 ' + el.dataset.fp + ' 创建黑名单规则草稿（观察模式）'); break;
+      case 'fp-wl': excDialog(0); break;
+    }
+  });
+  document.addEventListener('change', function (e) {
+    var el = e.target, d = S.draft;
+    if (el.id === 'b-pre') { var p = PRESETS[Number(el.value)]; if (p) { S.bench = Object.assign(S.bench, { sql: p[1], scene: p[2], env: p[3], group: p[4], hour: p[5], scan: p[6], affect: p[7], res: null }); renderBench(); runBench(); } return; }
+    if (el.id === 'f-a') S.f.action = el.value; else if (el.id === 'f-s') S.f.scene = el.value; else if (el.id === 'f-st') S.f.state = el.value;
+    if (el.id && el.id.indexOf('f-') === 0) { renderRules(); return; }
+    if (!d || !el.dataset.f) return;
+    var f = el.dataset.f, i = Number(el.dataset.i);
+    if (f === 'scene') d.scenes = [].slice.call(document.querySelectorAll('[data-f=scene]:checked')).map(function (x) { return x.value; });
+    else if (f === 'group') d.groups = [].slice.call(document.querySelectorAll('[data-f=group]:checked')).map(function (x) { return x.value; });
+    else if (f === 'gmode') { d.gmode = el.value; renderEditor(); }
+    else if (f === 'env') d.env = el.value;
+    else if (f === 't') { var def = { stmt: ['SELECT'], feature: 'no_where', keyword: [], regex: '', object: [], scan_rows: 1000000, affect_rows: 100000, time: 'offhours', fingerprint: '' }; d.conds[i] = { t: el.value, v: def[el.value] }; renderEditor(); }
+    else if (f === 'stmt') d.conds[i].v = [].slice.call(document.querySelectorAll('[data-f=stmt][data-i="' + i + '"]:checked')).map(function (x) { return x.value; });
+    else if (f === 'v') d.conds[i].v = el.value;
+    else if (f === 'num') d.conds[i].v = Number(el.value) || 0;
+    else if (f === 'list') d.conds[i].v = el.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    else if (f === 'prio' || f === 'arg') d[f] = Number(el.value) || 0;
+    else d[f] = el.value;
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'f-q') { S.f.q = e.target.value; var pos = e.target.selectionStart; renderRules(); var q = $('#f-q'); q.focus(); q.setSelectionRange(pos, pos); }
+  });
+  $('#b-test').addEventListener('click', function () { S.tab = 'bench'; renderTabs(); });
+  $('#b-new').addEventListener('click', function () { openEditor(null); });
+  document.addEventListener('click', function (e) { if (e.target.id === 'b-run') runBench(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#mask').hidden) closeMask(); });
+
+  // ===================== 启动（?skin= ?tab= ?edit= ?hit= ?mode=observe 方便截图）=====================
+  document.documentElement.dataset.skin = Q.get('skin') || 'dark';
+  if (Q.get('mode')) S.gmode = Q.get('mode');
+  S.tab = Q.get('tab') || 'rules';
+  render();
+  if (S.tab === 'bench' || Q.get('run')) { var pi = Number(Q.get('run') || 0); var p0 = PRESETS[pi]; S.bench = Object.assign(S.bench, { sql: p0[1], scene: p0[2], env: p0[3], group: p0[4], hour: p0[5], scan: p0[6], affect: p0[7] }); renderBench(); runBench(); }
+  if (Q.get('edit')) {
+    openEditor(ruleById(Number(Q.get('edit'))));
+    if (Q.get('backtest')) $('#replay').innerHTML = backtestHtml(S.draft);
+    if (Q.get('scroll')) $('.drawer .bd').scrollTop = 1e6; // 截图用：滚到抽屉底部看“历史回放”
+  }
+  if (Q.get('hit')) renderHitDetail(S.hits.filter(function (h) { return h.id === Number(Q.get('hit')); })[0]);
+})();
+</script>
+</body>
+</html>

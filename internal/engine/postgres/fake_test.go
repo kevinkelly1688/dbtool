@@ -1,0 +1,531 @@
+// @author: kevinkelly
+// @license: Apache Licence
+// @file: fake_test.go
+// @time: 2026/10/28
+
+package postgres
+
+import (
+	"fmt"
+	"net"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgproto3"
+
+	"dbtool/internal/engine"
+)
+
+// 进程内假 PostgreSQL 服务端（pgproto3）：支持启动（SSLRequest 拒绝、cleartext 密码认证）、扩展查询协议、简单查询协议、
+// 事务状态与 READ ONLY 语义、DECLARE CURSOR / FETCH、CancelRequest、statement_timeout 模拟。查询结果由测试里的 handler 提供。
+
+type fakeCol struct {
+	Name string
+	OID  uint32
+}
+
+type fakeResult struct {
+	Cols  []fakeCol
+	Rows  [][]*string
+	Tag   string
+	Err   *pgproto3.ErrorResponse
+	Delay time.Duration // 响应前先“执行”这么久（可被 CancelRequest / statement_timeout 打断）
+	// Origins 与 Cols 一一对应：该列的来源表 OID 与列号（0 表示表达式列）。只出现在语句本身的结果描述里；
+	// FETCH 游标的结果描述与真实服务端一样没有这两项。
+	Origins []Origin
+}
+
+// Origin 是结果列的来源表 OID 与列号。
+type Origin struct {
+	Table uint32
+	Att   uint16
+}
+
+func sp(s string) *string { return &s }
+
+func cell(vals ...string) []*string {
+	out := make([]*string, len(vals))
+	for i := range vals {
+		if vals[i] != "\x00NULL" {
+			out[i] = sp(vals[i])
+		}
+	}
+	return out
+}
+
+const nullCell = "\x00NULL"
+
+func pgErr(code, msg string) *fakeResult {
+	return &fakeResult{Err: &pgproto3.ErrorResponse{Severity: "ERROR", Code: code, Message: msg}}
+}
+
+// handler 返回 nil 表示“未知语句”，服务端回一个空结果。
+type fakeHandler func(sql string, params []string) *fakeResult
+
+type fakeServer struct {
+	t        *testing.T
+	ln       net.Listener
+	password string // 非空则要求 cleartext 密码
+	scs      string // standard_conforming_strings 的回报值，缺省 on
+	encoding string // client_encoding 的回报值，缺省 UTF8
+	handler  fakeHandler
+
+	mu       sync.Mutex
+	startups []map[string]string
+	stmts    []string // 收到的所有语句（扩展协议的 Parse + 简单查询里按分号拆开的每一条）
+	ssl      int
+	cancels  atomic.Int32
+	nextPID  uint32
+	live     map[uint32]*fakeConn
+	conns    atomic.Int32 // 累计连接数
+	open     atomic.Int32 // 当前打开的连接数
+	wg       sync.WaitGroup
+}
+
+func newFakeServer(t *testing.T, h fakeHandler) *fakeServer {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &fakeServer{t: t, ln: ln, handler: h, scs: "on", encoding: "UTF8", live: map[uint32]*fakeConn{}}
+	s.wg.Add(1)
+	go s.serve()
+	t.Cleanup(s.close)
+	return s
+}
+
+func (s *fakeServer) close() {
+	_ = s.ln.Close()
+	s.mu.Lock()
+	for _, c := range s.live {
+		_ = c.nc.Close()
+	}
+	s.mu.Unlock()
+	s.wg.Wait()
+}
+
+func (s *fakeServer) addr() (string, int) {
+	a := s.ln.Addr().(*net.TCPAddr)
+	return a.IP.String(), a.Port
+}
+
+func (s *fakeServer) conn(user, password, db string) engine.Conn {
+	h, p := s.addr()
+	return engine.Conn{Host: h, Port: p, User: user, Password: password, DBName: db}
+}
+
+func (s *fakeServer) serve() {
+	defer s.wg.Done()
+	for {
+		nc, err := s.ln.Accept()
+		if err != nil {
+			return
+		}
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			s.handleConn(nc)
+		}()
+	}
+}
+
+func (s *fakeServer) statements() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.stmts...)
+}
+
+func (s *fakeServer) startupParams() []map[string]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]map[string]string(nil), s.startups...)
+}
+
+// has 判断是否收到过包含 sub 的语句。
+func (s *fakeServer) has(sub string) bool {
+	for _, st := range s.statements() {
+		if strings.Contains(st, sub) {
+			return true
+		}
+	}
+	return false
+}
+
+type fakeConn struct {
+	s        *fakeServer
+	nc       net.Conn
+	be       *pgproto3.Backend
+	pid      uint32
+	secret   uint32
+	user, db string
+	inTx     bool
+	readOnly bool
+	failed   bool // 事务内出错
+	timeout  time.Duration
+	cursors  map[string]*fakeCursor
+	cancelCh chan struct{}
+}
+
+type fakeCursor struct {
+	res *fakeResult
+	pos int
+}
+
+func (c *fakeConn) txStatus() byte {
+	switch {
+	case c.failed:
+		return 'E'
+	case c.inTx:
+		return 'T'
+	}
+	return 'I'
+}
+
+func (s *fakeServer) handleConn(nc net.Conn) {
+	defer nc.Close()
+	be := pgproto3.NewBackend(nc, nc)
+	c := &fakeConn{s: s, nc: nc, be: be, cursors: map[string]*fakeCursor{}, cancelCh: make(chan struct{}, 1)}
+	for {
+		msg, err := be.ReceiveStartupMessage()
+		if err != nil {
+			return
+		}
+		switch m := msg.(type) {
+		case *pgproto3.SSLRequest, *pgproto3.GSSEncRequest:
+			s.mu.Lock()
+			s.ssl++
+			s.mu.Unlock()
+			if _, err := nc.Write([]byte("N")); err != nil {
+				return
+			}
+			continue
+		case *pgproto3.CancelRequest:
+			s.mu.Lock()
+			target := s.live[m.ProcessID]
+			s.mu.Unlock()
+			if target != nil && target.secret == m.SecretKey {
+				s.cancels.Add(1)
+				select {
+				case target.cancelCh <- struct{}{}:
+				default:
+				}
+			}
+			return
+		case *pgproto3.StartupMessage:
+			params := map[string]string{}
+			for k, v := range m.Parameters {
+				params[k] = v
+			}
+			c.user, c.db = params["user"], params["database"]
+			s.conns.Add(1)
+			s.open.Add(1)
+			defer s.open.Add(-1)
+			s.mu.Lock()
+			s.startups = append(s.startups, params)
+			s.nextPID++
+			c.pid, c.secret = 1000+s.nextPID, 777+s.nextPID
+			s.live[c.pid] = c
+			s.mu.Unlock()
+			defer func() {
+				s.mu.Lock()
+				delete(s.live, c.pid)
+				s.mu.Unlock()
+			}()
+			if !c.authenticate(params) {
+				return
+			}
+			c.run()
+			return
+		}
+	}
+}
+
+func (c *fakeConn) authenticate(params map[string]string) bool {
+	be := c.be
+	if c.s.password != "" {
+		_ = be.SetAuthType(pgproto3.AuthTypeCleartextPassword)
+		be.Send(&pgproto3.AuthenticationCleartextPassword{})
+		if be.Flush() != nil {
+			return false
+		}
+		msg, err := be.Receive()
+		if err != nil {
+			return false
+		}
+		pw, ok := msg.(*pgproto3.PasswordMessage)
+		if !ok || pw.Password != c.s.password {
+			be.Send(&pgproto3.ErrorResponse{Severity: "FATAL", Code: "28P01", Message: fmt.Sprintf("password authentication failed for user %q", c.user)})
+			_ = be.Flush()
+			return false
+		}
+	}
+	be.Send(&pgproto3.AuthenticationOk{})
+	for k, v := range map[string]string{"server_version": "16.2", "server_encoding": "UTF8", "client_encoding": c.s.encoding, "DateStyle": "ISO, MDY",
+		"integer_datetimes": "on", "standard_conforming_strings": c.s.scs, "TimeZone": "Asia/Shanghai"} {
+		be.Send(&pgproto3.ParameterStatus{Name: k, Value: v})
+	}
+	be.Send(&pgproto3.BackendKeyData{ProcessID: c.pid, SecretKey: c.secret})
+	be.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'})
+	return be.Flush() == nil
+}
+
+func (c *fakeConn) record(sql string) {
+	c.s.mu.Lock()
+	c.s.stmts = append(c.s.stmts, sql)
+	c.s.mu.Unlock()
+}
+
+var (
+	reDeclare = regexp.MustCompile(`(?is)^DECLARE\s+(\w+)\s+NO\s+SCROLL\s+CURSOR\s+FOR\s+(.*)$`)
+	reFetch   = regexp.MustCompile(`(?is)^FETCH\s+FORWARD\s+(\d+)\s+FROM\s+(\w+)$`)
+	reTimeout = regexp.MustCompile(`(?is)^SET\s+LOCAL\s+statement_timeout\s*=\s*(\d+)$`)
+	reWrite   = regexp.MustCompile(`(?is)^(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TRUNCATE)\b`)
+)
+
+// exec 执行一条语句，返回结果（Err 非空表示出错）。
+func (c *fakeConn) exec(sql string, params []string) *fakeResult {
+	sql = strings.TrimSpace(sql)
+	up := strings.ToUpper(sql)
+	c.record(sql)
+	if c.failed && !strings.HasPrefix(up, "ROLLBACK") {
+		return pgErr("25P02", "current transaction is aborted, commands ignored until end of transaction block")
+	}
+	switch {
+	case up == "BEGIN READ ONLY":
+		c.inTx, c.readOnly = true, true
+		return &fakeResult{Tag: "BEGIN"}
+	case up == "BEGIN":
+		c.inTx = true
+		return &fakeResult{Tag: "BEGIN"}
+	case up == "ROLLBACK":
+		c.inTx, c.readOnly, c.failed = false, false, false
+		c.cursors = map[string]*fakeCursor{}
+		c.timeout = 0
+		return &fakeResult{Tag: "ROLLBACK"}
+	case up == "COMMIT":
+		c.inTx, c.readOnly, c.failed = false, false, false
+		return &fakeResult{Tag: "COMMIT"}
+	}
+	if m := reTimeout.FindStringSubmatch(sql); m != nil {
+		ms, _ := strconv.Atoi(m[1])
+		c.timeout = time.Duration(ms) * time.Millisecond
+		return &fakeResult{Tag: "SET"}
+	}
+	if strings.HasPrefix(up, "SET LOCAL ") {
+		return &fakeResult{Tag: "SET"}
+	}
+	if m := reDeclare.FindStringSubmatch(sql); m != nil {
+		if !c.inTx {
+			return pgErr("25P01", "DECLARE CURSOR can only be used in transaction blocks")
+		}
+		res := c.eval(m[2], params)
+		if res.Err != nil {
+			return res
+		}
+		c.cursors[m[1]] = &fakeCursor{res: res}
+		return &fakeResult{Tag: "DECLARE CURSOR"}
+	}
+	if m := reFetch.FindStringSubmatch(sql); m != nil {
+		cur := c.cursors[m[2]]
+		if cur == nil {
+			return pgErr("34000", fmt.Sprintf("cursor %q does not exist", m[2]))
+		}
+		n, _ := strconv.Atoi(m[1])
+		end := min(cur.pos+n, len(cur.res.Rows))
+		out := &fakeResult{Cols: cur.res.Cols, Rows: cur.res.Rows[cur.pos:end]}
+		out.Tag = "FETCH " + strconv.Itoa(len(out.Rows))
+		cur.pos = end
+		return out
+	}
+	return c.eval(sql, params)
+}
+
+// eval 执行普通语句：只读事务里拒绝写操作，其余交给 handler；模拟 statement_timeout 与取消。
+func (c *fakeConn) eval(sql string, params []string) *fakeResult {
+	if c.readOnly && reWrite.MatchString(strings.TrimSpace(sql)) {
+		return pgErr("25006", "cannot execute "+strings.ToUpper(strings.Fields(sql)[0])+" in a read-only transaction")
+	}
+	var res *fakeResult
+	if c.s.handler != nil {
+		res = c.s.handler(sql, params)
+	}
+	if res == nil {
+		return &fakeResult{Tag: "SELECT 0"}
+	}
+	if res.Delay > 0 {
+		wait := res.Delay
+		timedOut := false
+		if c.timeout > 0 && c.timeout < wait {
+			wait, timedOut = c.timeout, true
+		}
+		select {
+		case <-time.After(wait):
+			if timedOut {
+				return pgErr("57014", "canceling statement due to statement timeout")
+			}
+		case <-c.cancelCh:
+			return pgErr("57014", "canceling statement due to user request")
+		}
+	}
+	return res
+}
+
+func (c *fakeConn) sendResult(res *fakeResult, withDesc bool) {
+	be := c.be
+	if res.Err != nil {
+		be.Send(res.Err)
+		return
+	}
+	if withDesc && len(res.Cols) > 0 {
+		be.Send(rowDesc(res))
+	}
+	for _, r := range res.Rows {
+		vals := make([][]byte, len(r))
+		for i, v := range r {
+			if v != nil {
+				vals[i] = []byte(*v)
+			}
+		}
+		be.Send(&pgproto3.DataRow{Values: vals})
+	}
+	tag := res.Tag
+	if tag == "" {
+		tag = "SELECT " + strconv.Itoa(len(res.Rows))
+	}
+	be.Send(&pgproto3.CommandComplete{CommandTag: []byte(tag)})
+}
+
+func rowDesc(res *fakeResult) *pgproto3.RowDescription {
+	rd := &pgproto3.RowDescription{}
+	for i, col := range res.Cols {
+		fd := pgproto3.FieldDescription{Name: []byte(col.Name), DataTypeOID: col.OID, DataTypeSize: -1, TypeModifier: -1}
+		if i < len(res.Origins) {
+			fd.TableOID, fd.TableAttributeNumber = res.Origins[i].Table, res.Origins[i].Att
+		}
+		rd.Fields = append(rd.Fields, fd)
+	}
+	return rd
+}
+
+func (c *fakeConn) run() {
+	be := c.be
+	stmts := map[string]string{}
+	type portal struct {
+		sql    string
+		params []string
+		res    *fakeResult
+	}
+	var cur *portal
+	skipToSync := false
+	for {
+		msg, err := be.Receive()
+		if err != nil {
+			return
+		}
+		switch m := msg.(type) {
+		case *pgproto3.Terminate:
+			return
+		case *pgproto3.Sync:
+			skipToSync = false
+			be.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus()})
+		case *pgproto3.Flush:
+		case *pgproto3.Query:
+			for _, st := range strings.Split(m.String, ";") {
+				if strings.TrimSpace(st) == "" {
+					continue
+				}
+				res := c.exec(st, nil)
+				if res.Err != nil {
+					if c.inTx {
+						c.failed = true
+					}
+					be.Send(res.Err)
+					break
+				}
+				c.sendResult(res, true)
+			}
+			be.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus()})
+		case *pgproto3.Parse:
+			if skipToSync {
+				continue
+			}
+			stmts[m.Name] = m.Query
+			be.Send(&pgproto3.ParseComplete{})
+		case *pgproto3.Bind:
+			if skipToSync {
+				continue
+			}
+			p := &portal{sql: stmts[m.PreparedStatement]}
+			for _, v := range m.Parameters {
+				p.params = append(p.params, string(v))
+			}
+			cur = p
+			be.Send(&pgproto3.BindComplete{})
+		case *pgproto3.Describe:
+			if skipToSync {
+				continue
+			}
+			if m.ObjectType == 'S' { // 描述预备语句：不执行，只回参数与结果列（含来源表 OID / 列号）
+				var dres *fakeResult
+				if c.s.handler != nil {
+					dres = c.s.handler(strings.TrimSpace(stmts[m.Name]), nil)
+				}
+				be.Send(&pgproto3.ParameterDescription{})
+				switch {
+				case dres != nil && dres.Err != nil:
+					be.Send(dres.Err)
+					skipToSync = true
+				case dres != nil && len(dres.Cols) > 0:
+					be.Send(rowDesc(dres))
+				default:
+					be.Send(&pgproto3.NoData{})
+				}
+				break
+			}
+			if cur == nil {
+				continue
+			}
+			cur.res = c.exec(cur.sql, cur.params)
+			if cur.res.Err != nil {
+				if c.inTx {
+					c.failed = true
+				}
+				be.Send(cur.res.Err)
+				skipToSync = true
+				continue
+			}
+			if len(cur.res.Cols) > 0 {
+				be.Send(rowDesc(cur.res))
+			} else {
+				be.Send(&pgproto3.NoData{})
+			}
+		case *pgproto3.Execute:
+			if skipToSync || cur == nil || cur.res == nil {
+				continue
+			}
+			c.sendResult(cur.res, false)
+		default:
+			// 其它消息（Close 等）忽略
+		}
+		if err := be.Flush(); err != nil {
+			return
+		}
+	}
+}
+
+// ---- 常用 handler 构件 ----
+
+// textCols 生成全是 text 列的列描述。
+func textCols(names ...string) []fakeCol {
+	out := make([]fakeCol, len(names))
+	for i, n := range names {
+		out[i] = fakeCol{n, 25}
+	}
+	return out
+}

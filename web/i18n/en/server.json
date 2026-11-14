@@ -1,0 +1,10 @@
+{
+  "CSRF 校验失败，请刷新页面后重试": "CSRF check failed. Refresh the page and try again.",
+  "令牌无效或已过期": "The token is invalid or has expired.",
+  "库权限": "Database privilege",
+  "未登录或登录已过期": "You are not signed in or your session has expired.",
+  "表权限": "Table privilege",
+  "该用户不在 API 白名单内": "This user is not on the API allowlist.",
+  "账号已停用或不存在，请联系管理员": "The account is disabled or does not exist. Contact an administrator.",
+  "账号已停用或不存在，请重新登录": "The account is disabled or does not exist. Please sign in again."
+}

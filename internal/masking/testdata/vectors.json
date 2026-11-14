@@ -1,0 +1,23 @@
+[
+  {"name": "保留首尾：手机号 3+4", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "13812345678", "out": "138***5678"},
+  {"name": "保留首尾：身份证 3+4", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "110101199003071234", "out": "110***1234"},
+  {"name": "保留首尾：银行卡 6+4", "rule": {"kind": "keep", "prefix": 6, "suffix": 4}, "in": "6222021234567890123", "out": "622202***0123"},
+  {"name": "保留首尾：中文姓名 1+0", "rule": {"kind": "keep", "prefix": 1, "suffix": 0}, "in": "张三丰", "out": "张***"},
+  {"name": "保留首尾：邮箱 2+0", "rule": {"kind": "keep", "prefix": 2, "suffix": 0}, "in": "zhangsan@corp.com", "out": "zh***"},
+  {"name": "保留首尾：值太短先缩后缀", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "abcd", "out": "abc***"},
+  {"name": "保留首尾：更短", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "ab", "out": "a***"},
+  {"name": "保留首尾：单字符整体隐藏", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "a", "out": "***"},
+  {"name": "保留首尾：恰好够长", "rule": {"kind": "keep", "prefix": 2, "suffix": 2}, "in": "abcde", "out": "ab***de"},
+  {"name": "保留首尾：前后都不留", "rule": {"kind": "keep", "prefix": 0, "suffix": 0}, "in": "abc", "out": "***"},
+  {"name": "保留首尾：空串原样", "rule": {"kind": "keep", "prefix": 3, "suffix": 4}, "in": "", "out": ""},
+  {"name": "整体隐藏", "rule": {"kind": "whole"}, "in": "secret", "out": "***"},
+  {"name": "整体隐藏：空串原样", "rule": {"kind": "whole"}, "in": "", "out": ""},
+  {"name": "三段式：隐藏中段（11 位）", "rule": {"kind": "three", "hide": 2}, "in": "13812345678", "out": "138****5678"},
+  {"name": "三段式：4 位", "rule": {"kind": "three", "hide": 2}, "in": "abcd", "out": "a**d"},
+  {"name": "三段式：隐藏前段", "rule": {"kind": "three", "hide": 1}, "in": "123456", "out": "**3456"},
+  {"name": "三段式：隐藏后段", "rule": {"kind": "three", "hide": 3}, "in": "123456", "out": "1234**"},
+  {"name": "三段式：中文按字符计长", "rule": {"kind": "three", "hide": 2}, "in": "王小明", "out": "王*明"},
+  {"name": "正则：手机号隐藏第 2 组", "rule": {"kind": "regex", "regex": "^(\\d{3})(\\d{4})(\\d{4})$", "hide": 2}, "in": "13812345678", "out": "138****5678"},
+  {"name": "正则：不匹配原样返回", "rule": {"kind": "regex", "regex": "^(\\d{3})(\\d{4})(\\d{4})$", "hide": 2}, "in": "1381234567", "out": "1381234567"},
+  {"name": "正则：邮箱隐藏用户名", "rule": {"kind": "regex", "regex": "^(.*)(@.*)$", "hide": 1}, "in": "abc@x.com", "out": "***@x.com"}
+]

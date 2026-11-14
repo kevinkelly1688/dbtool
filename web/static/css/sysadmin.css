@@ -1,0 +1,144 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: sysadmin.css
+ * @time: 2026/10/28
+ */
+/* 系统管理（审批流程、资源组、用户、权限组、系统审计）页面的专用样式；公共组件见 admin.css。 */
+.cols { display: grid; grid-template-columns: minmax(260px, 1fr) 2.2fr; gap: 14px; align-items: stretch; }
+.cols > .card { margin-bottom: 0; min-width: 0; }
+.cols.wide-left { grid-template-columns: minmax(220px, 280px) 1fr; }
+
+/* 审批流：拖动排序的权限组 */
+.chips.flow { min-height: 44px; padding: 8px; border: 1px dashed var(--dt-line-hi); border-radius: 6px; background: var(--dt-input); align-items: center; gap: 8px; }
+.chips.flow .chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid var(--dt-cyan-line); border-radius: 14px; background: var(--dt-cyan-soft); color: var(--dt-fg); cursor: grab; font-size: 13px; }
+.chips.flow .chip.drag { opacity: .4; }
+.chips.flow .chip i { font-style: normal; color: var(--dt-muted); font-size: 11px; }
+.chips.flow .chip button { background: none; border: 0; padding: 0 2px; cursor: pointer; color: var(--dt-muted); font-size: 14px; line-height: 1; }
+.chips.flow .chip button:hover { color: var(--dt-crit); }
+.chips.flow .chip button.mv { font-size: 16px; padding: 0 4px; }
+.chips.flow .chip button.mv:hover:not(:disabled) { color: var(--dt-fg); }
+.chips.flow .chip button.mv:disabled { opacity: .3; cursor: default; }
+.chips.flow .arrow { color: var(--dt-muted); }
+.chips.flow .hint { color: var(--dt-dim); }
+.matrix-cell { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.matrix-cell:hover { color: var(--dt-cyan-text); text-decoration: underline; }
+.approvers { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.approvers .nop { color: var(--dt-amber); }
+
+/* 关联对象穿梭框 */
+.shuttle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.shuttle .card { margin: 0; }
+.shuttle h3 { margin: 0 0 6px; font-size: 13px; }
+.shuttle input[type=search] { width: 100%; margin-bottom: 6px; }
+.shuttle .check-list { max-height: 260px; grid-template-columns: 1fr; }
+.shuttle .actions { margin-top: 8px; }
+@media (max-width: 800px) { .shuttle { grid-template-columns: 1fr; } }
+
+/* 权限矩阵 */
+.perm-cat summary small { margin-left: 6px; }
+.perm-grid label.danger-perm span.nm::after { content: " ⚠"; color: var(--dt-crit); }
+.side-list { display: flex; flex-direction: column; gap: 2px; max-height: 60vh; overflow: auto; }
+.side-list button { text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px; cursor: pointer; color: var(--dt-fg); display: flex; justify-content: space-between; gap: 8px; }
+.side-list button:hover { background: var(--dt-cyan-soft); }
+.side-list button.on { border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); color: var(--dt-cyan-text); }
+.side-list small { color: var(--dt-muted); }
+
+/* 审计 */
+td.sqlcell { max-width: 520px; font-family: var(--dt-f-mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-all; }
+td.sqlcell.clip { max-height: 4.6em; overflow: hidden; cursor: pointer; }
+td.extra { max-width: 520px; word-break: break-all; }
+.date-in { width: 140px; }
+.form-grid label.check input[type=checkbox] { flex: none; }
+.small-note { font-size: 12px; color: var(--dt-muted); margin: 6px 0 0; }
+.inline-form.wrap { flex-wrap: wrap; align-items: center; }
+
+/* ---- 通用小件 ---- */
+.h-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.h-row h3, .h-row h2 { margin: 0; }
+.warn-text { color: var(--dt-amber); }
+.warn-mark { color: var(--dt-amber); }
+.kpis.kpis-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kpis.kpis-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .kpis.kpis-3, .kpis.kpis-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpis b.warn { color: var(--dt-amber); }
+.sy-scroll { max-height: 56vh; overflow: auto; }
+
+/* ---- 审批流：锁定的审批人、矩阵红色单元格 ---- */
+.approvers .lock { color: var(--dt-crit); }
+td.cell-bad { background: var(--dt-crit-soft); }
+
+/* ---- 审批与通知链路：流程图与时间线 ---- */
+svg.diagram { width: 100%; height: auto; max-width: 1000px; display: block; }
+svg.diagram .n rect { fill: var(--dt-raise); stroke: var(--dt-line-hi); stroke-width: 1.2; }
+svg.diagram .n.ok rect { stroke: var(--dt-ok); }
+svg.diagram .n.bad rect { stroke: var(--dt-crit); fill: var(--dt-crit-soft); }
+svg.diagram .n.cur rect { stroke: var(--dt-cyan); fill: var(--dt-cyan-soft); }
+svg.diagram .n.info rect { stroke: var(--dt-info); }
+svg.diagram text { fill: var(--dt-fg); font-size: 13px; text-anchor: middle; }
+svg.diagram text.sub { fill: var(--dt-muted); font-size: 11px; }
+svg.diagram .e path { fill: none; stroke: var(--dt-muted); stroke-width: 1.5; marker-end: url(#sy-ah); }
+svg.diagram .e path.dash { stroke: var(--dt-cyan); stroke-dasharray: 4 3; marker-end: none; }
+svg.diagram .ah { fill: var(--dt-muted); }
+svg.diagram .t text { font-size: 11px; fill: var(--dt-muted); }
+svg.diagram .t text.l { text-anchor: start; }
+ol.tline { list-style: none; margin: 0; padding: 0 0 0 8px; border-left: 2px solid var(--dt-line-hi); }
+ol.tline li { position: relative; padding: 4px 0 12px 16px; }
+ol.tline li::before { content: ""; position: absolute; left: -7px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--dt-muted); }
+ol.tline li.ok::before { background: var(--dt-ok); }
+ol.tline li.cur::before { background: var(--dt-cyan); }
+ol.tline li.bad::before { background: var(--dt-crit); }
+ol.tline li.bad b { color: var(--dt-crit); }
+
+/* ---- 用户详情抽屉 ---- */
+.sy-drawer-mask { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 48; }
+.sy-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(760px, 100%); background: var(--dt-panel); border-left: 1px solid var(--dt-line-hi); box-shadow: var(--dt-shadow); z-index: 50; display: flex; flex-direction: column; }
+.sy-drawer-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--dt-line); }
+.sy-drawer-head h2 { margin: 0; font-size: 16px; }
+.sy-drawer-body { padding: 14px 16px; overflow: auto; flex: 1; }
+.sy-drawer-body h3 { margin: 16px 0 6px; font-size: 14px; }
+.sy-drawer-ops { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.pw-show { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.pw-show code { flex: 1; padding: 8px 12px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); font-size: 16px; letter-spacing: .5px; user-select: all; word-break: break-all; }
+
+/* ---- 资源组关联：暂存区 ---- */
+#rel-warn .alert ul { margin: 6px 0; }
+
+/* 系统审计：概览、图表、状态分布、详情 */
+#au .chk { display: inline-flex; align-items: center; gap: 6px; color: var(--dt-fg); font-size: 13px; margin: 0; }
+#au .chk input { width: auto; margin: 0; }
+.au-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .au-kpis { grid-template-columns: repeat(2, 1fr); } }
+.au-kpis small { color: var(--dt-muted); font-size: 12px; }
+.au-kpis b.warn { color: var(--dt-amber); }
+.au-charts { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 12px; }
+.au-charts .card { margin: 0; min-width: 0; }
+@media (max-width: 900px) { .au-charts { grid-template-columns: 1fr; } }
+svg.au-bars { width: 100%; height: auto; display: block; }
+svg.au-bars rect { fill: var(--dt-cyan); opacity: .75; }
+svg.au-bars rect:hover { opacity: 1; }
+svg.au-bars text { fill: var(--dt-muted); font-size: 10px; text-anchor: middle; }
+svg.au-bars text.v { fill: var(--dt-fg); }
+.au-top { display: flex; flex-direction: column; gap: 8px; }
+.au-top .row { display: grid; grid-template-columns: minmax(80px, 150px) 1fr 40px; gap: 8px; align-items: center; font-size: 13px; }
+.au-top .bar { height: 8px; border-radius: 4px; background: var(--dt-line); overflow: hidden; }
+.au-top .bar i { display: block; height: 100%; background: var(--dt-cyan); }
+.au-top .n { text-align: right; font-family: var(--dt-f-mono); }
+.au-dist { margin-bottom: 12px; }
+.au-stack { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--dt-line); }
+.au-stack i { display: block; height: 100%; }
+.au-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12.5px; color: var(--dt-muted); }
+.au-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.au-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.au-c0 { background: var(--dt-amber); } .au-c1 { background: var(--dt-info); } .au-c2 { background: var(--dt-cyan); } .au-c3 { background: var(--dt-ok); }
+.au-c4 { background: var(--dt-crit); } .au-c5 { background: var(--dt-muted); } .au-c6 { background: var(--dt-dim); }
+table.list tr.au-click { cursor: pointer; }
+.au-kv { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 6px 12px; margin: 0 0 12px; }
+.au-kv dt { color: var(--dt-muted); }
+.au-kv dd { margin: 0; word-break: break-all; }
+.au-extra { white-space: pre-wrap; word-break: break-all; background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 4px; padding: 8px 10px; margin: 0 0 12px; max-height: 240px; overflow: auto; font-family: var(--dt-f-mono); font-size: 12.5px; }
+.au-recent { margin-top: 6px; }
+td.sqlcell.expand { cursor: pointer; }
+.badge.au-risk { background: var(--dt-crit-soft); border-color: var(--dt-crit-line); color: var(--dt-crit); }
+.au-reason { color: var(--dt-crit); font-size: 12px; margin-top: 2px; }
+#au [hidden] { display: none !important; }

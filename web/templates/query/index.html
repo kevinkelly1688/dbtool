@@ -1,0 +1,136 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/query.css">{{end}}
+
+{{define "content"}}
+<div class="env-stripe" id="env-stripe"></div>
+<div class="wb-top">
+  <svg class="ico" aria-hidden="true"><use href="/static/img/icons.svg#db"/></svg>
+  <select id="inst" aria-label="{{t "实例"}}">
+    {{range .Data.Instances}}<option value="{{.ID}}" data-type="{{.DBType}}" data-env="{{.Env}}" data-env-label="{{.EnvLabel}}" data-env-prod="{{.EnvProd}}" data-role="{{.Role}}">{{.Name}}</option>{{else}}<option value="">{{t "（没有可用实例）"}}</option>{{end}}
+  </select>
+  <select id="db" aria-label="{{t "数据库"}}"><option value="">{{t "（先选择实例）"}}</option></select>
+  <span id="b-env" class="badge" hidden></span>
+  <span id="b-role" class="badge" hidden></span>
+  <span id="b-type" class="badge" hidden></span>
+</div>
+<div class="wb-body" id="wb" data-default-limit="500" data-apply-enabled="{{.Data.ApplyEnabled}}" data-export-enabled="{{.Data.ExportEnabled}}" data-timeout="{{.Data.Policy.MaxExecSeconds}}" data-disable-star="{{.Data.Policy.DisableStar}}" data-masking="{{.Data.Policy.DataMasking}}">
+  <aside class="wb-side">
+    <div class="side-tabs" id="side-tabs" role="tablist" aria-label="{{t "对象类别"}}" hidden>
+      <button type="button" role="tab" id="side-t-tables" class="on" aria-selected="true" aria-controls="side-p-tables">{{t "表"}}</button>
+      <button type="button" role="tab" id="side-t-prog" aria-selected="false" aria-controls="side-p-prog">{{t "可编程对象"}}</button>
+    </div>
+    <div class="side-pane" id="side-p-tables" role="tabpanel">
+      <div class="search"><input id="tree-q" type="search" placeholder="{{t "搜索表名"}}" aria-label="{{t "按表名搜索"}}" autocomplete="off"></div>
+      <div id="tree"><div class="tree-hint">{{t "选择实例和数据库后显示表"}}</div></div>
+    </div>
+    <div class="side-pane" id="side-p-prog" role="tabpanel" hidden>
+      <div class="search"><input id="prog-q" type="search" placeholder="{{t "搜索对象名"}}" aria-label="{{t "按名称搜索可编程对象"}}" autocomplete="off"></div>
+      <div id="prog-tree"></div>
+    </div>
+    <div class="wb-resizer" id="wb-resizer" role="separator" aria-orientation="vertical" tabindex="0" aria-label="{{t "拖动调整左侧栏宽度（双击恢复默认）"}}" title="{{t "拖动调整宽度，双击恢复默认"}}"></div>
+  </aside>
+  <section class="wb-main">
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="editor-wrap"><div id="editor" aria-label="{{t "SQL 编辑器"}}"></div></div>
+    <div class="toolbar">
+      <button class="btn primary" id="run" type="button"><svg class="ico"><use href="/static/img/icons.svg#play"/></svg>{{t "运行"}}</button>
+      <button class="btn" id="run-all" type="button" title="{{t "按顺序运行脚本里的每条语句，一条语句一个结果页签（Ctrl+Shift+Enter）；选中了几条就只运行选中的"}}"><svg class="ico"><use href="/static/img/icons.svg#play"/></svg>{{t "运行全部"}} <span id="run-all-n"></span></button>
+      <button class="btn" id="explain" type="button"><svg class="ico"><use href="/static/img/icons.svg#plan"/></svg>{{t "执行计划"}}</button>
+      <button class="btn danger" id="cancel" type="button" hidden><svg class="ico"><use href="/static/img/icons.svg#stop"/></svg>{{t "取消"}} <span id="elapsed"></span></button>
+      <button class="btn" id="batch-opts" type="button" aria-haspopup="dialog" aria-expanded="false" title="{{t "运行全部时遇到错误怎么办、是否同时执行"}}">{{t "批量选项"}} ▾</button>
+      <button class="btn" id="fmt" type="button">{{t "格式化"}}</button>
+      <select id="sample" aria-label="{{t "示例 SQL"}}"><option value="">{{t "示例 SQL…"}}</option></select>
+      <label class="hint">{{t "返回行数"}}
+        <select id="limit" aria-label="{{t "返回行数"}}"><option>100</option><option selected>500</option><option>1000</option><option>5000</option></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn" id="hist-btn" type="button" aria-expanded="false" aria-controls="mysql">{{t "我的 SQL"}}</button>
+    </div>
+    <div class="chips" id="policy"></div>
+    <div id="msg"></div>
+    <div class="result" id="result"><div class="res-empty">{{t "运行查询后，结果显示在这里"}}</div></div>
+  </section>
+</div>
+<aside class="mysql" id="mysql" hidden aria-label="{{t "我的 SQL"}}">
+  <div class="my-head">
+    <div class="my-tabs" role="tablist">
+      <button class="my-tab on" id="my-tab-fav" role="tab" aria-selected="true" aria-controls="my-pane-fav" type="button">{{t "收藏"}}</button>
+      <button class="my-tab" id="my-tab-hist" role="tab" aria-selected="false" aria-controls="my-pane-hist" type="button">{{t "执行历史"}}</button>
+    </div>
+    <span class="muted" id="my-scope"></span>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="my-close" type="button">{{t "关闭"}}</button>
+  </div>
+
+  <section class="my-pane" id="my-pane-fav" role="tabpanel" aria-labelledby="my-tab-fav">
+    <form class="my-filter" id="fav-form">
+      <button class="btn primary" id="fav-add" type="button">{{t "添加"}}</button>
+      <input type="search" id="fav-q" placeholder="{{t "搜索注释或 SQL"}}" aria-label="{{t "搜索收藏"}}" autocomplete="off">
+      <button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <form class="my-edit" id="fav-edit" hidden>
+      <b id="fav-edit-title">{{t "添加收藏"}}</b>
+      <label>{{t "注释"}} <input type="text" id="fav-edit-comment" maxlength="100" placeholder="{{t "可留空"}}" autocomplete="off"></label>
+      <label>SQL <textarea id="fav-edit-sql" rows="5" class="mono" spellcheck="false"></textarea></label>
+      <div class="my-edit-act">
+        <button class="btn primary" type="submit">{{t "保存"}}</button>
+        <button class="btn ghost" type="button" id="fav-edit-cancel">{{t "取消"}}</button>
+        <span class="my-edit-msg" id="fav-edit-msg" role="status"></span>
+      </div>
+    </form>
+    <div class="my-tablewrap">
+      <table class="my-table" id="fav-table">
+        <thead><tr>
+          <th class="c-note">{{t "注释"}}</th>
+          <th>SQL</th>
+          <th class="c-time"><button class="my-sort" type="button" data-fav-sort="created">{{t "添加时间"}} <span class="arrow"></span></button></th>
+          <th class="c-time"><button class="my-sort" type="button" data-fav-sort="used">{{t "最后使用时间"}} <span class="arrow">↓</span></button></th>
+          <th class="c-ops">{{t "操作"}}</th>
+        </tr></thead>
+        <tbody id="fav-rows"></tbody>
+      </table>
+    </div>
+    <div class="pager"><span id="fav-count"></span><span class="spacer"></span><button class="btn" id="fav-prev" type="button">{{t "上一页"}}</button><button class="btn" id="fav-next" type="button">{{t "下一页"}}</button></div>
+  </section>
+
+  <section class="my-pane" id="my-pane-hist" role="tabpanel" aria-labelledby="my-tab-hist" hidden>
+    <form class="my-filter wrap" id="hist-form">
+      <input type="search" id="hist-q" placeholder="{{t "搜索语句"}}" aria-label="{{t "按语句模糊搜索"}}" autocomplete="off">
+      <input type="search" id="hist-user" list="hist-users" placeholder="{{t "用户名或姓名"}}" aria-label="{{t "按用户模糊过滤"}}" autocomplete="off" hidden>
+      <datalist id="hist-users"></datalist>
+      <select id="hist-status" aria-label="{{t "按状态过滤"}}" hidden><option value="">{{t "全部状态"}}</option><option value="ok">{{t "成功"}}</option><option value="blocked">{{t "被拦截"}}</option><option value="failed">{{t "失败"}}</option><option value="timeout">{{t "超时"}}</option><option value="canceled">{{t "已取消"}}</option></select>
+      <select id="hist-inst" aria-label="{{t "按实例过滤"}}"><option value="">{{t "全部实例"}}</option>{{range .Data.Instances}}<option value="{{.Name}}">{{.Name}}</option>{{end}}</select>
+      <label class="hint">{{t "从"}} <input type="date" id="hist-from" aria-label="{{t "开始日期"}}"></label>
+      <label class="hint">{{t "到"}} <input type="date" id="hist-to" aria-label="{{t "结束日期"}}"></label>
+      <button class="btn primary" type="submit">{{t "搜索"}}</button>
+      <button class="btn ghost" type="button" id="hist-reset">{{t "重置"}}</button>
+    </form>
+    <span id="hist-scope" hidden></span>
+    <div class="my-tablewrap">
+      <table class="my-table" id="hist-table">
+        <thead><tr>
+          <th class="c-time">{{t "时间"}}</th>
+          <th class="c-user" id="hist-user-th" hidden>{{t "用户"}}</th>
+          <th class="c-inst">{{t "实例 / 库"}}</th>
+          <th>SQL</th>
+          <th class="c-num">{{t "行数"}}</th>
+          <th class="c-num">{{t "耗时"}}</th>
+          <th class="c-st">{{t "状态"}}</th>
+          <th class="c-ops">{{t "操作"}}</th>
+        </tr></thead>
+        <tbody id="hist-rows"></tbody>
+      </table>
+    </div>
+    <div class="pager"><span id="hist-count"></span><span class="spacer"></span><button class="btn" id="hist-prev" type="button">{{t "上一页"}}</button><button class="btn" id="hist-next" type="button">{{t "下一页"}}</button></div>
+  </section>
+</aside>
+{{end}}
+
+{{define "scripts"}}<script src="/static/vendor/ace/ace.js"></script>
+<script src="/static/vendor/ace/ext-language_tools.js"></script>
+<script type="module" src="/static/js/query/app.js"></script>{{end}}

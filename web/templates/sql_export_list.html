@@ -1,0 +1,115 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sql_export_list.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sqlflow.css">{{end}}
+{{define "content"}}
+{{$p := .Data}}
+<main class="page fill-list" id="exp-list">
+  <div class="page-head">
+    <h1>{{t "数据导出工单"}}</h1>
+    <span class="spacer"></span>
+    <a class="btn" href="/sqlworkflow">{{t "全部 SQL 工单"}}</a>
+    {{if $p.CanExp}}<a class="btn primary" href="/sqlworkflow/export/new">{{t "提交数据导出"}}</a>{{end}}
+  </div>
+
+  {{if $p.Stats}}
+  <div class="sf-kpis" role="group" aria-label="{{t "导出工单统计"}}">
+    <a class="sf-kpi{{if eq "workflow_manreviewing" $p.Status}} on{{end}} waiting" href="{{$p.Toggle "status" "workflow_manreviewing"}}"><span class="l">{{t "待审批"}}</span><b>{{$p.StatusCount "workflow_manreviewing"}}</b></a>
+    <div class="sf-kpi passed"><span class="l">{{t "待导出"}}</span><b>{{$p.Sum "workflow_review_pass" "workflow_timingtask"}}</b></div>
+    <div class="sf-kpi running"><span class="l">{{t "导出中"}}</span><b>{{$p.Sum "workflow_queuing" "workflow_executing"}}</b></div>
+    <a class="sf-kpi{{if eq "workflow_finish" $p.Status}} on{{end}} passed" href="{{$p.Toggle "status" "workflow_finish"}}"><span class="l">{{t "已完成"}}</span><b>{{$p.StatusCount "workflow_finish"}}</b></a>
+    <a class="sf-kpi{{if eq "workflow_exception" $p.Status}} on{{end}} rejected" href="{{$p.Toggle "status" "workflow_exception"}}"><span class="l">{{t "导出异常"}}</span><b>{{$p.StatusCount "workflow_exception"}}</b></a>
+    <div class="sf-kpi aborted"><span class="l">{{t "已终止"}}</span><b>{{$p.Sum "workflow_abort" "workflow_autoreviewwrong"}}</b></div>
+  </div>
+  {{end}}
+
+  <section class="card fill">
+    <nav class="sf-tabs" aria-label="{{t "导出类型"}}">
+      {{if and $p.View.Single $p.View.Batch}}
+      <a class="{{if eq $p.Batch ""}}on{{end}}" href="{{$p.Href "batch" ""}}">{{t "全部导出"}}</a>
+      <a class="{{if eq $p.Batch "0"}}on{{end}}" href="{{$p.Href "batch" "0"}}">{{t "普通导出"}}</a>
+      <a class="{{if eq $p.Batch "1"}}on{{end}}" href="{{$p.Href "batch" "1"}}">{{t "批量导出"}}</a>
+      {{else if $p.View.Batch}}
+      <a class="on" href="{{$p.Href "batch" ""}}">{{t "批量导出"}}</a>
+      {{else}}
+      <a class="on" href="{{$p.Href "batch" ""}}">{{t "普通导出"}}</a>
+      {{end}}
+      <span class="spacer"></span>
+      <a class="sf-chip{{if eq $p.Tab "approve"}} on{{end}}" href="{{$p.Toggle "tab" "approve"}}">{{t "只看待我审批"}}{{if $p.Stats}} <span class="sf-n{{if $p.Stats.Approve}} warn{{end}}">{{$p.Stats.Approve}}</span>{{end}}</a>
+      <a class="sf-chip{{if eq $p.Tab "mine"}} on{{end}}" href="{{$p.Toggle "tab" "mine"}}">{{t "我提交的"}}{{if $p.Stats}} <span class="sf-n">{{$p.Stats.Mine}}</span>{{end}}</a>
+      <a class="sf-chip{{if eq $p.Tab "exec"}} on{{end}}" href="{{$p.Toggle "tab" "exec"}}">{{t "待我执行"}}{{if $p.Stats}} <span class="sf-n{{if $p.Stats.Exec}} warn{{end}}">{{$p.Stats.Exec}}</span>{{end}}</a>
+    </nav>
+
+    <form method="get" action="{{$p.Path}}" class="sf-filter" id="sf-filter">
+      {{if $p.Tab}}<input type="hidden" name="tab" value="{{$p.Tab}}">{{end}}
+      {{if $p.Batch}}<input type="hidden" name="batch" value="{{$p.Batch}}">{{end}}
+      {{if $p.Sort}}<input type="hidden" name="sort" value="{{$p.Sort}}"><input type="hidden" name="dir" value="{{$p.Dir}}">{{end}}
+      <select name="status" aria-label="{{t "状态"}}">
+        <option value="">{{t "全部状态"}}</option>
+        {{range $p.Statuses}}<option value="{{.Value}}" {{if eq .Value $p.Status}}selected{{end}}>{{tp .Label}}</option>{{end}}
+      </select>
+      <select name="inst" aria-label="{{t "实例"}}">
+        <option value="">{{t "全部实例"}}</option>
+        {{range $p.Insts}}<option value="{{.ID}}" {{if eq .ID $p.InstID}}selected{{end}}>{{.Name}}</option>{{end}}
+      </select>
+      <select name="rg" aria-label="{{t "资源组"}}">
+        <option value="">{{t "全部资源组"}}</option>
+        {{range $p.Groups}}<option value="{{.GroupID}}" {{if eq .GroupID $p.GroupID}}selected{{end}}>{{.GroupName}}</option>{{end}}
+      </select>
+      <input type="search" name="q" value="{{$p.Q}}" placeholder="{{t "搜索工单号 / 名称 / 提交人"}}" aria-label="{{t "搜索"}}" maxlength="100">
+      <button class="btn" type="submit">{{t "查询"}}</button>
+      {{if $p.Filtered}}<a class="btn ghost" href="{{$p.Href "status" "" "inst" "" "rg" "" "q" "" "sort" "" "dir" ""}}">{{t "清除筛选"}}</a>{{end}}
+    </form>
+
+    <div class="grid-wrap"><table class="list sf-table">
+      <thead><tr>
+        <th><a class="sf-sort" href="{{$p.SortHref "id"}}">{{t "编号"}} {{$p.SortMark "id"}}</a></th>
+        <th><a class="sf-sort" href="{{$p.SortHref "name"}}">{{t "工单名称"}} {{$p.SortMark "name"}}</a></th>
+        <th><a class="sf-sort" href="{{$p.SortHref "instance"}}">{{t "实例 / 库"}} {{$p.SortMark "instance"}}</a></th>
+        <th>{{t "格式"}}</th>
+        <th>{{t "行数"}}</th>
+        <th><a class="sf-sort" href="{{$p.SortHref "engineer"}}">{{t "提交人"}} {{$p.SortMark "engineer"}}</a></th>
+        <th><a class="sf-sort" href="{{$p.SortHref "group"}}">{{t "资源组"}} {{$p.SortMark "group"}}</a></th>
+        <th><a class="sf-sort" href="{{$p.SortHref "status"}}">{{t "状态"}} {{$p.SortMark "status"}}</a></th>
+        <th>{{t "当前审批级"}}</th>
+        <th><a class="sf-sort" href="{{$p.SortHref "create_time"}}">{{t "提交时间"}} {{$p.SortMark "create_time"}}</a></th>
+        <th>{{t "操作"}}</th>
+      </tr></thead>
+      <tbody>
+        {{range $p.Rows}}
+        <tr>
+          <td><a href="/sqlworkflow/{{.ID}}">#{{.ID}}</a></td>
+          <td class="sf-name"><a href="/sqlworkflow/{{.ID}}">{{.Name}}</a>
+            <div class="sf-tags">
+              {{if .BatchCount}}<span class="badge">{{t "批量 {n}" "n" .BatchCount}}</span>{{end}}
+              {{if .ScheduleAt}}<span class="badge sf-sched" title="{{if eq .Status "workflow_manreviewing"}}{{t "计划定时导出"}}{{else}}{{t "定时导出"}}{{end}}">⏱ {{.ScheduleAt.Format "01-02 15:04"}}</span>{{end}}
+            </div></td>
+          <td>{{tp .InstanceName}}<div class="muted mono">{{.DBName}}</div></td>
+          <td><span class="badge">{{.ExportFormat}}</span></td>
+          <td class="num">{{if .ExportRows}}{{if .ExportRowsEstimate}}<span class="muted" title="{{t "预计行数"}}">≈</span>{{end}}{{.ExportRows}}{{else}}<span class="muted">—</span>{{end}}</td>
+          <td>{{.Engineer}}</td>
+          <td class="nowrap">{{.GroupName}}</td>
+          <td><span class="st {{sqlStatusClass .Status}}">{{tp .StatusLabel}}</span></td>
+          <td class="nowrap">{{if .WaitingForYour}}<b class="sf-me">{{tp .Level}}</b><div class="muted">{{t "轮到你审批"}}</div>{{else}}<span class="muted">{{tp .Level}}</span>{{end}}</td>
+          <td class="nowrap">{{.CreateTime.Format "2006-01-02 15:04"}}</td>
+          <td class="row-actions"><a href="/sqlworkflow/{{.ID}}">{{t "详情"}}</a>{{if .WaitingForYour}} <a href="/sqlworkflow/{{.ID}}"><b>{{t "审批|act"}}</b></a>{{end}}{{if .CanBeExecuted}} <a href="/sqlworkflow/{{.ID}}"><b>{{t "导出"}}</b></a>{{end}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="11" class="empty">{{t "没有符合条件的导出工单。"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table></div>
+    <div class="pager">
+      <span>{{t "共 {total} 条，第 {page} / {pages} 页" "total" $p.Total "page" $p.Page "pages" $p.Pages}}</span>
+      <span class="spacer"></span>
+      {{if gt $p.Page 1}}<a class="btn" href="{{$p.Href "page" (printf "%d" $p.PrevPage)}}">{{t "上一页"}}</a>{{end}}
+      {{if lt $p.Page $p.Pages}}<a class="btn" href="{{$p.Href "page" (printf "%d" $p.NextPage)}}">{{t "下一页"}}</a>{{end}}
+    </div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sqlflow/list.js"></script>{{end}}

@@ -1,0 +1,188 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/giconfig.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="gi">
+  <div class="page-head">
+    <h1>{{t "审核引擎"}}</h1>
+    <span id="gi-status" class="st aborted">{{t "检测中…"}}</span>
+    <span id="gi-statusline" class="muted small"></span>
+  </div>
+  <div id="gi-msg" aria-live="polite"></div>
+  <div id="gi-banner"></div>
+
+  <div class="tabbar" role="tablist">
+    <button class="tab on" type="button" role="tab" data-tab="conn">{{t "连接信息"}}</button>
+    <button class="tab" type="button" role="tab" data-tab="file">{{t "配置文件"}}</button>
+    <button class="tab" type="button" role="tab" data-tab="hist">{{t "历史版本"}}</button>
+    <button class="tab" type="button" role="tab" data-tab="deploy">{{t "部署与重启"}}</button>
+  </div>
+
+  <!-- 连接信息 -->
+  <div data-pane="conn" class="gi-cols">
+    <section class="card">
+      <h2>{{t "审核 / 执行连接"}}</h2>
+      <div class="form-grid one">
+        <label>HOST<input type="text" class="mono" id="gi-c-host" autocomplete="off"></label>
+        <label>PORT<input type="text" class="mono" id="gi-c-port" autocomplete="off" inputmode="numeric"></label>
+        <label>USER<input type="text" class="mono" id="gi-c-user" autocomplete="off"></label>
+        <label>PASSWORD<input type="password" id="gi-c-pass" autocomplete="new-password"></label>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="gi-c-test">{{t "测试连接"}}</button>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="gi-c-save">{{t "保存（即时生效）"}}</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{t "备份库"}}</h2>
+      <div class="form-grid one">
+        <label>BACKUP HOST<input type="text" class="mono" id="gi-b-host" autocomplete="off"></label>
+        <label>BACKUP PORT<input type="text" class="mono" id="gi-b-port" autocomplete="off" inputmode="numeric"></label>
+        <label>BACKUP USER<input type="text" class="mono" id="gi-b-user" autocomplete="off"></label>
+        <label>BACKUP PASSWORD<input type="password" id="gi-b-pass" autocomplete="new-password"></label>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="gi-b-test">{{t "测试备份库"}}</button>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="gi-b-save">{{t "保存（即时生效）"}}</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 配置文件 -->
+  <div data-pane="file" hidden>
+    <div class="toolbar">
+      <span class="mono small" id="gi-f-path">—</span>
+      <span class="badge" id="gi-f-eff"></span>
+      <span class="muted small" id="gi-f-meta"></span>
+      <span class="spacer"></span>
+      <label class="muted small">{{t "视图"}}
+        <select id="gi-f-view"><option value="both">{{t "结构化表单 + 源文件"}}</option><option value="src">{{t "只看源文件"}}</option></select>
+      </label>
+    </div>
+    <div class="gi-cols gi-file" id="gi-f-cols">
+      <section class="card" id="gi-form-card">
+        <h2>{{t "常用参数"}}</h2>
+        <div id="gi-form"></div>
+      </section>
+      <section class="card">
+        <h2>{{t "源文件 config.toml"}} <small class="muted" id="gi-f-from"></small></h2>
+        <textarea id="gi-src" class="gi-src mono" spellcheck="false" wrap="off" aria-label="{{t "config.toml 源文件"}}"></textarea>
+        <div id="gi-valid" class="gi-valid"></div>
+        <h3>{{t "变更对比"}} <small class="muted" id="gi-diff-title"></small></h3>
+        <pre class="sqlbox mono diff" id="gi-diff"></pre>
+        <div class="actions">
+          <button class="btn" type="button" id="gi-f-check">{{t "校验"}}</button>
+          <button class="btn" type="button" id="gi-f-restore">{{t "恢复为当前生效版本"}}</button>
+          <span class="spacer"></span>
+          <button class="btn" type="button" id="gi-f-save">{{t "仅保存（不重启，下次重启时生效）"}}</button>
+          <button class="btn primary" type="button" id="gi-f-saverestart">{{t "保存并重启 goInception"}}</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 历史版本 -->
+  <section class="card" data-pane="hist" hidden>
+    <table class="list">
+      <thead><tr><th>{{t "版本"}}</th><th>{{t "时间"}}</th><th>{{t "操作人"}}</th><th>{{t "变更摘要"}}</th><th>{{t "状态"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="gi-h-rows"><tr><td colspan="6" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+  </section>
+
+  <!-- 部署与重启 -->
+  <div data-pane="deploy" hidden class="gi-cols">
+    <section class="card">
+      <h2>{{t "配置文件与重启"}}</h2>
+      <div class="form-grid one">
+        <label>{{t "配置文件路径"}}<input type="text" class="mono" id="gi-d-path" autocomplete="off" placeholder="/etc/goinception/config.toml"><small class="muted" id="gi-d-pathhint"></small></label>
+        <div class="lbl">{{t "重启方式"}}
+          <div class="gi-fixed"><b>{{t "Docker（docker restart）"}}</b></div>
+        </div>
+        <label>{{t "容器名（必填）"}}<input type="text" class="mono" id="gi-d-container" autocomplete="off" maxlength="128" placeholder="goinception"></label>
+        <label class="check"><input type="checkbox" id="gi-d-sudo"> {{th "命令前加 <code>sudo -n</code>"}}</label>
+        <label>{{t "重启命令预览（只读）"}}<input type="text" class="mono" id="gi-d-preview" readonly placeholder="{{t "docker restart <容器名>"}}"></label>
+        <label>{{t "重启命令超时（秒）"}}<input type="text" class="mono" id="gi-d-rt" inputmode="numeric"></label>
+        <label>{{t "健康检查：重启后最长等待（秒）"}}<input type="text" class="mono" id="gi-d-ht" inputmode="numeric"></label>
+        <label>{{t "等待任务完成的最长时间（秒）"}}<input type="text" class="mono" id="gi-d-wt" inputmode="numeric"></label>
+        <label class="check"><input type="checkbox" id="gi-d-auto"> {{t "健康检查失败时自动恢复上一个生效版本并再次重启"}}</label>
+        <label class="check"><input type="checkbox" id="gi-d-wait"> {{t "有任务正在执行时，默认选“等待执行完再重启”"}}</label>
+      </div>
+      <div id="gi-d-result"></div>
+      <div class="actions">
+        <button class="btn" type="button" id="gi-d-check">{{t "检查权限与连通性"}}</button>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="gi-d-save">{{t "保存"}}</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{t "进程状态"}}</h2>
+      <dl class="kv" id="gi-st"></dl>
+      <div class="actions">
+        <button class="btn" type="button" id="gi-st-refresh">{{t "刷新状态"}}</button>
+        <span class="spacer"></span>
+        <button class="btn ghost danger" type="button" id="gi-st-restart">{{t "仅重启"}}</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 弹窗 -->
+  <div class="modal-mask" id="m-gi-test" hidden><div class="modal" role="dialog" aria-modal="true" aria-label="{{t "测试连接"}}">
+    <h2 id="m-gi-test-title">{{t "测试连接"}}</h2>
+    <div id="m-gi-test-body"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" data-close>{{t "关闭"}}</button></div>
+  </div></div>
+
+  <div class="modal-mask" id="m-gi-save" hidden><div class="modal" role="dialog" aria-modal="true" aria-label="{{t "仅保存配置文件"}}">
+    <h2>{{t "仅保存配置文件"}}</h2>
+    <p>{{t "将写入"}} <code id="m-gi-save-path"></code>{{th "，<b>不重启</b>；goInception 重启后才使用新配置。"}}</p>
+    <label class="gi-note">{{t "变更说明（可选）"}}<input type="text" id="m-gi-save-note" maxlength="120" autocomplete="off"></label>
+    <div id="m-gi-save-err"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="m-gi-save-ok">{{t "保存"}}</button></div>
+  </div></div>
+
+  <div class="modal-mask" id="m-gi-restart" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="{{t "重启 goInception"}}">
+    <h2 class="crit" id="m-gi-restart-title">{{t "保存并重启 goInception"}}</h2>
+    <ol class="plain" id="m-gi-restart-steps"></ol>
+    <div id="m-gi-restart-tasks" hidden>
+      <div class="alert warn" id="m-gi-restart-taskmsg"></div>
+      <div class="form-grid one">
+        <label class="check"><input type="radio" name="gi-when" value="wait" checked> {{t "等待执行中的任务完成后再重启"}}</label>
+        <label class="check"><input type="radio" name="gi-when" value="force"> {{t "强制立即重启（会中断正在执行的任务）"}}</label>
+      </div>
+    </div>
+    <label class="gi-note" id="m-gi-restart-notebox">{{t "变更说明（可选）"}}<input type="text" id="m-gi-restart-note" maxlength="120" autocomplete="off"></label>
+    <div id="m-gi-restart-err"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn danger" type="button" id="m-gi-restart-ok">{{t "确认并重启"}}</button></div>
+  </div></div>
+
+  <div class="modal-mask" id="m-gi-warn" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="{{t "请确认"}}">
+    <h2 id="m-gi-warn-title">{{t "请确认"}}</h2>
+    <p id="m-gi-warn-text"></p>
+    <ul class="plain" id="m-gi-warn-list"></ul>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn danger" type="button" id="m-gi-warn-ok">{{t "仍然继续"}}</button></div>
+  </div></div>
+
+  <div class="modal-mask" id="m-gi-diff" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-label="{{t "版本对比"}}">
+    <h2>{{t "版本对比"}} <small class="muted" id="m-gi-diff-title"></small></h2>
+    <pre class="sqlbox mono diff" id="m-gi-diff-body"></pre>
+    <p class="muted small" id="m-gi-diff-result"></p>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" data-close>{{t "关闭"}}</button></div>
+  </div></div>
+
+  <div class="modal-mask" id="m-gi-progress" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="{{t "重启进度"}}">
+    <h2 id="m-gi-progress-title">{{t "正在重启 goInception"}}</h2>
+    <ol class="gi-steps" id="m-gi-progress-steps"></ol>
+    <div id="m-gi-progress-result"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" id="m-gi-progress-close" data-close disabled>{{t "关闭"}}</button></div>
+  </div></div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/giconfig/giconfig.js"></script>{{end}}

@@ -1,0 +1,62 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: duty.css
+ * @time: 2026/10/28
+ */
+/* 值班表管理页（平台设置 › 值班表）独有的样式；公共组件见 admin.css / app.css，一天的时间条（.dv-*）在 shell.css（顶栏浮层共用）。 */
+#duty [hidden] { display: none !important; }
+#duty .card h2 .small { margin: 0; font-weight: 400; }
+
+/* 当前值班 */
+.duty-cur { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.duty-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--dt-ok); }
+.duty-dot.none { background: var(--dt-dim); }
+.duty-who { font-size: 20px; font-weight: 600; line-height: 28px; }
+.duty-who.none { font-size: 15px; font-weight: 500; color: var(--dt-muted); }
+.duty-meta { color: var(--dt-muted); font-variant-numeric: tabular-nums; }
+.duty-notes { margin-top: 8px; }
+.duty-notes .badge { margin-top: 8px; }
+
+/* 排班预览 */
+.duty-days { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.duty-days .btn { height: 28px; padding: 0 12px; }
+.duty-bar-wrap { max-width: 960px; }
+.duty-bar-wrap .dv-bar { height: 32px; }
+.duty-bar-wrap .dv-seg { font-size: 13px; line-height: 30px; }
+.duty-day-list { max-width: 960px; margin: 14px 0 0; padding: 0; list-style: none; }
+.duty-day-list li { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--dt-line); }
+.duty-t { flex: none; width: 108px; font-variant-numeric: tabular-nums; }
+.duty-p { min-width: 6em; font-weight: 500; }
+.duty-day-list li.gap .duty-p { color: var(--dt-dim); font-weight: 400; }
+.duty-sw { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--dt-line-hi); }
+.duty-sw.p0 { background: var(--dt-cyan); }
+.duty-sw.p1 { background: var(--dt-ok); }
+.duty-sw.p2 { background: var(--dt-amber); }
+.duty-sw.p3 { background: var(--dt-muted); }
+.duty-sw.gap { border: 1px dashed var(--dt-line-hi); background: transparent; }
+.duty-cur-tag { padding: 0 6px; border: 1px solid var(--dt-ok-line); border-radius: 8px; background: var(--dt-ok-soft); color: var(--dt-ok); font-size: 11px; font-style: normal; line-height: 16px; }
+
+/* 班次 / 调班列表：整页滚动，不在卡片里再套一层纵向滚动条；列间距收紧一点，常见宽度下不出现横向滚动条 */
+#duty .grid-wrap { max-height: none; }
+#duty table.list th, #duty table.list td { padding-left: 12px; padding-right: 12px; }
+#duty table.list tr.off td { color: var(--dt-dim); }
+#duty table.list td.duty-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#duty table.list td.duty-ops { white-space: nowrap; }
+
+/* 班次弹窗 */
+.duty-wd { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.form-grid label.duty-wd-item { display: inline-flex; align-items: center; gap: 4px; margin: 0; color: var(--dt-fg); }
+.form-grid label.duty-wd-item input { display: inline-block; width: auto; margin: 0; }
+.duty-wd-quick { display: flex; gap: 6px; margin-top: 8px; }
+.duty-wd-quick .btn { height: 24px; padding: 0 10px; font-size: 12px; }
+.duty-span { min-height: 18px; color: var(--dt-muted); font-size: 13px; }
+
+@media (max-width: 800px) {
+  .duty-t { width: 92px; }
+  .duty-day-list li { flex-wrap: wrap; gap: 6px 10px; }
+  /* 卡片标题右边的说明文字太长：窄屏时换到标题下面，不把标题挤成竖排 */
+  #duty .card h2 { flex-wrap: wrap; row-gap: 4px; }
+  #duty .card h2 .spacer { display: none; }
+  #duty .card h2 .small { flex: 1 1 100%; }
+}

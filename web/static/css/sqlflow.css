@@ -1,0 +1,217 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: sqlflow.css
+ * @time: 2026/10/28
+ */
+/* SQL 上线 / 数据导出：列表、详情、提交页的增量样式（只用 --dt-* 变量，三套皮肤都适用） */
+
+/* 状态卡片 */
+.sf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; margin: 0 0 14px; }
+.sf-kpi { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-left-width: 3px; border-radius: 6px; color: var(--dt-fg); text-decoration: none; }
+a.sf-kpi:hover { border-color: var(--dt-cyan); }
+.sf-kpi .l { color: var(--dt-muted); font-size: 12px; }
+.sf-kpi b { font-size: 21px; line-height: 1.2; }
+.sf-kpi.on { border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); }
+.sf-kpi.waiting { border-left-color: var(--dt-amber); }
+.sf-kpi.passed { border-left-color: var(--dt-ok); }
+.sf-kpi.running { border-left-color: var(--dt-cyan); }
+.sf-kpi.rejected { border-left-color: var(--dt-crit); }
+.sf-kpi.aborted { border-left-color: var(--dt-line-hi); }
+
+/* 页签、筛选 */
+.sf-tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; border-bottom: 1px solid var(--dt-line); margin: -4px 0 10px; }
+.sf-tabs > a { padding: 6px 12px; color: var(--dt-muted); text-decoration: none; border: 1px solid transparent; border-bottom: 0; border-radius: 4px 4px 0 0; }
+.sf-tabs > a.on { color: var(--dt-fg); background: var(--dt-input); border-color: var(--dt-line); margin-bottom: -1px; font-weight: 600; }
+.sf-tabs > a:hover { color: var(--dt-fg); }
+.sf-tabs > a.sf-chip { margin-bottom: 4px; padding: 2px 10px; border: 1px solid var(--dt-line-hi); border-radius: 12px; font-size: 12.5px; }
+.sf-tabs > a.sf-chip.on { background: var(--dt-cyan-soft); border-color: var(--dt-cyan-line); color: var(--dt-cyan-text); margin-bottom: 4px; }
+.sf-n { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 9px; background: var(--dt-raise); color: var(--dt-muted); font-size: 12px; text-align: center; font-weight: 400; }
+.sf-n.warn { background: var(--dt-amber-soft); color: var(--dt-amber); border: 1px solid var(--dt-amber-line); }
+.sf-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
+.sf-filter input[type=search] { min-width: 260px; flex: 1 1 260px; max-width: 420px; }
+.sf-sort { color: inherit; text-decoration: none; white-space: nowrap; }
+.sf-sort:hover { color: var(--dt-cyan-text); }
+.sf-table td.nowrap, .sf-table th { white-space: nowrap; }
+.sf-name { max-width: 340px; }
+.sf-name a { word-break: break-all; }
+.sf-tags { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 2px; font-size: 12px; align-items: center; }
+.sf-tags .badge { font-size: 11px; padding: 0 6px; }
+.badge.sf-osc { border-color: var(--dt-info); color: var(--dt-info); background: var(--dt-info-soft); }
+.badge.sf-warn { border-color: var(--dt-amber-line); color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.sf-sched { border-color: var(--dt-cyan-line); color: var(--dt-cyan-text); background: var(--dt-cyan-soft); }
+.sf-me { color: var(--dt-amber); }
+
+/* 审批时间线 */
+.sf-steps { list-style: none; margin: 0 0 6px; padding: 0 0 0 4px; }
+.sf-step { position: relative; display: flex; gap: 10px; padding: 0 0 12px 0; }
+.sf-step::before { content: ""; position: absolute; left: 6px; top: 16px; bottom: -2px; width: 2px; background: var(--dt-line-hi); }
+.sf-step:last-child::before { display: none; }
+.sf-step .dot { flex: none; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; border: 2px solid var(--dt-line-hi); background: var(--dt-panel); z-index: 1; }
+.sf-step.done .dot { border-color: var(--dt-ok); background: var(--dt-ok); }
+.sf-step.current .dot { border-color: var(--dt-amber-line); background: var(--dt-amber-soft); box-shadow: 0 0 0 3px var(--dt-amber-soft); }
+.sf-step.rejected .dot { border-color: var(--dt-crit); background: var(--dt-crit); }
+.sf-step.aborted .dot { border-color: var(--dt-muted); background: var(--dt-muted); }
+.sf-step.auto .dot { border-color: var(--dt-info); background: var(--dt-info); }
+.sf-step.pending, .sf-step.skipped { color: var(--dt-dim); }
+.sf-step-body { min-width: 0; }
+.sf-step-st { margin-left: 6px; color: var(--dt-muted); }
+.sf-step.current .sf-step-st { color: var(--dt-amber); }
+.sf-step.rejected .sf-step-st { color: var(--dt-crit); }
+.sf-step-who time { margin-left: 6px; color: var(--dt-dim); font-family: var(--dt-f-mono); font-size: 12px; }
+.sf-step-remark { word-break: break-all; }
+.sf-appr { margin-top: 3px; font-size: 12.5px; color: var(--dt-muted); }
+.sf-appr.bad { color: var(--dt-crit); }
+.sf-tip { cursor: help; }
+.sf-tip:hover, .sf-tip:focus-visible { text-decoration: underline dotted; text-underline-offset: 3px; }
+.sf-noone { color: var(--dt-crit); font-size: 12.5px; }
+
+/* 进度条 */
+.sf-progress { position: relative; height: 10px; border-radius: 5px; background: var(--dt-raise); border: 1px solid var(--dt-line); overflow: hidden; }
+.sf-progress > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--dt-cyan); transition: width .4s; }
+.sf-progress.indet > i { width: 35%; animation: sf-slide 1.4s ease-in-out infinite; }
+.sf-progress.sm { display: inline-block; vertical-align: middle; width: 90px; height: 8px; margin-right: 6px; }
+@keyframes sf-slide { 0% { left: -35%; } 100% { left: 100%; } }
+.sf-pg-line { display: flex; gap: 12px; margin-top: 6px; font-size: 12.5px; }
+.sf-pg-line .spacer { flex: 1; }
+.sf-cancel-run, #stuck-box { margin-top: 12px; }
+/* 取消执行：填原因的输入框和“取消执行”按钮同一排（窄屏自动折行）；说明放在下面。label 只给读屏用，按钮上已经有同样的字 */
+.sf-cancel-run { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--dt-line); }
+.sf-reason-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sf-reason-row > label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.sf-reason-row > input { flex: 1 1 260px; min-width: 0; max-width: 520px; }
+.sf-cancel-run > .small { margin-top: 8px; }
+
+/* 提交页：审批流预览 */
+.sf-flowprev { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.sf-flowprev .lv { padding: 4px 10px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-sunken); font-size: 12.5px; }
+.sf-flowprev .lv.ok { border-color: var(--dt-ok); }
+.sf-flowprev .lv.bad { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); color: var(--dt-crit); }
+.sf-flowprev .arrow { color: var(--dt-dim); }
+.sf-flowprev .who { color: var(--dt-muted); }
+
+/* Redis 工单：命令模式提示、执行前原值 */
+.rds-note { margin: 0 0 10px; }
+.rds-before { margin-top: 6px; }
+.rds-before summary { cursor: pointer; color: var(--dt-muted); }
+.rds-before pre { margin: 4px 0 0; padding: 6px 8px; white-space: pre-wrap; word-break: break-all; background: var(--dt-raise); border-radius: 4px; max-height: 240px; overflow: auto; }
+
+/* 工单详情：同一行的两张卡片等高（app.css 的 .dgrid 已 stretch），SQL 内容框撑满卡片剩余高度 */
+#detail .dgrid > .card { display: flex; flex-direction: column; }
+#detail .dgrid > .card > pre.sqlbox { flex: 1 1 auto; }
+
+/* 结果表：所有列超出定义的列宽就折叠成一行，点开后在同一列宽里换行（detail.js 的 foldResultTable）。
+   表格是固定列宽，每列的宽度在这里定义（含左右内边距），SQL 列拿走其余的宽度（最少 --rt-sql-min）；表格比窗口宽时由 .grid-wrap 横向滚动。
+   没有脚本时（模板 head 里的 <noscript>）退回自动布局，内容照常完整显示。 */
+#result-table { table-layout: fixed; --rt-id: 72px; --rt-inst: 200px; --rt-stage: 200px; --rt-lv: 92px; --rt-msg: 260px; --rt-aff: 100px; --rt-time: 100px; --rt-osc: 280px; --rt-sql-min: 260px;
+  --rt-x-inst: 0px; --rt-x-time: 0px; --rt-x-osc: 0px;
+  min-width: calc(var(--rt-id) + var(--rt-stage) + var(--rt-lv) + var(--rt-msg) + var(--rt-aff) + var(--rt-sql-min) + var(--rt-x-inst) + var(--rt-x-time) + var(--rt-x-osc)); }
+#result-table.rt-inst { --rt-x-inst: var(--rt-inst); }   /* 批量工单才有“实例”列 */
+#result-table.rt-time { --rt-x-time: var(--rt-time); }   /* 执行 / 导出结果才有“耗时”列 */
+#result-table.rt-osc { --rt-x-osc: var(--rt-osc); }      /* 有在线改表的工单才有“在线改表”列（按钮，不折叠） */
+#result-table col.c-id { width: var(--rt-id); }
+#result-table col.c-inst { width: var(--rt-inst); }
+#result-table col.c-stage { width: var(--rt-stage); }
+#result-table col.c-lv { width: var(--rt-lv); }
+#result-table col.c-msg { width: var(--rt-msg); }
+#result-table col.c-aff { width: var(--rt-aff); }
+#result-table col.c-time { width: var(--rt-time); }
+#result-table col.c-osc { width: var(--rt-osc); }
+#result-table th, #result-table td { overflow: hidden; }
+#result-table th { white-space: normal; }
+#result-table td.wrap { min-width: 0; }                  /* app.css 给 td.wrap 的最小宽度在固定列宽下不需要 */
+#result-table .nw { white-space: nowrap; }
+.rf { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.rf-t { flex: none; width: 20px; padding: 0; border: 0; background: none; color: var(--dt-muted); cursor: pointer; font: inherit; line-height: 1.4; }
+.rf-t:hover, .rf-t:focus-visible { color: var(--dt-cyan-text); }
+.rf-one { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf.over .rf-one { cursor: pointer; }
+.rf.over .rf-one:hover { color: var(--dt-cyan-text); }
+.rf.pad { padding-left: 26px; }                          /* 这一列里有折叠的，放得下的格子也留出 ▸ 的位置，整列文字左对齐 */
+.rf-x { flex: none; }                                    /* 实例名后面的“已关闭”标记不参与折叠，折叠时也看得见 */
+.rf-full { flex: 1 1 auto; min-width: 0; padding: 3px 9px; background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 6px; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+#result-table td.num .rf { justify-content: flex-end; }
+#result-table td.num .rf-one { text-align: right; }
+.rf-ruler { position: absolute; left: -9999px; top: 0; visibility: hidden; white-space: pre; pointer-events: none; }   /* 量一行文字有多宽用的，看不见 */
+.rf-th { margin-left: 4px; width: 20px; padding: 0; border: 0; background: none; color: var(--dt-muted); cursor: pointer; font: inherit; }
+.rf-th:hover, .rf-th:focus-visible { color: var(--dt-cyan-text); }
+#result-fold-all { margin-left: 8px; font-weight: 400; }
+/* 汇总行的“信息”（整句汇总）不折叠，在列宽里换行；“保存文件”另起一行（见 detail.js） */
+#result-table tr.sum .msgcell { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* “MSSQL批量上线”开关：醒目的强调色，别和普通选项混在一起 */
+.batch-on { align-self: start; padding: 6px 12px; border: 1px solid var(--dt-amber-line); border-radius: 6px; background: var(--dt-amber-soft); }
+.batch-title { color: var(--dt-amber); font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+.batch-q { display: block; width: 100%; margin: 6px 0; }
+
+/* 数据导出提交页：超级用户的“导出原值（不脱敏）”选项。放在一块卡片里，说明文字在标题下面；勾上后卡片变成危险色提醒，
+   理由框占满一行（textarea 不在 form-grid 的 label 通用规则里）并带字数。 */
+.sf-unmask { padding: 12px 14px; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-sunken); transition: border-color .2s var(--dt-ease), background-color .2s var(--dt-ease); }
+.sf-unmask:has(#wf-unmask:checked) { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.sf-unmask > label.check { margin-top: 0; } /* .form-grid label.check 默认有 22px 上边距（和同排输入框对齐用），这里不要 */
+.sf-unmask > label.check b { font-size: 14px; }
+.sf-unmask:has(#wf-unmask:checked) > label.check b { color: var(--dt-crit); }
+.sf-unmask-note { margin: 4px 0 0 22px; font-size: 12.5px; color: var(--dt-muted); }
+.sf-unmask-reason { margin-top: 12px; }
+.sf-unmask-reason[hidden] { display: none; }
+.sf-unmask-reason textarea { display: block; width: 100%; margin-top: 6px; resize: vertical; }
+.sf-unmask-count { display: block; margin-top: 4px; text-align: right; font-size: 12px; color: var(--dt-dim); font-variant-numeric: tabular-nums; }
+.sf-unmask-count.ok { color: var(--dt-ok); }
+/* 提交页的“批量导出”开关单独占一行，不需要 .form-grid label.check 那 22px 的上边距 */
+#exp-new #wf-batch-wrap { margin-top: 0; }
+
+/* 提交 SQL 工单页（#sql-new）的布局：
+   1. 审批流预览在页头里、紧跟标题（#flow-prev）；“没配置 / 流程为空 / 无人可审 / 读取失败”的提示条在页头下面整行（#flow-note）。
+   2. “批量提交”“执行前备份”“跳过语法检查”放进同一个框（.wf-opts），横着排在工单名称右边，项与项之间一条细线。
+      “批量提交”始终显示，不能用时（.off）置灰，原因在标签的 title 里（new.js 的 updateBatchWrap）。
+   第一行按表单实际宽度换布局（.form-grid 是 auto-fit，每列最窄 300px、间距 24px：624px 起 2 列，948px 起 3 列，1272px 起 4 列）：
+     ≥4 列：名称占前 2 列，选项组占后 2 列，正好对齐下面第 3、4 列；  3 列：名称占第 1 列，选项组占后 2 列；
+     ≤2 列：名称一行，选项组在它下面一行；  不足 624px（手机）：选项组里的各项改成上下排。 */
+#sql-new .form-grid { container-type: inline-size; }
+#sql-new .wf-name { grid-column: 1 / -1; }
+#sql-new .wf-opts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; min-height: var(--dt-h); padding: 4px 0; background: var(--dt-input); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r); transition: border-color .2s var(--dt-ease), background-color .2s var(--dt-ease); }
+#sql-new .wf-opts > label.check { margin: 0; padding: 0 16px; min-height: 22px; cursor: pointer; }   /* .form-grid label.check 的 22px 上边距是给“和同排输入框对齐”用的，放在选项组里不需要 */
+#sql-new .wf-opts > label.check:not([hidden]) ~ label.check:not([hidden]) { border-left: 1px solid var(--dt-line); }   /* 可见的各项之间一条细线（有的项会隐藏，所以不能用相邻选择器） */
+#sql-new .wf-opts > label.check input { width: 15px; height: 15px; cursor: pointer; }
+#sql-new .wf-opts > label.risk:has(input:checked) { color: var(--dt-amber); }   /* 跳过语法检查有风险：勾上后这一项变橙，整个框也变橙提醒 */
+#sql-new .wf-opts:has(label.risk input:checked) { background: var(--dt-amber-soft); border-color: var(--dt-amber-line); }
+#sql-new .wf-opts > label.batch .batch-title { color: var(--dt-amber); font-size: 14px; font-weight: 600; letter-spacing: 0; }
+#sql-new .wf-opts > label.batch.off { cursor: not-allowed; }
+#sql-new .wf-opts > label.batch.off .batch-title { color: var(--dt-dim); }
+#sql-new .wf-opts > label.batch.off input { pointer-events: none; opacity: .55; }   /* 鼠标事件落在整个标签上，标签上的 title 才一定会弹出来 */
+@media (min-width: 801px) {
+  @container (min-width: 948px) { #sql-new .wf-name { grid-column: span 1; } #sql-new .wf-opts { grid-column: span 2; align-self: end; } }
+  @container (min-width: 1272px) { #sql-new .wf-name { grid-column: span 2; } }
+}
+@container (max-width: 623px) {
+  #sql-new .wf-opts { flex-direction: column; align-items: stretch; padding: 0; }
+  #sql-new .wf-opts > label.check { padding: 6px 12px; }
+  #sql-new .wf-opts > label.check:not([hidden]) ~ label.check:not([hidden]) { border-left: 0; border-top: 1px solid var(--dt-line); }
+}
+/* 批量提交打开后的“选择要上线的实例”：标题、搜索框、全选 / 清空、已选数量排在同一行，搜索框在全选前；放不下时（手机）按这个顺序换行。
+   这几项都在 .lbl 里（app.css 里 #wf-batch-list .lbl 是 flex 换行布局），这里只调搜索框的宽度。数据导出提交页的这一块不变。 */
+#sql-new #wf-batch-list .bl-title { white-space: nowrap; }
+#sql-new #wf-batch-list .batch-q { flex: 1 1 180px; width: auto; min-width: 0; max-width: 320px; margin: 0; }
+/* 批量提交打开后版面不动：“目标实例”等字段留在原位。“选择要上线的实例”拆成两块（#wf-batch-list 本身不生成盒子，里面两块各自是网格项）：
+   · 表头（.lbl：标题、搜索框、全选 / 清空、已选数量）放进日期那一行右边的空位（4 列及以上时占 2 列，列数不够时占满一整行）；
+     4 列时它旁边是日期输入框，上面留出和字段标签一样的高度，让搜索框 / 按钮和日期输入框对齐；
+   · 实例列表（.check-list）单独占下面一整行，左右边缘和上面的字段对齐；每项至少 280px 宽，常见的长实例名不用折成两行。 */
+#sql-new #wf-batch-list:not([hidden]) { display: contents; }
+#sql-new #wf-batch-list > .lbl, #sql-new #wf-batch-list > .check-list { grid-column: 1 / -1; }
+#sql-new #wf-batch-list > .check-list { margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+@container (min-width: 1272px) { #sql-new #wf-batch-list > .lbl { grid-column: span 2; padding-top: 22px; } }
+/* 页头里的审批流：药丸形步骤条。只有最后一步“审核通过，可执行”是绿色（带 ✓），起点带一个蓝点，中间各级是中性色，某级无人可审是红色。
+   作用在提交 SQL 工单页（#sql-new）和数据导出提交页（#exp-new）的页头里，两页都紧跟标题；数据导出页标题和步骤条的右边是“导出工单列表”按钮。 */
+:is(#sql-new, #exp-new) .wf-flow { display: flex; justify-content: flex-start; min-width: 0; }
+:is(#sql-new, #exp-new) .wf-flow:empty { display: none; }
+:is(#sql-new, #exp-new) .wf-flow .sf-flowprev { margin-top: 0; gap: 6px; justify-content: flex-start; }
+:is(#sql-new, #exp-new) .wf-flow .lv { display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 13px; border-color: var(--dt-line-hi); background: var(--dt-raise); }
+:is(#sql-new, #exp-new) .wf-flow .lv.bad { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+:is(#sql-new, #exp-new) .wf-flow .lv.start::before { content: ""; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: var(--dt-cyan); }
+:is(#sql-new, #exp-new) .wf-flow .lv.end { border-color: var(--dt-ok-line); background: var(--dt-ok-soft); color: var(--dt-ok); }
+:is(#sql-new, #exp-new) .wf-flow .lv.end::before { content: "✓"; margin-right: 6px; font-weight: 700; }
+:is(#sql-new, #exp-new) .wf-flow .lv[title] { cursor: help; }
+:is(#sql-new, #exp-new) .wf-flow .lv[title]:hover { border-color: var(--dt-accent-hover); }
+:is(#sql-new, #exp-new) .wf-flow .lv.bad[title]:hover { border-color: var(--dt-crit); }
+:is(#sql-new, #exp-new) .wf-flow .arrow { font-size: 12px; }
+@media (max-width: 800px) { :is(#sql-new, #exp-new) .wf-flow { margin-left: 0; flex-basis: 100%; justify-content: flex-start; } :is(#sql-new, #exp-new) .wf-flow .sf-flowprev { justify-content: flex-start; } #exp-new .wf-flow { order: 1; } }

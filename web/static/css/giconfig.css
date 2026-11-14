@@ -1,0 +1,42 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: giconfig.css
+ * @time: 2026/10/28
+ */
+/* goInception 配置页（系统管理 › goInception 配置）独有的样式；公共组件见 admin.css。 */
+#gi [hidden] { display: none !important; }
+.gi-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.gi-cols.gi-file { grid-template-columns: minmax(300px, 1fr) 1.3fr; }
+.gi-cols.gi-file.src-only { grid-template-columns: 1fr; }
+.gi-cols.gi-file.src-only #gi-form-card { display: none; }
+@media (max-width: 900px) { .gi-cols.gi-file { grid-template-columns: 1fr; } }
+
+textarea.gi-src { width: 100%; height: clamp(260px, 46vh, 640px); min-height: 160px; box-sizing: border-box; tab-size: 4; font-size: 12.5px; white-space: pre; overflow: auto; }
+.gi-valid { margin: 8px 0; }
+.gi-valid ul { margin: 6px 0 0; padding-left: 20px; }
+.gi-valid li { margin: 2px 0; }
+.gi-valid li.error { color: var(--dt-crit); }
+.gi-valid li.warn { color: var(--dt-amber); }
+.gi-valid .alert { margin: 0; }
+.gi-fixed { margin-top: 4px; padding: 6px 10px; border: 1px solid var(--dt-line-hi); border-radius: 4px; color: var(--dt-fg); font-size: 13px; }
+#gi [data-pane="deploy"] .form-grid.one label.check { margin-top: 0; }
+.gi-note { display: block; margin-top: 10px; font-size: 12.5px; color: var(--dt-muted); }
+.gi-note input { display: block; width: 100%; margin-top: 4px; box-sizing: border-box; }
+
+pre.diff { white-space: pre-wrap; min-height: 24px; }
+pre.diff .ctx { display: block; color: var(--dt-muted); }
+pre.diff .hunk { display: block; color: var(--dt-dim); text-align: center; }
+pre.diff .ln { display: inline-block; min-width: 3.2em; color: var(--dt-dim); user-select: none; }
+
+table.list tr.gi-err td { background: var(--dt-crit-soft); }
+.gi-steps { list-style: none; margin: 8px 0 12px; padding: 0; }
+.gi-steps li { padding: 5px 0 5px 26px; position: relative; border-bottom: 1px dashed var(--dt-line); }
+.gi-steps li::before { content: "○"; position: absolute; left: 4px; color: var(--dt-muted); }
+.gi-steps li.ok::before { content: "✔"; color: var(--dt-ok); }
+.gi-steps li.failed::before { content: "✘"; color: var(--dt-crit); }
+.gi-steps li.running::before { content: "…"; color: var(--dt-cyan-text); }
+.gi-steps li small { display: block; color: var(--dt-muted); white-space: pre-wrap; word-break: break-all; }
+.gi-banner-actions { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+.gi-modified { margin-left: 6px; }
+.form-grid label small { display: block; margin-top: 3px; }

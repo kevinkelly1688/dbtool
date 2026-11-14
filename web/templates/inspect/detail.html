@@ -1,0 +1,36 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: detail.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/inspect.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="insp-detail" data-ref="{{.Data.Ref}}">
+  <div class="page-head">
+    <a class="btn ghost" href="/inspection">&larr; {{t "返回列表"}}</a>
+    <h1>{{t "性能巡检报告"}} <span id="d-title">…</span></h1>
+    <span id="d-status"></span>
+    <span class="spacer"></span>
+    <button class="btn primary" type="button" id="d-rerun" hidden>{{t "重新巡检"}}</button>
+    <button class="btn danger" type="button" id="d-delete" hidden>{{t "删除报告"}}</button>
+  </div>
+  <p class="muted small" id="d-sub">{{t "加载中…"}}</p>
+  <div id="d-msg"></div>
+
+  <section class="card summary" id="d-summary" hidden>
+    <div class="bignums" id="d-nums"></div>
+    <dl class="kv" id="d-facts"></dl>
+  </section>
+  <section class="card" id="d-trend" hidden>
+    <h2>{{t "同实例趋势"}} <small class="muted" id="d-trend-sub"></small></h2>
+    <div id="d-trend-chart"></div>
+  </section>
+  <div id="d-blocks"></div>
+  <p class="muted small" id="d-note" hidden></p>
+  <div id="d-sections"></div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/inspect/detail.js"></script>{{end}}

@@ -1,0 +1,74 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sessions.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/instmgr.css">{{end}}
+
+{{define "content"}}
+<div class="with-side">{{template "instmgr_side" .Data}}
+<main class="page fill-list" id="ss">
+  <div class="page-head">
+    <h1>{{t "会话诊断"}}</h1><span class="spacer"></span>
+    <label class="muted small">{{t "实例"}} <select id="ss-inst" aria-label="{{t "实例"}}"></select></label>
+  </div>
+  <div id="ss-msg"></div>
+  <div class="tabbar" id="ss-tabs">
+    <button class="tab on" type="button" data-tab="proc" id="tab-proc">{{t "进程状态"}}</button>
+    <button class="tab" type="button" data-tab="space" id="tab-space">{{t "Top 表空间"}}</button>
+    <button class="tab" type="button" data-tab="trx" id="tab-trx">{{t "事务信息"}}</button>
+    <button class="tab" type="button" data-tab="lock" id="tab-lock">{{t "锁信息"}}</button>
+  </div>
+
+  <section class="card fill" data-pane="proc">
+    <div class="kpis im-kpis4" id="p-stats" aria-label="{{t "进程统计"}}"></div>
+    <form class="toolbar" id="p-filter">
+      <label class="muted small">{{t "command 类型"}} <select id="p-cmd"><option value="All">All</option><option value="Not Sleep">Not Sleep</option><option value="Query">Query</option><option value="Sleep">Sleep</option><option value="Connect">Connect</option></select></label>
+      <input type="text" id="p-user" placeholder="USER" aria-label="{{t "用户"}}" size="10">
+      <input type="text" id="p-db" placeholder="DATABASE" aria-label="{{t "库"}}" size="10">
+      <label class="muted small">{{t "时长 ≥"}} <input type="text" id="p-time" size="4" inputmode="numeric" placeholder="{{t "秒"}}"> s</label>
+      <input type="search" id="p-q" placeholder="{{t "搜索 USER / HOST / INFO"}}" aria-label="{{t "关键字"}}">
+      <button class="btn" type="submit">{{t "查询"}}</button>
+      <span class="spacer"></span>
+      <span class="muted small" id="p-count">{{t "已选 {n} 个会话" "n" 0}}</span>
+      <button class="btn danger" type="button" id="p-kill" hidden disabled>{{t "终止会话"}}</button>
+    </form>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th><input type="checkbox" id="p-all" aria-label="{{t "全选"}}"></th><th>THREAD ID</th><th>USER</th><th>HOST</th><th>DATABASE</th><th>TIME(s)</th><th>COMMAND</th><th>STATE</th><th>INFO</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="p-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card fill" data-pane="space" hidden>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "数据库"}}</th><th>{{t "表名"}}</th><th>{{t "存储引擎"}}</th><th>{{t "总空间(MB)"}}</th><th>{{t "行数"}}</th><th>{{t "数据(MB)"}}</th><th>{{t "索引(MB)"}}</th><th>{{t "碎片(MB)"}}</th><th>{{t "碎片率(%)"}}</th></tr></thead>
+      <tbody id="s-rows"><tr><td colspan="9" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pager" id="s-pager"></div>
+  </section>
+
+  <section class="card fill" data-pane="trx" hidden>
+    <form class="toolbar" id="t-filter">
+      <label class="muted small">{{t "已持续 ≥"}} <select id="t-min"><option value="0">{{t "全部"}}</option><option value="3">{{t "3 秒"}}</option><option value="10">{{t "10 秒"}}</option><option value="60">{{t "1 分钟"}}</option><option value="600">{{t "10 分钟"}}</option></select></label>
+      <label class="muted small"><input type="checkbox" id="t-idle"> {{t "只看空闲（Sleep）的事务"}}</label>
+      <button class="btn" type="submit">{{t "查询"}}</button>
+    </form>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>trx_started</th><th>{{t "已持续(s)"}}</th><th>trx_state</th><th>user</th><th>host</th><th>db</th><th>thread_id</th><th>rows_locked</th><th>rows_modified</th><th>info</th></tr></thead>
+      <tbody id="t-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card fill" data-pane="lock" hidden>
+    <div class="toolbar"><button class="btn" type="button" id="l-refresh">{{t "刷新"}}</button></div>
+    <div id="l-chains"></div>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "等待状态"}}</th><th>{{t "已等待(s)"}}</th><th>{{t "等待事务线程"}}</th><th>{{t "等待事务 SQL"}}</th><th>{{t "等待的对象"}}</th><th>{{t "运行事务线程"}}</th><th>{{t "运行事务 SQL"}}</th><th>{{t "运行时长"}}</th></tr></thead>
+      <tbody id="l-rows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+</main></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/instmgr/sessions.js"></script>{{end}}

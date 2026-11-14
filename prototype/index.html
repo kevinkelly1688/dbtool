@@ -1,0 +1,63 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: index.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DB Tool</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/archive.css">
+</head>
+<body>
+<div class="login" id="login" hidden></div>
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="logo"><i>DB</i><div>DB Tool<small>审核 · 查询 · 优化 · 运维</small></div></div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div><div class="crumb" id="crumb"></div><h1 id="pageTitle"></h1></div>
+      <span class="pill mock">原型 · 模拟数据</span>
+      <span class="sp"></span>
+      <button class="btn" id="helpBtn" title="查看本页使用手册">? 帮助</button>
+      <div class="theme-sw" data-theme-sw="1"></div>
+      <div class="umenu-wrap"><div class="user-chip" title="原型演示：切换登录身份以查看不同权限组的菜单与按钮权限"><span class="avatar" id="avatar" data-on="umenu" style="cursor:pointer" title="个人菜单"></span><select id="userSel" aria-label="切换用户"></select></div>
+        <div class="umenu" id="umenu"></div></div>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+</div>
+<div id="wm"></div>
+<aside class="drawer" id="drawer"><header><h3 id="drTitle"></h3><button class="btn sm" data-close="1">关闭 ✕</button></header><div class="dbody" id="drBody"></div></aside>
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/perm.js"></script>
+<script src="js/p_redis.js"></script>
+<script src="js/p_redisq.js"></script>
+<script src="js/p_engines.js"></script>
+<script src="js/p_home.js"></script>
+<script src="js/p_sql.js"></script>
+<script src="js/p_query.js"></script>
+<script src="js/p_priv.js"></script>
+<script src="js/p_opt.js"></script>
+<script src="js/p_perf.js"></script>
+<script src="js/p_inst.js"></script>
+<script src="js/p_binlog.js"></script>
+<script src="js/p_sys.js"></script>
+<script src="js/p_sys2.js"></script>
+<script src="js/p_redisrule.js"></script>
+<script src="js/p_archive.js"></script>
+<script src="js/p_help.js"></script>
+<script src="js/help_content.js"></script>
+<script src="js/login.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

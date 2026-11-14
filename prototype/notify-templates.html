@@ -1,0 +1,1025 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: notify-templates.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>消息模板管理 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*，与正式页面一致 ===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-amber-soft: rgba(255, 181, 71, .13);
+  --dt-ok: #37d99a; --dt-ok-soft: rgba(55, 217, 154, .12);
+  --dt-crit: #ff5577; --dt-crit-soft: rgba(255, 85, 119, .14);
+  --dt-input: #0a111c; --dt-sunken: rgba(0, 0, 0, .2); --dt-on-accent: #04121a;
+  --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-amber-soft: rgba(219, 140, 20, .12);
+  --dt-ok: #1a8f5c; --dt-ok-soft: rgba(26, 143, 92, .1);
+  --dt-crit: #cf2c46; --dt-crit-soft: rgba(207, 44, 70, .09);
+  --dt-input: #f8fafc; --dt-sunken: #f5f7fa; --dt-on-accent: #ffffff; --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3f7d3a; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #b2443a; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-on-accent: #fbf7ec; --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 13.5px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; }
+.muted { color: var(--dt-muted); } .dim { color: var(--dt-dim); } .small { font-size: 12px; }
+[hidden] { display: none !important; }
+
+.top { flex: none; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 20px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); }
+.top .sp { flex: 1; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 12px; gap: 10px; overflow: hidden; }
+.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 19px; }
+.head .sp { flex: 1; }
+.btn { height: 30px; padding: 0 12px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-panel); white-space: nowrap; }
+.btn:hover { border-color: var(--dt-cyan); }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+.btn.ghost { background: none; }
+.btn.sm { height: 24px; padding: 0 8px; font-size: 12px; }
+.btn.danger { color: var(--dt-crit); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.ipt, select.ipt, textarea.ipt { height: 30px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); min-width: 0; width: 100%; }
+textarea.ipt { height: auto; padding: 6px 8px; resize: vertical; line-height: 1.55; }
+.ipt:focus, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.tabs button { height: 34px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--dt-muted); }
+.tabs button[aria-selected="true"] { color: var(--dt-cyan); border-bottom-color: var(--dt-cyan); font-weight: 600; }
+.badge { display: inline-block; padding: 0 7px; font-size: 11.5px; line-height: 18px; border: 1px solid var(--dt-line-hi); border-radius: 9px; color: var(--dt-muted); white-space: nowrap; }
+.badge.ok { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.badge.warn { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.info { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.badge.crit { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.note { padding: 8px 12px; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-sunken); color: var(--dt-muted); }
+.note.warn { border-color: var(--dt-amber); background: var(--dt-amber-soft); color: var(--dt-amber); }
+.note.crit { border-color: var(--dt-crit); background: var(--dt-crit-soft); color: var(--dt-crit); }
+.note.ok { border-color: var(--dt-ok); background: var(--dt-ok-soft); color: var(--dt-ok); }
+.note b { color: var(--dt-fg); }
+
+.panel { min-height: 0; display: flex; flex-direction: column; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.panel > h2 { margin: 0; padding: 9px 12px; font-size: 13.5px; border-bottom: 1px solid var(--dt-line); display: flex; align-items: center; gap: 8px; flex: none; }
+.panel .body { flex: 1; min-height: 0; overflow: auto; }
+.step { width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--dt-cyan-soft); color: var(--dt-cyan); font-size: 12px; font-weight: 700; flex: none; }
+
+/* ===== 编辑页：事件 | 编辑 | 预览 ===== */
+.edit { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px minmax(420px, 1fr) minmax(400px, .95fr); gap: 12px; }
+@media (max-width: 1280px) { .edit { grid-template-columns: 220px minmax(0, 1fr); } .edit > .pv-col { grid-column: 1 / -1; min-height: 520px; } }
+.ev-search { padding: 8px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.ev-group { padding: 6px 12px 3px; font-size: 11.5px; color: var(--dt-dim); letter-spacing: .06em; position: sticky; top: 0; background: var(--dt-panel); }
+.ev { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 12px; border: 0; border-left: 3px solid transparent; background: none; text-align: left; }
+.ev:hover { background: var(--dt-cyan-soft); }
+.ev[aria-current="true"] { background: var(--dt-cyan-soft); border-left-color: var(--dt-cyan); }
+.ev .nm { flex: 1; min-width: 0; }
+.ev .nm small { display: block; color: var(--dt-dim); font-size: 11.5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--dt-dim); }
+.dot.info { background: var(--dt-cyan); } .dot.ok { background: var(--dt-ok); } .dot.warn { background: var(--dt-amber); } .dot.crit { background: var(--dt-crit); }
+
+.ed-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+.scope { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--dt-line); background: var(--dt-sunken); flex: none; }
+.scope label { color: var(--dt-muted); }
+.scope select { width: auto; min-width: 220px; }
+.lbl { display: block; font-size: 12px; color: var(--dt-muted); margin-bottom: 4px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row { display: flex; align-items: center; gap: 8px; }
+.tones { display: flex; gap: 6px; flex-wrap: wrap; }
+.tone-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: none; white-space: nowrap; }
+.tone-btn[aria-pressed="true"] { border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+
+.block { border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-input); }
+.block > header { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; border-bottom: 1px solid var(--dt-line); }
+.block > header b { font-size: 12.5px; }
+.block > header .sp { flex: 1; }
+.block .in { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.icobtn { width: 26px; height: 26px; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--dt-muted); }
+.icobtn:hover:not(:disabled) { border-color: var(--dt-line-hi); color: var(--dt-fg); }
+.icobtn:disabled { opacity: .3; cursor: default; }
+.frow { display: grid; grid-template-columns: 22px minmax(70px, .7fr) minmax(120px, 1.6fr) auto auto; gap: 6px; align-items: center; }
+.frow.hd { color: var(--dt-dim); font-size: 11.5px; }
+.frow .grip { color: var(--dt-dim); text-align: center; }
+.addbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.vars { border: 1px solid var(--dt-line); border-radius: 8px; padding: 8px 10px; background: var(--dt-sunken); }
+.vars h4 { margin: 0 0 6px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; }
+.vgroup { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; align-items: center; }
+.vgroup .gname { width: 38px; font-size: 11.5px; color: var(--dt-dim); }
+.vchip { height: 24px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 12px; background: var(--dt-panel); font-size: 12px; }
+.vchip:hover:not(.off) { border-color: var(--dt-cyan); color: var(--dt-cyan); }
+.vchip.off { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+.vchip small { color: var(--dt-dim); margin-left: 4px; }
+.hint { font-size: 12px; color: var(--dt-muted); }
+.warns { display: flex; flex-direction: column; gap: 6px; }
+
+/* ===== 预览 ===== */
+.pv-col .tabs { padding: 0 8px; }
+.pv-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.pv-tools select { width: auto; }
+.pv-stage { flex: 1; min-height: 0; overflow: auto; padding: 14px; background: var(--dt-sunken); }
+.raw { margin: 0; padding: 10px 12px; border: 1px solid var(--dt-line); border-radius: 6px; background: var(--dt-input); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.limit { height: 6px; border-radius: 3px; background: var(--dt-line); overflow: hidden; width: 140px; display: inline-block; vertical-align: middle; }
+.limit i { display: block; height: 100%; background: var(--dt-ok); }
+.limit.hot i { background: var(--dt-amber); } .limit.over i { background: var(--dt-crit); }
+
+/* 各渠道的仿真外观（固定配色，示意各渠道里的样子，不随皮肤变） */
+.sim { max-width: 560px; margin: 0 auto; border-radius: 8px; font-size: 13.5px; line-height: 1.5; }
+.sim .mn { color: #1d9bd1; background: rgba(29, 155, 209, .12); padding: 0 3px; border-radius: 3px; }
+.sim.slack { background: #1a1d21; color: #d1d2d3; padding: 12px 14px; font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.slack .who { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.slack .av { width: 34px; height: 34px; border-radius: 6px; background: #4a154b; color: #fff; display: grid; place-items: center; font-weight: 700; }
+.slack .who b { color: #fff; } .slack .app { font-size: 10px; background: #36393f; color: #b9bbbe; padding: 0 4px; border-radius: 3px; }
+.slack .tm { color: #818385; font-size: 12px; }
+.slack .ttl { font-size: 15px; font-weight: 700; color: #fff; margin: 4px 0 8px; }
+.slack .flds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-bottom: 8px; }
+.slack .flds .full { grid-column: 1 / -1; }
+.slack .flds b { display: block; color: #fff; }
+.slack pre { margin: 6px 0; padding: 10px 12px; background: #222529; border: 1px solid #383b40; border-radius: 6px; color: #d1d2d3; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; }
+.slack a, .slack .lnk { color: #1d9bd1; text-decoration: none; }
+.slack .btnx { display: inline-block; padding: 5px 12px; border: 1px solid #565856; border-radius: 4px; color: #d1d2d3; margin-top: 4px; }
+.slack hr { border: 0; border-top: 1px solid #383b40; margin: 8px 0; }
+.sim.ding { background: #fff; color: #1f2329; padding: 12px 14px; border: 1px solid #dee0e3; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+.ding .bot { display: flex; align-items: center; gap: 8px; color: #646a73; font-size: 12px; margin-bottom: 8px; }
+.ding .av { width: 28px; height: 28px; border-radius: 50%; background: #3296fa; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+.ding h4 { margin: 0 0 8px; font-size: 15px; }
+.ding .ln b { color: #1f2329; } .ding .ln { margin: 2px 0; }
+.ding pre { margin: 6px 0; padding: 8px 10px; background: #f5f6f7; border-radius: 4px; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; }
+.ding a, .ding .lnk { color: #3370ff; text-decoration: none; }
+.ding hr { border: 0; border-top: 1px solid #dee0e3; }
+.sim.fei { background: #fff; color: #1f2329; border: 1px solid #dee0e3; overflow: hidden; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+.fei .hdr { padding: 10px 14px; color: #fff; font-weight: 700; font-size: 15px; }
+.fei .hdr.info { background: #3370ff; } .fei .hdr.ok { background: #34c724; } .fei .hdr.warn { background: #ff8800; } .fei .hdr.crit { background: #f54a45; }
+.fei .cd { padding: 12px 14px; }
+.fei .flds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-bottom: 8px; }
+.fei .flds .full { grid-column: 1 / -1; }
+.fei .flds b { display: block; color: #646a73; font-weight: 500; font-size: 12px; }
+.fei pre { margin: 6px 0; padding: 8px 10px; background: #f5f6f7; border-radius: 4px; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; }
+.fei .btnx { display: inline-block; padding: 4px 14px; border: 1px solid #3370ff; color: #3370ff; border-radius: 4px; margin-top: 4px; }
+.fei hr { border: 0; border-top: 1px solid #dee0e3; }
+.sim.mail { background: #f5f6f8; color: #1f2933; padding: 12px; font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.mail .sbj { font-weight: 700; padding: 0 4px 8px; }
+.mail .meta { color: #7b8794; font-size: 12px; padding: 0 4px 8px; }
+.mail .card { background: #fff; border-radius: 6px; border: 1px solid #e4e7eb; overflow: hidden; }
+.mail .bar { height: 4px; } .mail .bar.info { background: #2f80ed; } .mail .bar.ok { background: #27ae60; } .mail .bar.warn { background: #f2994a; } .mail .bar.crit { background: #eb5757; }
+.mail .cd { padding: 14px 16px; }
+.mail h4 { margin: 0 0 10px; font-size: 16px; }
+.mail table { width: 100%; border-collapse: collapse; }
+.mail td { padding: 5px 0; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
+.mail td:first-child { color: #7b8794; width: 96px; }
+.mail pre { margin: 8px 0; padding: 8px 10px; background: #f5f7fa; border-radius: 4px; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; }
+.mail .btnx { display: inline-block; padding: 6px 14px; background: #2f80ed; color: #fff; border-radius: 4px; margin-top: 6px; }
+.sim.text { background: #fff; color: #1f2329; padding: 12px 14px; border: 1px solid #dee0e3; font-family: "JetBrains Mono", Consolas, "Microsoft YaHei", monospace; font-size: 12.5px; white-space: pre-wrap; word-break: break-all; }
+mark.bad { background: var(--dt-crit-soft); color: var(--dt-crit); border-radius: 2px; padding: 0 2px; }
+mark.empty { background: var(--dt-amber-soft); color: var(--dt-amber); border-radius: 2px; padding: 0 2px; }
+
+/* ===== 生效矩阵 / 变量页 ===== */
+.pane { flex: 1; min-height: 0; overflow: auto; }
+table.mx { width: 100%; border-collapse: collapse; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; overflow: hidden; }
+.mx th, .mx td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--dt-line); vertical-align: middle; }
+.mx th { background: var(--dt-sunken); color: var(--dt-muted); font-weight: 500; font-size: 12px; position: sticky; top: 0; }
+.mx tr.grp td { background: var(--dt-raise); color: var(--dt-muted); font-size: 12px; letter-spacing: .05em; }
+.mx td.cell { cursor: pointer; }
+.mx td.cell:hover { background: var(--dt-cyan-soft); }
+.vt { width: 100%; border-collapse: collapse; background: var(--dt-panel); border: 1px solid var(--dt-line); }
+.vt th, .vt td { padding: 6px 10px; border-bottom: 1px solid var(--dt-line); text-align: left; }
+.vt th { background: var(--dt-sunken); color: var(--dt-muted); font-weight: 500; font-size: 12px; }
+.vt td.c { text-align: center; color: var(--dt-ok); }
+.vt td.n { text-align: center; color: var(--dt-dim); }
+
+/* 对话框与提示 */
+dialog { border: 1px solid var(--dt-line-hi); border-radius: 10px; background: var(--dt-panel); color: var(--dt-fg); padding: 0; box-shadow: var(--dt-shadow); width: min(520px, 94vw); }
+dialog::backdrop { background: rgba(0, 0, 0, .5); }
+dialog .dh { padding: 12px 16px; border-bottom: 1px solid var(--dt-line); font-weight: 600; display: flex; align-items: center; }
+dialog .db { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow: auto; }
+dialog .df { padding: 10px 16px; border-top: 1px solid var(--dt-line); display: flex; justify-content: flex-end; gap: 8px; }
+.hist-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--dt-line); }
+.toast { position: fixed; right: 20px; bottom: 20px; padding: 10px 14px; border-radius: 6px; background: var(--dt-raise); border: 1px solid var(--dt-ok); color: var(--dt-fg); box-shadow: var(--dt-shadow); max-width: 420px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="crumb">系统管理 › 通知渠道 › <b>消息模板</b></span>
+  <span class="badge warn">原型 · 模拟数据，不会真的保存或发送</span>
+  <span class="sp"></span>
+  <span class="seg" id="skin" role="group" aria-label="皮肤">
+    <button type="button" data-skin="light" aria-pressed="false">明亮</button>
+    <button type="button" data-skin="dark" aria-pressed="true">深空</button>
+    <button type="button" data-skin="sepia" aria-pressed="false">护眼</button>
+  </span>
+</header>
+
+<main class="page">
+  <div class="head">
+    <h1>消息模板</h1>
+    <span class="sp"></span>
+    <span class="badge warn" id="dirty" hidden>未保存</span>
+    <button class="btn ghost" id="b-hist" type="button">历史版本</button>
+    <button class="btn ghost" id="b-reset" type="button">恢复系统默认</button>
+    <button class="btn" id="b-test" type="button">测试发送…</button>
+    <button class="btn primary" id="b-save" type="button">保存</button>
+  </div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button type="button" role="tab" aria-selected="true" data-pane="edit">编辑模板</button>
+    <button type="button" role="tab" aria-selected="false" data-pane="matrix">生效矩阵</button>
+    <button type="button" role="tab" aria-selected="false" data-pane="vars">变量一览</button>
+  </nav>
+
+  <!-- ============ 编辑 ============ -->
+  <section class="edit" id="pane-edit">
+    <div class="panel">
+      <h2><span class="step">1</span>选择消息</h2>
+      <div class="ev-search"><input class="ipt" id="ev-q" type="search" placeholder="搜索消息" aria-label="搜索消息"></div>
+      <div class="body" id="ev-list"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">2</span>编辑内容 <span class="sp" style="flex:1"></span><span id="ed-src"></span></h2>
+      <div class="scope">
+        <label for="scope">适用范围</label>
+        <select class="ipt" id="scope" aria-label="适用范围"></select>
+      </div>
+      <div class="body ed-body" id="ed"></div>
+    </div>
+
+    <div class="panel pv-col">
+      <h2><span class="step">3</span>预览 <span class="hint" id="pv-from"></span></h2>
+      <div class="tabs" id="ch-tabs" role="tablist"></div>
+      <div class="pv-tools">
+        <label class="hint" for="sample">示例数据</label>
+        <select class="ipt" id="sample" aria-label="示例数据"></select>
+        <span class="seg" id="viewmode" role="group" aria-label="查看方式">
+          <button type="button" data-v="render" aria-pressed="true">渲染效果</button>
+          <button type="button" data-v="raw" aria-pressed="false">发出的内容</button>
+        </span>
+      </div>
+      <div class="pv-stage" id="pv"></div>
+    </div>
+  </section>
+
+  <!-- ============ 生效矩阵 ============ -->
+  <section class="pane" id="pane-matrix" hidden>
+    <table class="mx" id="mx"></table>
+  </section>
+
+  <!-- ============ 变量与语法 ============ -->
+  <section class="pane" id="pane-vars" hidden>
+    <div class="scroll"><table class="vt" id="vt"></table></div>
+  </section>
+</main>
+
+<dialog id="dlg-test">
+  <div class="dh">测试发送</div>
+  <div class="db">
+    <div><span class="lbl">发到哪个渠道</span><select class="ipt" id="t-ch"></select></div>
+    <div class="note" id="t-note"></div>
+  </div>
+  <div class="df"><button class="btn ghost" id="t-cancel" type="button">取消</button><button class="btn primary" id="t-go" type="button">发送</button></div>
+</dialog>
+
+<dialog id="dlg-hist">
+  <div class="dh">历史版本 <span class="muted small" id="h-for" style="margin-left:8px"></span></div>
+  <div class="db" id="h-list"></div>
+  <div class="df"><button class="btn" id="h-close" type="button">关闭</button></div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+/* ===================== 数据：变量 ===================== */
+// k 变量名；n 中文名；g 分组；ex 示例值（SQL 类取自示例数据）
+const VARS = [
+  { k: 'ticket_id', n: '工单号', g: '工单', ex: '3058' },
+  { k: 'kind', n: '工单类型', g: '工单', ex: 'SQL上线申请' },
+  { k: 'title', n: '工单名称', g: '工单', ex: '更新支付渠道账户联调' },
+  { k: 'created_at', n: '发起时间', g: '工单', ex: '2026-10-13 14:44:35' },
+  { k: 'url', n: '工单地址', g: '工单', ex: 'https://saas-sql.dbatools.me/detail/3058/' },
+  { k: 'applicant', n: '提交人', g: '人员', ex: 'Alice' },
+  { k: 'applicant_user', n: '提交人账号', g: '人员', ex: 'alice' },
+  { k: 'group', n: '资源组', g: '人员', ex: '支付组' },
+  { k: 'instance', n: '实例名', g: '目标', ex: '(Sit) shop-2002 [SQL-Server]-(华东)' },
+  { k: 'db', n: '数据库', g: '目标', ex: 'shopdb' },
+  { k: 'syntax', n: '语句类型', g: '目标', ex: 'DML' },
+  { k: 'sql', n: 'SQL 内容', g: '内容', ex: '' },
+  { k: 'flow', n: '审批流程', g: '审批', ex: '组长(passed) -> DBA(current)' },
+  { k: 'current_step', n: '当前审批', g: '审批', ex: 'DBA' },
+  { k: 'reviewer', n: '审批人', g: '审批', ex: '李工' },
+  { k: 'remark', n: '备注 / 原因', g: '审批', ex: '缺少 WHERE 条件，请补充后重新提交' },
+  { k: 'run_at', n: '计划执行时间', g: '执行', ex: '2026-10-13 23:30' },
+  { k: 'executor', n: '执行方式', g: '执行', ex: 'goInception 自动执行' },
+  { k: 'finish_at', n: '结束时间', g: '执行', ex: '2026-10-13 15:02:11' },
+  { k: 'elapsed', n: '执行耗时', g: '执行', ex: '2.3 秒' },
+  { k: 'affected_rows', n: '影响行数', g: '执行', ex: '2' },
+  { k: 'error', n: '错误信息', g: '执行', ex: 'Lock wait timeout exceeded; try restarting transaction' },
+  { k: 'db_list', n: '数据库清单', g: '权限', ex: 'shop, report' },
+  { k: 'table_list', n: '表清单', g: '权限', ex: 'orders, users' },
+  { k: 'valid_date', n: '授权截止时间', g: '权限', ex: '2026-11-13 00:00:00' },
+  { k: 'limit_num', n: '结果集上限', g: '权限', ex: '1000' },
+  { k: 'change', n: '变更内容', g: '权限', ex: '到期时间 2026-10-20 → 2026-11-13' },
+  { k: 'operator', n: '操作人', g: '权限', ex: '王管理员' },
+  { k: 'task_name', n: '任务名称', g: '归档', ex: '订单表 90 天前数据归档' },
+  { k: 'rows_archived', n: '归档行数', g: '归档', ex: '1,284,300' },
+  { k: 'backup_to', n: '备份去向', g: '归档', ex: 'S3 · dba-archive/orders/2026-10' },
+  { k: 'sql_digest', n: 'SQL 指纹', g: '性能', ex: 'select * from orders where user_id = ?' },
+  { k: 'slow_count', n: '出现次数', g: '性能', ex: '412 次 / 24 小时' },
+  { k: 'deadline', n: 'SLA 截止', g: '性能', ex: '2026-10-13 18:00' },
+  { k: 'owner', n: '责任人', g: '性能', ex: '赵研发' },
+  { k: 'plan_name', n: '巡检计划', g: '巡检', ex: '生产库每日巡检' },
+  { k: 'issue_count', n: '问题数', g: '巡检', ex: '3（严重 1）' },
+  { k: 'issues', n: '问题摘要', g: '巡检', ex: '· prod-mysql-01：磁盘剩余 8%\n· prod-mysql-02：复制延迟 320 秒' },
+];
+const VMAP = Object.fromEntries(VARS.map(v => [v.k, v]));
+const SQLB = ['ticket_id', 'kind', 'title', 'created_at', 'url', 'applicant', 'applicant_user', 'group', 'instance', 'db', 'syntax', 'sql', 'flow'];
+const PRIVB = ['ticket_id', 'kind', 'title', 'created_at', 'url', 'applicant', 'applicant_user', 'group', 'instance', 'db_list', 'table_list', 'valid_date', 'limit_num', 'flow'];
+
+/* ===================== 数据：消息（事件） ===================== */
+// tone 决定卡片颜色；vars 是这条消息里可用的变量
+const EVENTS = [
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.submitted', n: '新工单提交', code: 'submitted', tone: 'warn', icon: '📋', vars: [...SQLB, 'current_step'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.pending', n: '流转到下一级审批', code: 'pending', tone: 'warn', icon: '🔔', vars: [...SQLB, 'current_step', 'reviewer'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.passed', n: '审批通过', code: 'passed', tone: 'ok', icon: '✅', vars: [...SQLB, 'reviewer'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.rejected', n: '被驳回', code: 'rejected', tone: 'crit', icon: '⛔', vars: [...SQLB, 'reviewer', 'remark'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.aborted', n: '提交人终止', code: 'aborted', tone: 'info', icon: '↩️', vars: [...SQLB, 'remark'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.scheduled', n: '已设置定时执行', code: 'scheduled', tone: 'info', icon: '⏰', vars: [...SQLB, 'run_at', 'executor'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.executing', n: '开始执行', code: 'executing', tone: 'info', icon: '▶️', vars: [...SQLB, 'executor'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.finished', n: '执行成功', code: 'finished', tone: 'ok', icon: '✅', vars: [...SQLB, 'executor', 'finish_at', 'elapsed', 'affected_rows'], fam: 'sql' },
+  { grp: 'SQL 上线 / 数据导出', id: 'sql.exception', n: '执行异常', code: 'exception', tone: 'crit', icon: '🚨', vars: [...SQLB, 'executor', 'finish_at', 'elapsed', 'error'], fam: 'sql' },
+
+  { grp: '查询权限', id: 'priv.submitted', n: '新的权限申请', code: 'submitted', tone: 'warn', icon: '🔑', vars: [...PRIVB, 'current_step'], fam: 'priv' },
+  { grp: '查询权限', id: 'priv.passed', n: '申请通过', code: 'passed', tone: 'ok', icon: '✅', vars: [...PRIVB, 'reviewer'], fam: 'priv' },
+  { grp: '查询权限', id: 'priv.rejected', n: '申请被驳回', code: 'rejected', tone: 'crit', icon: '⛔', vars: [...PRIVB, 'reviewer', 'remark'], fam: 'priv' },
+  { grp: '查询权限', id: 'priv.changed', n: '权限被修改 / 回收', code: 'passed', tone: 'info', icon: '🛠️', vars: ['applicant', 'applicant_user', 'instance', 'db_list', 'table_list', 'valid_date', 'limit_num', 'change', 'operator', 'url'], fam: 'priv' },
+
+  { grp: '数据归档', id: 'arc.submitted', n: '归档任务待审批', code: 'submitted', tone: 'warn', icon: '🗄️', vars: ['task_name', 'applicant', 'group', 'instance', 'db', 'flow', 'current_step', 'url'], fam: 'archive' },
+  { grp: '数据归档', id: 'arc.finished', n: '归档完成', code: 'finished', tone: 'ok', icon: '✅', vars: ['task_name', 'applicant', 'group', 'instance', 'db', 'rows_archived', 'backup_to', 'elapsed', 'url'], fam: 'archive' },
+  { grp: '数据归档', id: 'arc.exception', n: '归档失败', code: 'exception', tone: 'crit', icon: '🚨', vars: ['task_name', 'applicant', 'group', 'instance', 'db', 'error', 'url'], fam: 'archive' },
+
+  { grp: '性能工单 / 巡检', id: 'perf.new', n: '新发现慢 SQL', code: 'pending', tone: 'warn', icon: '🐢', vars: ['sql_digest', 'slow_count', 'instance', 'db', 'owner', 'group', 'url'], fam: 'perf' },
+  { grp: '性能工单 / 巡检', id: 'perf.overdue', n: 'SLA 超时升级', code: 'perf_overdue', tone: 'crit', icon: '⏳', vars: ['sql_digest', 'slow_count', 'instance', 'db', 'owner', 'group', 'deadline', 'url'], fam: 'perf' },
+  { grp: '性能工单 / 巡检', id: 'insp.alert', n: '巡检告警', code: 'inspect_alert', tone: 'crit', icon: '🩺', vars: ['plan_name', 'issue_count', 'issues', 'group', 'url'], fam: 'inspect' },
+];
+const EVMAP = Object.fromEntries(EVENTS.map(e => [e.id, e]));
+
+/* ===================== 数据：渠道 / 范围 ===================== */
+const CHANNELS = [
+  { id: 'c1', n: '订单中心 · DBA 值班群', t: 'slack', g: '订单中心' },
+  { id: 'c2', n: '支付组 · 审批群', t: 'dingtalk', g: '支付组' },
+  { id: 'c3', n: '全局 · 变更公告', t: 'feishu', g: '' },
+  { id: 'c4', n: '审计 · 邮件', t: 'email', g: '' },
+];
+const CH_TYPES = [
+  { t: 'slack', n: 'Slack' }, { t: 'dingtalk', n: '钉钉' }, { t: 'feishu', n: '飞书 / Lark' }, { t: 'email', n: '邮件' }, { t: 'text', n: '纯文本' },
+];
+const GROUPS = ['订单中心', '支付组'];
+const SCOPES = [
+  { id: 'global', n: '全局（所有渠道）' },
+  ...GROUPS.map(g => ({ id: 'g:' + g, n: '资源组：' + g })),
+  ...CHANNELS.map(c => ({ id: 'c:' + c.id, n: '渠道：' + c.n })),
+];
+
+/* ===================== 数据：示例 ===================== */
+const SAMPLES = {
+  sql: { n: 'SQL 上线 · 更新账户（含密钥字段）', d: {
+    ticket_id: '3058', kind: 'SQL上线申请', title: '更新支付渠道账户联调', created_at: '2026-10-13 14:44:35', url: 'https://saas-sql.dbatools.me/detail/3058/',
+    applicant: 'Alice', applicant_user: 'alice', group: '支付组', instance: '(Sit) shop-2002 [SQL-Server]-(华东)', db: 'shopdb', syntax: 'DML',
+    sql: "UPDATE pay_channel\nSET ApiCode='demo-merchant-2' ,\n    PrivateKey='demo-private-key-2' ,\n    state=1\nWHERE Code ='PayChannelA' ;\nUPDATE settle_channel\nSET ApiCode='demo-merchant-2' ,\n    PrivateKey='demo-private-key-2' ,\n    state=1\nWHERE Code ='PayChannelA' ;" } },
+  ddl: { n: 'SQL 上线 · DDL 加索引', d: {
+    ticket_id: '3071', kind: 'SQL上线申请', title: '订单表加联合索引 idx_user_created', created_at: '2026-10-13 16:20:08', url: 'https://saas-sql.dbatools.me/detail/3071/',
+    applicant: '赵研发', applicant_user: 'zhao_rd', group: '订单中心', instance: 'prod-mysql-01 [MySQL]', db: 'shop', syntax: 'DDL',
+    sql: 'ALTER TABLE `orders` ADD INDEX `idx_user_created` (`user_id`, `created_at`), ALGORITHM=INPLACE, LOCK=NONE;' } },
+  batch: { n: '数据导出 · 批量 4 个实例', d: {
+    ticket_id: '3029', kind: '数据导出申请', title: '各站点菜单配置导出', created_at: '2026-10-12 21:05:39', url: 'https://saas-sql.dbatools.me/detail/3029/',
+    applicant: 'Alice', applicant_user: 'alice', group: '支付组', instance: '(Sit) shop-2001 [SQL-Server]-(华东)...等 4 个实例（批量上线）', db: 'shopdb', syntax: 'SELECT',
+    sql: 'select * from shop_menus' } },
+};
+// 非 SQL 类消息用各自的示例；SQL 类共用上面三套 + 事件相关字段
+const EXTRA = {
+  current_step: 'DBA', reviewer: '李工', flow: '组长(passed) -> DBA(current)', remark: '缺少 WHERE 条件，请补充后重新提交', run_at: '2026-10-13 23:30',
+  executor: 'goInception 自动执行', finish_at: '2026-10-13 15:02:11', elapsed: '2.3 秒', affected_rows: '2', error: 'Lock wait timeout exceeded; try restarting transaction',
+};
+
+/* ===================== 状态 ===================== */
+const S = {
+  ev: 'sql.submitted', scope: 'global', ch: 'slack', sample: 'sql', view: 'render', pane: 'edit', dirty: false,
+  tpl: {}, // key = `${ev}::${scope}` -> 模板；没有则沿用上层
+  hist: {}, // key -> [{ts, user, note, snap}]
+  focusEl: null,
+};
+
+/* ----- 系统默认模板：与现在代码里写死的文案一致（一行一个“名称：值”）----- */
+function sysDefault(ev) {
+  const f = (l, v) => ({ l, v, short: false });
+  const T = (title, rows, extra = []) => ({ custom: false, enabled: true, title, tone: ev.tone, icon: '', blocks: [{ t: 'fields', rows }, ...extra] });
+  const sqlPrev = { t: 'code', l: '工单详情预览', v: '{{sql}}', mode: 'head', n: 500 };
+  switch (ev.id) {
+    case 'sql.submitted': return T('[{{kind}}]新的工单申请#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('审批流程', '{{flow}}'), f('当前审批', '{{current_step}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}')], [sqlPrev]);
+    case 'sql.pending': return T('[{{kind}}]新的工单申请#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('审批流程', '{{flow}}'), f('当前审批', '{{current_step}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}')], [sqlPrev]);
+    case 'sql.passed': return T('[{{kind}}]工单审核通过#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('审批流程', '{{flow}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}')], [sqlPrev]);
+    case 'sql.rejected': return T('[{{kind}}]工单被驳回#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}'), f('驳回原因', '{{remark}}')], [{ t: 'text', v: '提醒：此工单被审核不通过，请按照驳回原因进行修改！' }]);
+    case 'sql.aborted': return T('[{{kind}}]提交人主动终止工单#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}'), f('终止原因', '{{remark}}')]);
+    case 'sql.scheduled': return T('[{{kind}}]工单已设置定时执行#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}'), f('计划执行时间', '{{run_at}}')], [sqlPrev]);
+    case 'sql.executing': return T('[{{kind}}]工单开始执行#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}'), f('执行方式', '{{executor}}')], [sqlPrev]);
+    case 'sql.finished': return T('[{{kind}}]工单已正常结束#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('审批流程', '{{flow}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}')], [sqlPrev]);
+    case 'sql.exception': return T('[{{kind}}]工单执行异常#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}')], [sqlPrev]);
+    case 'priv.submitted': return T('[查询权限申请]新的工单申请#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('组', '{{group}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db_list}}'), f('审批流程', '{{flow}}'), f('当前审批', '{{current_step}}'), f('工单名称', '{{title}}'), f('工单地址', '{{url}}'), f('表清单', '{{table_list}}'), f('授权截止时间', '{{valid_date}}'), f('结果集', '{{limit_num}}')]);
+    case 'priv.passed': return T('[查询权限申请]工单审核通过#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('发起人', '{{applicant}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db_list}}'), f('授权截止时间', '{{valid_date}}'), f('工单地址', '{{url}}')]);
+    case 'priv.rejected': return T('[查询权限申请]工单被驳回#{{ticket_id}}', [f('发起时间', '{{created_at}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db_list}}'), f('工单地址', '{{url}}'), f('驳回原因', '{{remark}}')], [{ t: 'text', v: '提醒：此工单被审核不通过，请按照驳回原因进行修改！' }]);
+    case 'priv.changed': return T('[查询权限]已变更：{{instance}}', [f('用户', '{{applicant_user}}'), f('目标实例', '{{instance}}'), f('对象', '{{db_list}} / {{table_list}}'), f('变更', '{{change}}'), f('操作人', '{{operator}}'), f('查询权限页', '{{url}}')]);
+    case 'arc.submitted': return T('[数据归档申请]{{task_name}}：待审批', [f('任务', '{{task_name}}'), f('发起人', '{{applicant}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('审批流程', '{{flow}}'), f('当前审批', '{{current_step}}'), f('任务地址', '{{url}}')]);
+    case 'arc.finished': return T('[数据归档]{{task_name}}：运行完成', [f('任务', '{{task_name}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('归档行数', '{{rows_archived}}'), f('备份去向', '{{backup_to}}'), f('耗时', '{{elapsed}}'), f('任务地址', '{{url}}')]);
+    case 'arc.exception': return T('[数据归档]{{task_name}}：运行失败', [f('任务', '{{task_name}}'), f('目标实例', '{{instance}}'), f('数据库', '{{db}}'), f('错误', '{{error}}'), f('任务地址', '{{url}}')]);
+    case 'perf.new': return T('【SQL性能工单】新发现慢SQL待受理', [f('实例', '{{instance}}'), f('库', '{{db}}'), f('出现次数', '{{slow_count}}'), f('责任人', '{{owner}}'), f('地址', '{{url}}')], [{ t: 'code', l: 'SQL 指纹', v: '{{sql_digest}}', mode: 'full', n: 500 }]);
+    case 'perf.overdue': return T('【SQL性能工单】SLA 超时升级', [f('实例', '{{instance}}'), f('库', '{{db}}'), f('责任人', '{{owner}}'), f('SLA 截止', '{{deadline}}'), f('地址', '{{url}}')], [{ t: 'code', l: 'SQL 指纹', v: '{{sql_digest}}', mode: 'full', n: 500 }]);
+    case 'insp.alert': return T('[dbtool] 定时巡检「{{plan_name}}」发现问题', [f('问题数', '{{issue_count}}'), f('报告', '{{url}}')], [{ t: 'text', v: '{{issues}}' }]);
+  }
+  return T('{{title}}', [f('工单名称', '{{title}}')]);
+}
+
+/* ----- 示范：已被管理员定制的两条（对应用户的需求：提交一个模板，执行成功另一个模板）----- */
+function seed() {
+  S.tpl['sql.submitted::global'] = {
+    custom: true, enabled: true, name: '待审批 · 卡片', title: '📋 有新工单需要处理', tone: 'warn', icon: '',
+    blocks: [
+      { t: 'fields', rows: [
+        { l: '工单号', v: '{{ticket_id}}', short: true }, { l: '时间', v: '{{created_at}}', short: true },
+        { l: '工单名', v: '{{title}}', short: true }, { l: '数据库', v: '{{db}}', short: true },
+        { l: '实例名', v: '{{instance}}', short: true }, { l: '提交人', v: '{{applicant}}', short: true }] },
+      { t: 'code', l: 'SQL 内容', v: '{{sql}}', mode: 'head', n: 800 },
+      { t: 'link', l: '详情登陆', v: '{{url}}', as: 'text' },
+    ] };
+  S.tpl['sql.finished::global'] = {
+    custom: true, enabled: true, name: '执行成功 · 简报', title: '✅ 工单 #{{ticket_id}} 执行成功', tone: 'ok', icon: '',
+    blocks: [
+      { t: 'fields', rows: [
+        { l: '工单名', v: '{{title}}', short: false }, { l: '实例', v: '{{instance}}', short: false },
+        { l: '数据库', v: '{{db}}', short: true }, { l: '提交人', v: '{{applicant}}', short: true },
+        { l: '耗时', v: '{{elapsed}}', short: true }, { l: '影响行数', v: '{{affected_rows}}', short: true }] },
+      { t: 'link', l: '查看详情', v: '{{url}}', as: 'button' },
+    ] };
+  // 一个渠道专属 + 一个资源组模板，让“生效矩阵”有内容可看
+  S.tpl['sql.finished::c:c2'] = {
+    custom: true, enabled: true, name: '钉钉 · 一句话', title: '工单 #{{ticket_id}} 执行成功（{{elapsed}}）', tone: 'ok', icon: '',
+    blocks: [{ t: 'text', v: '{{applicant}} 提交的「{{title}}」已在 {{instance}} / {{db}} 执行成功，影响 {{affected_rows}} 行。' }, { t: 'link', l: '详情', v: '{{url}}', as: 'text' }] };
+  S.tpl['sql.rejected::g:支付组'] = {
+    custom: true, enabled: true, name: '支付组 · 驳回', title: '⛔ 工单 #{{ticket_id}} 被驳回', tone: 'crit', icon: '',
+    blocks: [{ t: 'fields', rows: [{ l: '工单名', v: '{{title}}', short: false }, { l: '驳回原因', v: '{{remark}}', short: false }] }, { t: 'link', l: '修改后重新提交', v: '{{url}}', as: 'button' }] };
+  S.hist['sql.submitted::global'] = [
+    { ts: '2026-10-12 18:20', user: 'admin', note: '改成卡片：两列字段 + SQL 代码块', snap: null },
+    { ts: '2026-10-09 10:05', user: 'admin', note: '首次定制（从系统默认复制）', snap: null },
+  ];
+}
+
+/* ===================== 小工具 ===================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const key = (ev = S.ev, sc = S.scope) => ev + '::' + sc;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2600);
+}
+function setDirty(v) { S.dirty = v; $('#dirty').hidden = !v; }
+
+/* 找生效模板：专属 → 资源组 → 全局 → 系统默认。返回 {tpl, src, key} */
+function resolve(evId, scope) {
+  const order = [];
+  if (scope.startsWith('c:')) {
+    order.push(scope);
+    const ch = CHANNELS.find(c => 'c:' + c.id === scope);
+    if (ch && ch.g) order.push('g:' + ch.g);
+  } else if (scope.startsWith('g:')) order.push(scope);
+  order.push('global');
+  for (const sc of order) {
+    const t = S.tpl[key(evId, sc)];
+    if (t) return { tpl: t, src: sc, key: key(evId, sc) };
+  }
+  return { tpl: sysDefault(EVMAP[evId]), src: 'default', key: null };
+}
+const scopeName = id => id === 'default' ? '系统默认' : (SCOPES.find(s => s.id === id) || { n: id }).n;
+const scopeKind = id => id === 'default' ? '' : id === 'global' ? 'info' : id.startsWith('g:') ? 'warn' : 'ok';
+
+/* ===================== 渲染：模板 → 中间结构（IR）===================== */
+function dataFor(evId, sampleId) {
+  const ev = EVMAP[evId];
+  const base = {};
+  VARS.forEach(v => { base[v.k] = v.ex; });
+  Object.assign(base, EXTRA);
+  if (ev.fam === 'sql') Object.assign(base, SAMPLES[sampleId].d);
+  else if (ev.fam === 'priv') Object.assign(base, { ticket_id: '2217', kind: '查询权限申请', title: '申请查询 shop 库订单表', applicant: '赵研发', applicant_user: 'zhao_rd', group: '订单中心', instance: 'prod-mysql-01 [MySQL]', url: 'https://saas-sql.dbatools.me/queryapplydetail/2217/' });
+  else if (ev.fam === 'archive') Object.assign(base, { instance: 'prod-mysql-01 [MySQL]', db: 'shop', applicant: '赵研发', group: '订单中心', url: 'https://saas-sql.dbatools.me/archive/17' });
+  else if (ev.fam === 'perf') Object.assign(base, { instance: 'prod-mysql-02 [MySQL]', db: 'shop', group: '订单中心', url: 'https://saas-sql.dbatools.me/perf/88' });
+  else Object.assign(base, { group: '全部资源组', url: 'https://saas-sql.dbatools.me/inspect/reports/412' });
+  return base;
+}
+
+// 替换变量。ctx.warn 收集问题；ctx.mark=true 时把未知 / 取不到的变量标出来（预览用）
+function fill(str, data, ev, ctx, mark) {
+  let s = String(str ?? '');
+  s = s.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_, k, inner) => {
+    if (!VMAP[k]) ctx.unknown.add(k);
+    return ev.vars.includes(k) && data[k] ? inner : '';
+  });
+  return s.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => {
+    if (!VMAP[k]) { ctx.unknown.add(k); return mark ? '\u0001bad:' + k + '\u0002' : ''; }
+    if (!ev.vars.includes(k)) { ctx.missing.add(k); return mark ? '\u0001empty:' + VMAP[k].n + '\u0002' : ''; }
+    return String(data[k] ?? '');
+  });
+}
+// 把 fill 的标记转成 HTML（先整体转义，再还原标记）
+function markHTML(s) {
+  return esc(s).replace(/\u0001(bad|empty):([^\u0002]*)\u0002/g, (_, c, t) => `<mark class="${c}">${c === 'bad' ? '未知变量 ' : '无此变量 '}${t}</mark>`);
+}
+function sqlShow(sql, b) {
+  const n = Math.max(50, +b.n || 500);
+  let t = String(sql);
+  const total = [...t].length;
+  switch (b.mode) {
+    case 'none': return { text: '（SQL 已隐藏，请登录平台查看）', note: 'SQL 不进消息' };
+    case 'mask': t = t.replace(/'(?:[^'\\]|\\.|'')*'/g, "'***'"); break;
+    case 'full': break;
+    default: break;
+  }
+  const cut = [...t];
+  if (b.mode !== 'full' && cut.length > n) return { text: cut.slice(0, n).join('') + '\n…（已截断，共 ' + total + ' 字，完整内容见工单）', note: '已截断' };
+  if (b.mode === 'full' && cut.length > 3000) return { text: cut.slice(0, 3000).join('') + '\n…（超出渠道上限已截断，共 ' + total + ' 字）', note: '超出渠道上限已截断' };
+  return { text: t, note: b.mode === 'mask' ? '字符串常量已隐藏' : '' };
+}
+function toIR(tpl, evId, sampleId, markVars) {
+  const ev = EVMAP[evId];
+  const data = dataFor(evId, sampleId);
+  const ctx = { unknown: new Set(), missing: new Set() };
+  const F = s => fill(s, data, ev, ctx, markVars);
+  const ir = { title: F((tpl.icon ? tpl.icon + ' ' : '') + tpl.title), tone: tpl.tone, blocks: [], notes: [] };
+  (tpl.blocks || []).forEach(b => {
+    if (b.t === 'fields') ir.blocks.push({ t: 'fields', rows: b.rows.map(r => ({ l: F(r.l), v: F(r.v), short: !!r.short })) });
+    else if (b.t === 'text') ir.blocks.push({ t: 'text', v: F(b.v) });
+    else if (b.t === 'code') {
+      const raw = /^\s*\{\{\s*sql\s*\}\}\s*$/.test(b.v) ? data.sql : F(b.v);
+      const sh = sqlShow(raw, b);
+      if (/\{\{\s*sql\s*\}\}/.test(b.v) && !ev.vars.includes('sql')) ctx.missing.add('sql');
+      ir.blocks.push({ t: 'code', l: F(b.l), v: sh.text, note: sh.note, rawSecret: /(key|password|passwd|secret|token|pwd)/i.test(String(raw)) && b.mode === 'full' });
+    } else if (b.t === 'link') ir.blocks.push({ t: 'link', l: F(b.l), v: F(b.v), as: b.as });
+    else if (b.t === 'divider') ir.blocks.push({ t: 'divider' });
+  });
+  ir.ctx = ctx;
+  return ir;
+}
+
+/* ===================== 渠道渲染（外观）===================== */
+const H = markHTML;
+function renderSlack(ir) {
+  let h = '<div class="sim slack"><div class="who"><span class="av">DB</span><div><b>dbtool-bot</b> <span class="app">应用</span> <span class="tm">下午 2:44</span></div></div>';
+  h += '<div><span class="mn">@dba_user</span> ' + H('') + '</div>';
+  h += `<div class="ttl">${H(ir.title)}</div>`;
+  ir.blocks.forEach(b => {
+    if (b.t === 'fields') {
+      h += '<div class="flds">' + b.rows.map(r => `<div class="${r.short ? '' : 'full'}"><b>${H(r.l)}:</b>${H(r.v)}</div>`).join('') + '</div>';
+    } else if (b.t === 'text') h += `<div style="margin:6px 0;white-space:pre-wrap">${H(b.v)}</div>`;
+    else if (b.t === 'code') h += `<div><b style="color:#fff">${H(b.l)}:</b></div><pre class="mono">${H(b.v)}</pre>`;
+    else if (b.t === 'link') h += b.as === 'button' ? `<div><span class="btnx">${H(b.l)}</span></div>` : `<div>${H(b.l)} <span class="lnk">${H(b.v)}</span></div>`;
+    else h += '<hr>';
+  });
+  return h + '</div>';
+}
+function renderDing(ir) {
+  let h = '<div class="sim ding"><div class="bot"><span class="av">DB</span>dbtool 机器人</div>';
+  h += `<h4>${H(ir.title)}</h4>`;
+  ir.blocks.forEach(b => {
+    if (b.t === 'fields') h += b.rows.map(r => `<div class="ln"><b>${H(r.l)}</b>：${H(r.v)}</div>`).join('');
+    else if (b.t === 'text') h += `<div class="ln" style="white-space:pre-wrap">${H(b.v)}</div>`;
+    else if (b.t === 'code') h += `<div class="ln"><b>${H(b.l)}</b>：</div><pre class="mono">${H(b.v)}</pre>`;
+    else if (b.t === 'link') h += `<div class="ln"><span class="lnk">[${H(b.l)}](${H(b.v)})</span></div>`;
+    else h += '<hr>';
+  });
+  return h + '</div>';
+}
+function renderFeishu(ir) {
+  let h = `<div class="sim fei"><div class="hdr ${ir.tone}">${H(ir.title)}</div><div class="cd">`;
+  ir.blocks.forEach(b => {
+    if (b.t === 'fields') h += '<div class="flds">' + b.rows.map(r => `<div class="${r.short ? '' : 'full'}"><b>${H(r.l)}</b>${H(r.v)}</div>`).join('') + '</div>';
+    else if (b.t === 'text') h += `<div style="margin:6px 0;white-space:pre-wrap">${H(b.v)}</div>`;
+    else if (b.t === 'code') h += `<div><b style="color:#646a73;font-weight:500;font-size:12px">${H(b.l)}</b></div><pre class="mono">${H(b.v)}</pre>`;
+    else if (b.t === 'link') h += `<div><span class="btnx">${H(b.l)}</span></div>`;
+    else h += '<hr>';
+  });
+  return h + '</div></div>';
+}
+function renderMail(ir) {
+  let rows = '', rest = '';
+  ir.blocks.forEach(b => {
+    if (b.t === 'fields') rows += b.rows.map(r => `<tr><td>${H(r.l)}</td><td>${H(r.v)}</td></tr>`).join('');
+    else if (b.t === 'text') rest += `<p style="white-space:pre-wrap">${H(b.v)}</p>`;
+    else if (b.t === 'code') rest += `<div style="color:#7b8794;font-size:12px;margin-top:8px">${H(b.l)}</div><pre class="mono">${H(b.v)}</pre>`;
+    else if (b.t === 'link') rest += `<div><span class="btnx">${H(b.l)}</span></div>`;
+    else rest += '<hr style="border:0;border-top:1px solid #e4e7eb">';
+  });
+  return `<div class="sim mail"><div class="sbj">主题：[dbtool] ${H(ir.title.replace(/^[^\w一-龥\[【(（]+\s*/, ''))}</div><div class="meta">发件人：DB 工具 &lt;dbtool@example.com&gt; · 收件人：ops@example.com、提交人邮箱</div>` +
+    `<div class="card"><div class="bar ${ir.tone}"></div><div class="cd"><h4>${H(ir.title)}</h4>${rows ? `<table>${rows}</table>` : ''}${rest}</div></div></div>`;
+}
+function textOf(ir) {
+  const out = [ir.title.replace(/\u0001[^\u0002]*\u0002/g, '□'), ''];
+  ir.blocks.forEach(b => {
+    if (b.t === 'fields') b.rows.forEach(r => out.push(r.l + '：' + r.v));
+    else if (b.t === 'text') out.push(b.v);
+    else if (b.t === 'code') { out.push(b.l + '：'); out.push(b.v); }
+    else if (b.t === 'link') out.push(b.l + '：' + b.v);
+    else out.push('----------');
+  });
+  return out.join('\n');
+}
+function renderText(ir) { return `<div class="sim text">${markHTML(textOf(ir))}</div>`; }
+
+/* ----- 原始载荷（示意各渠道真实发出去的结构）----- */
+const clean = s => String(s).replace(/\u0001(?:bad|empty):([^\u0002]*)\u0002/g, '□$1');
+function rawPayload(ch, ir) {
+  const c = clean;
+  if (ch === 'slack') {
+    const blocks = [{ type: 'header', text: { type: 'plain_text', text: c(ir.title) } }];
+    ir.blocks.forEach(b => {
+      if (b.t === 'fields') {
+        const shorts = b.rows.filter(r => r.short), longs = b.rows.filter(r => !r.short);
+        if (shorts.length) blocks.push({ type: 'section', fields: shorts.map(r => ({ type: 'mrkdwn', text: `*${c(r.l)}:*\n${c(r.v)}` })) });
+        longs.forEach(r => blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*${c(r.l)}:*\n${c(r.v)}` } }));
+      } else if (b.t === 'text') blocks.push({ type: 'section', text: { type: 'mrkdwn', text: c(b.v) } });
+      else if (b.t === 'code') blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*${c(b.l)}:*\n\`\`\`${c(b.v)}\`\`\`` } });
+      else if (b.t === 'link') blocks.push(b.as === 'button' ? { type: 'actions', elements: [{ type: 'button', text: { type: 'plain_text', text: c(b.l) }, url: c(b.v) }] } : { type: 'section', text: { type: 'mrkdwn', text: `<${c(b.v)}|${c(b.l)}>` } });
+      else blocks.push({ type: 'divider' });
+    });
+    return JSON.stringify({ text: c(ir.title), blocks }, null, 2);
+  }
+  if (ch === 'dingtalk') {
+    const md = ['### ' + c(ir.title), ''];
+    ir.blocks.forEach(b => {
+      if (b.t === 'fields') b.rows.forEach(r => md.push(`- **${c(r.l)}**：${c(r.v)}`));
+      else if (b.t === 'text') md.push(c(b.v));
+      else if (b.t === 'code') md.push(`**${c(b.l)}**：`, '```', c(b.v), '```');
+      else if (b.t === 'link') md.push(`[${c(b.l)}](${c(b.v)})`);
+      else md.push('---');
+    });
+    return JSON.stringify({ msgtype: 'markdown', markdown: { title: c(ir.title), text: md.join('\n') }, at: { atUserIds: ['…'], isAtAll: false } }, null, 2);
+  }
+  if (ch === 'feishu') {
+    const el = [];
+    ir.blocks.forEach(b => {
+      if (b.t === 'fields') el.push({ tag: 'div', fields: b.rows.map(r => ({ is_short: r.short, text: { tag: 'lark_md', content: `**${c(r.l)}**\n${c(r.v)}` } })) });
+      else if (b.t === 'text') el.push({ tag: 'div', text: { tag: 'lark_md', content: c(b.v) } });
+      else if (b.t === 'code') el.push({ tag: 'div', text: { tag: 'lark_md', content: `**${c(b.l)}**\n\`\`\`\n${c(b.v)}\n\`\`\`` } });
+      else if (b.t === 'link') el.push({ tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: c(b.l) }, url: c(b.v), type: 'default' }] });
+      else el.push({ tag: 'hr' });
+    });
+    const color = { info: 'blue', ok: 'green', warn: 'orange', crit: 'red' }[ir.tone];
+    return JSON.stringify({ msg_type: 'interactive', card: { header: { template: color, title: { tag: 'plain_text', content: c(ir.title) } }, elements: el } }, null, 2);
+  }
+  if (ch === 'email') {
+    return 'Subject: [dbtool] ' + c(ir.title) + '\nContent-Type: multipart/alternative\n\n--- text/plain ---\n' + c(textOf(ir)) + '\n\n--- text/html ---\n<table> … </table>（见“渲染效果”）';
+  }
+  return c(textOf(ir));
+}
+const LIMITS = { slack: 40000, dingtalk: 20000, feishu: 30000, email: 200000, text: 20000 };
+function sizeOf(ch, ir) { return new Blob([clean(rawPayload(ch, ir))]).size; }
+
+/* ===================== 渲染：左侧事件列表 ===================== */
+function renderEvents() {
+  const q = $('#ev-q').value.trim().toLowerCase();
+  let h = '', last = '';
+  EVENTS.forEach(e => {
+    if (q && !(e.n + e.code + e.grp).toLowerCase().includes(q)) return;
+    if (e.grp !== last) { h += `<div class="ev-group">${esc(e.grp)}</div>`; last = e.grp; }
+    const own = S.tpl[key(e.id, 'global')];
+    const extra = Object.keys(S.tpl).filter(k => k.startsWith(e.id + '::') && k !== key(e.id, 'global')).length;
+    h += `<button class="ev" type="button" data-ev="${e.id}" aria-current="${e.id === S.ev}"><span class="dot ${e.tone}"></span><span class="nm">${esc(e.n)}<small>${esc(e.code)}</small></span>` +
+      (own ? '<span class="badge info">自定义</span>' : '') + (extra ? `<span class="badge ok" title="另有 ${extra} 个范围专属模板">+${extra}</span>` : '') + '</button>';
+  });
+  $('#ev-list').innerHTML = h || '<div class="empty" style="padding:24px;text-align:center;color:var(--dt-muted)">没有匹配的消息</div>';
+}
+
+/* ===================== 渲染：编辑区 ===================== */
+function varPanel(ev) {
+  const groups = {};
+  VARS.forEach(v => { (groups[v.g] = groups[v.g] || []).push(v); });
+  let h = '<div class="vars"><h4>变量</h4>';
+  Object.entries(groups).forEach(([g, list]) => {
+    if (!list.some(v => ev.vars.includes(v.k))) return;
+    h += `<div class="vgroup"><span class="gname">${esc(g)}</span>` + list.map(v => {
+      const on = ev.vars.includes(v.k);
+      return `<button type="button" class="vchip${on ? '' : ' off'}" data-var="${v.k}" ${on ? '' : 'disabled'} title="${esc(v.k)}">${esc(v.n)}<small class="mono">${esc(v.k)}</small></button>`;
+    }).join('') + '</div>';
+  });
+  return h + '</div>';
+}
+function blockHTML(b, i, n) {
+  const names = { fields: '字段表', text: '文本', code: 'SQL / 代码块', link: '链接 / 按钮', divider: '分隔线' };
+  let inner = '';
+  if (b.t === 'fields') {
+    inner = '<div class="frow hd"><span></span><span>名称</span><span>值</span><span>占半行</span><span></span></div>' +
+      b.rows.map((r, j) => `<div class="frow"><span class="grip">⋮⋮</span><input class="ipt vt-in" data-b="${i}" data-r="${j}" data-f="l" value="${esc(r.l)}" aria-label="名称"><input class="ipt vt-in mono" data-b="${i}" data-r="${j}" data-f="v" value="${esc(r.v)}" aria-label="值"><label class="row" style="justify-content:center"><input type="checkbox" data-b="${i}" data-r="${j}" data-f="short" ${r.short ? 'checked' : ''}></label><span class="row"><button class="icobtn" data-act="rup" data-b="${i}" data-r="${j}" ${j === 0 ? 'disabled' : ''} aria-label="上移">↑</button><button class="icobtn" data-act="rdel" data-b="${i}" data-r="${j}" aria-label="删除">✕</button></span></div>`).join('') +
+      `<div><button class="btn sm ghost" data-act="radd" data-b="${i}" type="button">+ 添加字段</button></div>`;
+  } else if (b.t === 'text') {
+    inner = `<textarea class="ipt vt-in mono" rows="3" data-b="${i}" data-f="v" aria-label="文本">${esc(b.v)}</textarea>`;
+  } else if (b.t === 'code') {
+    inner = `<div class="g2"><div><span class="lbl">小标题</span><input class="ipt vt-in" data-b="${i}" data-f="l" value="${esc(b.l)}"></div>
+      <div><span class="lbl">内容</span><input class="ipt vt-in mono" data-b="${i}" data-f="v" value="${esc(b.v)}"></div></div>
+      <div class="g2"><div><span class="lbl">怎么显示 SQL</span><select class="ipt" data-b="${i}" data-f="mode">
+        <option value="head" ${b.mode === 'head' ? 'selected' : ''}>只显示前 N 个字</option>
+        <option value="mask" ${b.mode === 'mask' ? 'selected' : ''}>隐藏字符串常量后取前 N 字</option>
+        <option value="full" ${b.mode === 'full' ? 'selected' : ''}>完整显示</option>
+        <option value="none" ${b.mode === 'none' ? 'selected' : ''}>不显示 SQL</option></select></div>
+      <div><span class="lbl">N（字）</span><input class="ipt" type="number" min="50" max="3000" step="50" data-b="${i}" data-f="n" value="${esc(b.n)}" ${b.mode === 'head' || b.mode === 'mask' ? '' : 'disabled'}></div></div>`;
+  } else if (b.t === 'link') {
+    inner = `<div class="g2"><div><span class="lbl">文字</span><input class="ipt vt-in" data-b="${i}" data-f="l" value="${esc(b.l)}"></div>
+      <div><span class="lbl">地址</span><input class="ipt vt-in mono" data-b="${i}" data-f="v" value="${esc(b.v)}"></div></div>
+      <div><span class="lbl">样式</span><select class="ipt" style="width:auto" data-b="${i}" data-f="as"><option value="button" ${b.as === 'button' ? 'selected' : ''}>按钮</option><option value="text" ${b.as !== 'button' ? 'selected' : ''}>文字链接</option></select></div>`;
+  }
+  return `<div class="block"><header><b>${names[b.t]}</b><span class="sp"></span>
+    <button class="icobtn" data-act="up" data-b="${i}" ${i === 0 ? 'disabled' : ''} aria-label="上移">↑</button>
+    <button class="icobtn" data-act="down" data-b="${i}" ${i === n - 1 ? 'disabled' : ''} aria-label="下移">↓</button>
+    <button class="icobtn" data-act="del" data-b="${i}" aria-label="删除">✕</button></header>${inner ? `<div class="in">${inner}</div>` : ''}</div>`;
+}
+function renderEditor() {
+  const ev = EVMAP[S.ev];
+  const own = S.tpl[key()];
+  const eff = resolve(S.ev, S.scope);
+  const sel = $('#scope');
+  if (!sel.options.length) sel.innerHTML = SCOPES.map(s => `<option value="${esc(s.id)}">${esc(s.n)}</option>`).join('');
+  sel.value = S.scope;
+  const inherit = !own;
+  $('#ed-src').innerHTML = `<span class="badge ${scopeKind(eff.src)}">当前生效：${esc(scopeName(eff.src))}</span>`;
+  $('#pv-from').textContent = '· ' + ev.n + '（' + ev.code + '）';
+
+  let h = '';
+  if (inherit) {
+    const base = S.scope === 'global' ? '系统默认' : scopeName(eff.src);
+    h += `<div class="note warn"><b>${S.scope === 'global' ? '这条消息还在用系统默认模板。' : '这个范围没有专属模板。'}</b> 下面显示的是「${esc(base)}」，只读。
+      <div style="margin-top:8px"><button class="btn primary" data-act="create" type="button">${S.scope === 'global' ? '定制这条消息' : '为「' + esc(scopeName(S.scope)) + '」创建专属模板（复制当前内容）'}</button></div></div>`;
+  }
+  const t = own || eff.tpl;
+  const ro = inherit ? 'disabled' : '';
+  h += `<div class="g2">
+    <div><span class="lbl">模板名称</span><input class="ipt" id="f-name" value="${esc(t.name || '')}" placeholder="例如：待审批 · 卡片" ${ro}></div>
+    <div><span class="lbl">状态</span><label class="row" style="height:30px"><input type="checkbox" id="f-on" ${t.enabled !== false ? 'checked' : ''} ${ro}> 启用这个模板</label></div></div>
+  <div><span class="lbl">标题</span><input class="ipt vt-in mono" id="f-title" value="${esc(t.title)}" ${ro}></div>
+  <div class="g2">
+    <div><span class="lbl">状态色</span><div class="tones" id="f-tone">
+      ${[['info', '蓝 信息'], ['ok', '绿 成功'], ['warn', '橙 待办'], ['crit', '红 异常']].map(([v, n]) => `<button type="button" class="tone-btn" data-tone="${v}" aria-pressed="${t.tone === v}" ${ro}><span class="dot ${v}"></span>${n}</button>`).join('')}</div></div>
+    <div><span class="lbl">图标（可选）</span><input class="ipt" id="f-icon" value="${esc(t.icon || '')}" maxlength="4" style="width:90px" ${ro}></div></div>
+  <div><span class="lbl">内容</span><div class="warns" id="blocks" style="gap:8px">${(t.blocks || []).map((b, i, a) => blockHTML(b, i, a.length)).join('') || '<div class="hint">还没有内容块。</div>'}</div></div>
+  <div class="addbar"><span class="hint">添加：</span>
+    ${[['fields', '字段表'], ['text', '文本'], ['code', 'SQL / 代码块'], ['link', '链接 / 按钮'], ['divider', '分隔线']].map(([v, n]) => `<button class="btn sm" data-add="${v}" type="button" ${ro}>+ ${n}</button>`).join('')}</div>`;
+  h += varPanel(ev);
+  h += '<div class="warns" id="warns"></div>';
+  $('#ed').innerHTML = h;
+  if (inherit) $$('#blocks input, #blocks select, #blocks textarea, #blocks button').forEach(e => { e.disabled = true; });
+}
+
+/* ===================== 渲染：预览 ===================== */
+function renderPreview() {
+  const eff = resolve(S.ev, S.scope);
+  const tpl = S.tpl[key()] || eff.tpl;
+  const ir = toIR(tpl, S.ev, S.sample, true);
+  const stage = $('#pv');
+  const ch = S.ch;
+  if (S.view === 'raw') stage.innerHTML = `<pre class="raw mono">${esc(rawPayload(ch, ir))}</pre>`;
+  else stage.innerHTML = { slack: renderSlack, dingtalk: renderDing, feishu: renderFeishu, email: renderMail, text: renderText }[ch](ir);
+  // 大小与告警
+  const size = sizeOf(ch, ir), lim = LIMITS[ch];
+  const pct = Math.min(100, Math.round(size / lim * 100));
+  const warns = [];
+  const unknown = [...ir.ctx.unknown], missing = [...ir.ctx.missing];
+  if (unknown.length) warns.push(['crit', `用了不存在的变量：${unknown.map(k => '<code>' + esc(k) + '</code>').join('、')}，保存时会被拒绝。`]);
+  if (missing.length) warns.push(['warn', `这条消息里没有这些变量：${missing.map(k => '<code>' + esc(k) + '</code>（' + esc(VMAP[k] ? VMAP[k].n : k) + '）').join('、')}，发出去会是空的。`]);
+  ir.blocks.filter(b => b.t === 'code' && b.rawSecret).forEach(() => warns.push(['crit', '示例 SQL 里有 <code>PrivateKey</code> / <code>password</code> 这类字段，却选了“完整显示”：群消息谁都能看到并长期留存。建议改成“隐藏字符串常量”或“不显示 SQL，只给链接”。']));
+  ir.blocks.filter(b => b.t === 'code' && b.note === '已截断').forEach(() => warns.push(['ok', 'SQL 超出设定长度，消息里会写明“已截断，完整内容见工单”。']));
+  warns.unshift([pct >= 100 ? 'crit' : pct >= 80 ? 'warn' : 'ok', `${CH_TYPES.find(c => c.t === ch).n} 消息大小约 ${size.toLocaleString()} / ${lim.toLocaleString()} 字节 <span class="limit ${pct >= 100 ? 'over' : pct >= 80 ? 'hot' : ''}"><i style="width:${pct}%"></i></span>${pct >= 100 ? ' · 会被截断' : ''}`]);
+  $('#warns').innerHTML = warns.map(([c, m]) => `<div class="note ${c}">${m}</div>`).join('');
+}
+function renderChTabs() {
+  $('#ch-tabs').innerHTML = CH_TYPES.map(c => `<button type="button" role="tab" data-ch="${c.t}" aria-selected="${c.t === S.ch}">${c.n}</button>`).join('');
+}
+function renderSample() {
+  const fam = EVMAP[S.ev].fam;
+  const sel = $('#sample');
+  if (fam === 'sql') { sel.disabled = false; sel.innerHTML = Object.entries(SAMPLES).map(([k, v]) => `<option value="${k}" ${k === S.sample ? 'selected' : ''}>${esc(v.n)}</option>`).join(''); }
+  else { sel.disabled = true; sel.innerHTML = '<option>默认示例</option>'; }
+}
+
+/* ===================== 渲染：生效矩阵 / 变量表 ===================== */
+function renderMatrix() {
+  let h = '<thead><tr><th>消息</th>' + CHANNELS.map(c => `<th>${esc(c.n)}<br><span class="badge">${CH_TYPES.find(t => t.t === c.t).n}</span>${c.g ? ' <span class="badge">' + esc(c.g) + '</span>' : ' <span class="badge">全局</span>'}</th>`).join('') + '</tr></thead><tbody>';
+  let last = '';
+  EVENTS.forEach(e => {
+    if (e.grp !== last) { h += `<tr class="grp"><td colspan="${CHANNELS.length + 1}">${esc(e.grp)}</td></tr>`; last = e.grp; }
+    h += `<tr><td><span class="dot ${e.tone}" style="display:inline-block;margin-right:6px"></span>${esc(e.n)} <span class="dim mono small">${esc(e.code)}</span></td>` +
+      CHANNELS.map(c => {
+        const r = resolve(e.id, 'c:' + c.id);
+        const kind = r.src === 'default' ? '' : r.src === 'global' ? 'info' : r.src.startsWith('g:') ? 'warn' : 'ok';
+        const label = r.src === 'default' ? '系统默认' : (r.tpl.name || '未命名');
+        const where = r.src === 'default' || r.src === 'global' ? '' : '<br><span class="dim small">' + esc(scopeName(r.src)) + '</span>';
+        return `<td class="cell" data-ev="${e.id}" data-sc="c:${c.id}" data-ch="${c.t}"><span class="badge ${kind}">${esc(label)}</span>${where}</td>`;
+      }).join('') + '</tr>';
+  });
+  $('#mx').innerHTML = h + '</tbody>';
+}
+function renderVarTable() {
+  const fams = [['sql', 'SQL 上线 / 导出'], ['priv', '查询权限'], ['archive', '数据归档'], ['perf', '性能工单'], ['inspect', '巡检']];
+  let h = '<thead><tr><th>变量</th><th>含义</th><th>示例</th>' + fams.map(f => `<th style="text-align:center">${f[1]}</th>`).join('') + '</tr></thead><tbody>';
+  VARS.forEach(v => {
+    h += `<tr><td class="mono">{{${v.k}}}</td><td>${esc(v.n)}</td><td class="mono small muted">${esc(v.k === 'sql' ? SAMPLES.ddl.d.sql.slice(0, 40) + '…' : v.ex.split('\n')[0])}</td>` +
+      fams.map(f => {
+        const evs = EVENTS.filter(e => e.fam === f[0] && e.vars.includes(v.k));
+        const all = EVENTS.filter(e => e.fam === f[0]).length;
+        return evs.length ? `<td class="c" title="${esc(evs.map(e => e.n).join('、'))}">${evs.length === all ? '✓ 全部' : '✓ ' + evs.length + '/' + all}</td>` : '<td class="n">—</td>';
+      }).join('') + '</tr>';
+  });
+  $('#vt').innerHTML = h + '</tbody>';
+}
+
+/* ===================== 交互 ===================== */
+function curTpl() { return S.tpl[key()]; }
+function touch() { setDirty(true); renderEvents(); renderPreview(); }
+function renderAll() { renderEvents(); renderEditor(); renderChTabs(); renderSample(); renderPreview(); }
+
+document.addEventListener('focusin', e => { if (e.target.matches('.vt-in')) S.focusEl = e.target; });
+$('#ev-list').addEventListener('click', e => { const b = e.target.closest('.ev'); if (b) { S.ev = b.dataset.ev; renderAll(); } });
+$('#ev-q').addEventListener('input', renderEvents);
+$('#scope').addEventListener('change', e => { S.scope = e.target.value; renderEditor(); renderPreview(); });
+$('#ch-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ch]'); if (b) { S.ch = b.dataset.ch; renderChTabs(); renderPreview(); } });
+$('#sample').addEventListener('change', e => { S.sample = e.target.value; renderPreview(); });
+$('#viewmode').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if (!b) return;
+  S.view = b.dataset.v;
+  $$('#viewmode button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  renderPreview();
+});
+$('#skin').addEventListener('click', e => {
+  const b = e.target.closest('[data-skin]'); if (!b) return;
+  document.documentElement.dataset.skin = b.dataset.skin;
+  $$('#skin button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  try { localStorage.setItem('nt-skin', b.dataset.skin); } catch (_) { /* 无存储 */ }
+});
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-pane]'); if (b) showPane(b.dataset.pane); });
+function showPane(p) {
+  S.pane = p;
+  $$('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.pane === p)));
+  ['edit', 'matrix', 'vars'].forEach(x => { $('#pane-' + x).hidden = x !== p; });
+  if (p === 'matrix') renderMatrix();
+  if (p === 'vars') renderVarTable();
+}
+$('#mx').addEventListener('click', e => {
+  const c = e.target.closest('td.cell'); if (!c) return;
+  S.ev = c.dataset.ev; S.scope = S.tpl[key(c.dataset.ev, c.dataset.sc)] ? c.dataset.sc : 'global'; S.ch = c.dataset.ch;
+  showPane('edit'); renderAll();
+});
+
+// 编辑区：事件委托
+$('#ed').addEventListener('input', e => {
+  const t = curTpl(); if (!t) return;
+  const el = e.target;
+  if (el.id === 'f-name') t.name = el.value;
+  else if (el.id === 'f-title') t.title = el.value;
+  else if (el.id === 'f-icon') t.icon = el.value;
+  else if (el.dataset.b !== undefined) {
+    const b = t.blocks[+el.dataset.b]; const f = el.dataset.f;
+    if (el.dataset.r !== undefined) b.rows[+el.dataset.r][f] = f === 'short' ? el.checked : el.value;
+    else b[f] = f === 'n' ? +el.value : el.value;
+  } else return;
+  touch();
+});
+$('#ed').addEventListener('change', e => {
+  const t = curTpl(); if (!t) return;
+  const el = e.target;
+  if (el.id === 'f-on') { t.enabled = el.checked; touch(); }
+  else if (el.dataset.f === 'mode' || el.dataset.f === 'as') { t.blocks[+el.dataset.b][el.dataset.f] = el.value; renderEditor(); touch(); }
+  else if (el.dataset.f === 'short') touch();
+});
+$('#ed').addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  const t = curTpl();
+  if (el.dataset.act === 'create') {
+    const eff = resolve(S.ev, S.scope);
+    const c = clone(eff.tpl); c.custom = true; c.enabled = true; c.name = c.name || (EVMAP[S.ev].n + ' · ' + scopeName(S.scope));
+    S.tpl[key()] = c; setDirty(true); renderAll(); toast('已创建，改完记得保存');
+    return;
+  }
+  if (!t) return;
+  if (el.dataset.tone) { t.tone = el.dataset.tone; renderEditor(); touch(); return; }
+  if (el.dataset.var) {
+    const f = S.focusEl && document.contains(S.focusEl) && !S.focusEl.disabled ? S.focusEl : $('#f-title');
+    const v = '{{' + el.dataset.var + '}}';
+    const a = f.selectionStart ?? f.value.length, b = f.selectionEnd ?? a;
+    f.value = f.value.slice(0, a) + v + f.value.slice(b);
+    f.focus(); f.setSelectionRange(a + v.length, a + v.length);
+    f.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  if (el.dataset.add) {
+    const n = {
+      fields: { t: 'fields', rows: [{ l: '名称', v: '{{title}}', short: false }] },
+      text: { t: 'text', v: '' },
+      code: { t: 'code', l: 'SQL 内容', v: '{{sql}}', mode: 'head', n: 500 },
+      link: { t: 'link', l: '详情', v: '{{url}}', as: 'button' },
+      divider: { t: 'divider' },
+    }[el.dataset.add];
+    if (n.t === 'code' && !EVMAP[S.ev].vars.includes('sql')) { toast('这条消息没有 SQL 内容变量，代码块里可以改写别的变量'); }
+    t.blocks.push(n); renderEditor(); touch(); return;
+  }
+  const i = +el.dataset.b, r = el.dataset.r === undefined ? null : +el.dataset.r;
+  const act = el.dataset.act;
+  if (act === 'up' && i > 0) [t.blocks[i - 1], t.blocks[i]] = [t.blocks[i], t.blocks[i - 1]];
+  else if (act === 'down' && i < t.blocks.length - 1) [t.blocks[i + 1], t.blocks[i]] = [t.blocks[i], t.blocks[i + 1]];
+  else if (act === 'del') t.blocks.splice(i, 1);
+  else if (act === 'radd') t.blocks[i].rows.push({ l: '名称', v: '', short: false });
+  else if (act === 'rdel') t.blocks[i].rows.splice(r, 1);
+  else if (act === 'rup' && r > 0) { const rows = t.blocks[i].rows; [rows[r - 1], rows[r]] = [rows[r], rows[r - 1]]; }
+  else return;
+  renderEditor(); touch();
+});
+
+// 顶部按钮
+$('#b-save').addEventListener('click', () => {
+  const t = curTpl();
+  if (!t) { toast('这个范围还没有专属模板，没有可保存的改动'); return; }
+  const ir = toIR(t, S.ev, S.sample, false);
+  if (ir.ctx.unknown.size) { toast('有不存在的变量（' + [...ir.ctx.unknown].join('、') + '），请先改掉'); return; }
+  (S.hist[key()] = S.hist[key()] || []).unshift({ ts: '2026-10-13 15:20', user: 'admin', note: '保存（原型示意）', snap: clone(t) });
+  setDirty(false);
+  toast('已保存（原型：未真正写库）');
+});
+$('#b-reset').addEventListener('click', () => {
+  if (!S.tpl[key()]) { toast('当前范围本来就是沿用上一层'); return; }
+  if (!confirm('恢复后，这个范围的专属模板会被删除，改回沿用上一层。继续？')) return;
+  (S.hist[key()] = S.hist[key()] || []).unshift({ ts: '2026-10-13 15:21', user: 'admin', note: '恢复默认（删除专属模板）', snap: clone(S.tpl[key()]) });
+  delete S.tpl[key()]; setDirty(false); renderAll(); toast('已恢复');
+});
+$('#b-test').addEventListener('click', () => {
+  $('#t-ch').innerHTML = CHANNELS.map(c => `<option value="${c.id}">${esc(c.n)}（${CH_TYPES.find(t => t.t === c.t).n}）</option>`).join('');
+  const upd = () => {
+    const c = CHANNELS.find(x => x.id === $('#t-ch').value);
+    const r = resolve(S.ev, 'c:' + c.id);
+    $('#t-note').innerHTML = `这个渠道发「${esc(EVMAP[S.ev].n)}」实际会用：<b>${esc(r.src === 'default' ? '系统默认' : r.tpl.name)}</b>（${esc(scopeName(r.src))}）。` + (S.dirty ? '<br><span style="color:var(--dt-amber)">你有未保存的改动：测试发送用的是当前编辑中的内容。</span>' : '');
+  };
+  $('#t-ch').onchange = upd; upd();
+  $('#dlg-test').showModal();
+});
+$('#t-cancel').addEventListener('click', () => $('#dlg-test').close());
+$('#t-go').addEventListener('click', () => {
+  const c = CHANNELS.find(x => x.id === $('#t-ch').value);
+  $('#dlg-test').close();
+  toast('已向「' + c.n + '」发送测试消息（原型：没有真的发送）');
+});
+$('#b-hist').addEventListener('click', () => {
+  const list = S.hist[key()] || [];
+  $('#h-for').textContent = EVMAP[S.ev].n + ' · ' + scopeName(S.scope);
+  $('#h-list').innerHTML = list.length ? list.map((h, i) => `<div class="hist-row"><span class="mono small">${esc(h.ts)}</span><span class="badge">${esc(h.user)}</span><span style="flex:1">${esc(h.note)}</span><button class="btn sm" data-restore="${i}" type="button" ${h.snap ? '' : 'disabled'}>恢复此版本</button></div>`).join('') : '<div class="muted">这个范围还没有历史版本。</div>';
+  $('#dlg-hist').showModal();
+});
+$('#h-close').addEventListener('click', () => $('#dlg-hist').close());
+$('#h-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-restore]'); if (!b) return;
+  const h = (S.hist[key()] || [])[+b.dataset.restore];
+  if (h && h.snap) { S.tpl[key()] = clone(h.snap); setDirty(true); renderAll(); $('#dlg-hist').close(); toast('已恢复到 ' + h.ts + ' 的版本，保存后生效'); }
+});
+
+/* ===================== 启动 ===================== */
+(function init() {
+  try { const sk = localStorage.getItem('nt-skin'); if (sk) { document.documentElement.dataset.skin = sk; $$('#skin button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.skin === sk))); } } catch (_) { /* 无存储 */ }
+  seed();
+  // #ev=sql.finished&ch=feishu&pane=matrix&view=raw&sc=c:c2 ：直接定位到某个状态（方便截图 / 分享）
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get('ev') && EVMAP[p.get('ev')]) S.ev = p.get('ev');
+  if (p.get('ch')) S.ch = p.get('ch');
+  if (p.get('sc')) S.scope = p.get('sc');
+  if (p.get('sample') && SAMPLES[p.get('sample')]) S.sample = p.get('sample');
+  if (p.get('view') === 'raw') { S.view = 'raw'; $$('#viewmode button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === 'raw'))); }
+  renderAll();
+  if (p.get('pane')) showPane(p.get('pane'));
+})();
+</script>
+</body>
+</html>

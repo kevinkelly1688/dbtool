@@ -1,0 +1,86 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: resource_groups.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="rg">
+  <div class="page-head">
+    <h1>{{t "资源组"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form wrap" id="rg-filter">
+      <input type="search" id="rg-search" placeholder="{{t "搜索组名 / 负责人 / 备注"}}" aria-label="{{t "搜索组名、负责人或备注"}}" style="min-width:220px">
+      <label class="muted small"><input type="checkbox" id="rg-deleted"> {{t "显示已停用"}}</label>
+    </form>
+    <button class="btn primary" type="button" id="rg-new">+ {{t "新建资源组"}}</button>
+  </div>
+  <div class="kpis kpis-4" id="rg-kpis" aria-live="polite"></div>
+  <div id="rg-msg"></div>
+
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>ID</th><th>{{t "组名称"}}</th><th>{{t "负责人"}}</th><th>{{t "用户"}}</th><th>{{t "实例"}}</th><th>{{t "审批流"}}</th><th>{{t "通知群"}}</th><th>{{t "状态"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="rg-rows"><tr><td colspan="9" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+</main>
+
+<div class="modal-mask" id="m-res-edit" hidden role="dialog" aria-modal="true" aria-labelledby="m-res-title">
+  <div class="modal wide">
+    <h2 id="m-res-title">{{t "新建资源组"}}</h2>
+    <div class="form-grid">
+      <label class="full">{{t "组名称（唯一，最多 100 字）"}}<input type="text" id="re-name" maxlength="100" aria-label="{{t "组名称"}}"></label>
+      <label>{{t "负责人（用户名，可空）"}}<input type="text" id="re-leader" maxlength="30" list="re-leader-list" autocomplete="off" aria-label="{{t "负责人"}}"></label>
+      <datalist id="re-leader-list"></datalist>
+      <label>{{t "备注（≤100 字）"}}<input type="text" id="re-remark" maxlength="100" aria-label="{{t "备注"}}"></label>
+      <p class="full small-note">{{t "资源组的通知请到“通知渠道”配置（多资源组关联、@ 规则、按事件订阅、消息模板、测试发送、邮件）。"}} <a href="/settings/notify">{{t "去“通知渠道”配置"}}</a></p>
+      <p class="full small-note" id="re-chan-now" hidden></p>
+      <div class="full" id="re-legacy" hidden>
+        <p class="small-note">{{t "这个资源组还配着旧版 Webhook：只有它没有同类型的“通知渠道”时才会使用。建议先在“通知渠道”里配好，再在这里清除旧的。"}}</p>
+        <label class="mini" id="re-ding-clear" hidden><input type="checkbox" id="re-ding-cb"> {{t "清除已配置的钉钉 Webhook"}}</label>
+        <label class="mini" id="re-feishu-clear" hidden><input type="checkbox" id="re-feishu-cb"> {{t "清除已配置的飞书 Webhook"}}</label>
+        <label class="mini" id="re-slack-clear" hidden><input type="checkbox" id="re-slack-cb"> {{t "清除已配置的 Slack Webhook"}}</label>
+      </div>
+    </div>
+    <div id="re-flows" hidden>
+      <h3>{{t "审批流概览"}}</h3>
+      <table class="list"><tbody id="re-flows-body"></tbody></table>
+      <p class="small-note"><a id="re-flow-link" href="/settings/audit-flow">{{t "去“审批流程”修改"}}</a></p>
+    </div>
+    <div id="re-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="re-save">{{t "保存"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-res-rel" hidden role="dialog" aria-modal="true" aria-labelledby="m-rel-title">
+  <div class="modal xwide">
+    <h2 id="m-rel-title">{{t "关联对象"}}</h2>
+    <div class="tabbar" id="rel-tabs">
+      <button class="tab on" type="button" data-tab="users">{{t "用户（"}}<span id="rel-nu">0</span>{{t "）"}}</button>
+      <button class="tab" type="button" data-tab="instances">{{t "实例（"}}<span id="rel-ni">0</span>{{t "）"}}</button>
+    </div>
+    <div class="shuttle" id="rel-body"></div>
+    <p class="small-note" id="rel-sum"></p>
+    <div id="rel-warn"></div>
+    <div id="rel-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" id="rel-cancel">{{t "放弃并关闭"}}</button><button class="btn primary" type="button" id="rel-save" disabled>{{t "保存关联"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-res-busy" hidden role="dialog" aria-modal="true" aria-labelledby="m-busy-title">
+  <div class="modal wide">
+    <h2 id="m-busy-title" class="crit">{{t "无法停用资源组"}}</h2>
+    <p id="busy-sum" class="small"></p>
+    <table class="list">
+      <thead><tr><th>{{t "类型"}}</th><th>{{t "工单"}}</th><th>{{t "状态"}}</th></tr></thead>
+      <tbody id="busy-rows"></tbody>
+    </table>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" data-close>{{t "知道了"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysadmin/resource_groups.js"></script>{{end}}

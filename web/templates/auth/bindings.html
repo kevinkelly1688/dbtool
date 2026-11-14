@@ -1,0 +1,36 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: bindings.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/auth.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="bd">
+  <div class="page-head">
+    <h1>{{t "账号绑定"}}</h1>
+  </div>
+  <div id="bd-msg">
+    {{if .Data.Error}}<div class="alert err" role="alert">{{tp .Data.Error}}</div>{{end}}
+    {{if .Data.Info}}<div class="alert info" role="status">{{tp .Data.Info}}</div>{{end}}
+  </div>
+
+  <div id="bd-off" class="alert warn" role="status" hidden>{{t "管理员未开放自行绑定 / 解绑，这里只能查看已有的绑定。"}}</div>
+
+  <section class="card">
+    <h2>{{t "已绑定的外部账号"}}</h2>
+    <table class="list">
+      <thead><tr><th scope="col">{{t "登录方式"}}</th><th scope="col">{{t "类型"}}</th><th scope="col">{{t "绑定时间"}}</th><th scope="col"><span class="sr-only">{{t "操作"}}</span></th></tr></thead>
+      <tbody id="bd-rows"><tr><td colspan="4" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="bd-add" hidden>
+    <h2>{{t "绑定新的外部账号"}}</h2>
+    <div class="toolbar" id="bd-choices"></div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/auth/bindings.js"></script>{{end}}

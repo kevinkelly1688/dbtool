@@ -1,0 +1,48 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: help.css
+ * @time: 2026/10/28
+ */
+/* 使用文档页：左目录 + 正文 + 右侧本页目录。颜色全部取 --dt-* 变量，三套皮肤自动适配。 */
+.help { display: grid; grid-template-columns: 240px minmax(0, 1fr) 200px; gap: 14px; align-items: start; }
+.help .card { margin-bottom: 0; }
+.help .topics { position: sticky; top: 0; max-height: calc(100vh - var(--dt-top-h) - 32px); overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.help .topics input[type=search] { width: 100%; margin-bottom: 8px; }
+.help .topics nav { display: flex; flex-direction: column; gap: 1px; }
+.help .topics .g { margin: 10px 0 2px; padding: 0 8px; font-size: 11.5px; letter-spacing: .08em; color: var(--dt-dim); }
+.help .topics a { padding: 5px 8px; border-radius: 4px; color: var(--dt-muted); text-decoration: none; }
+.help .topics a:hover { color: var(--dt-fg); background: var(--dt-cyan-soft); }
+.help .topics a.on { color: var(--dt-fg); background: var(--dt-cyan-soft); box-shadow: inset 3px 0 0 var(--dt-cyan); }
+
+.help .hp { min-width: 0; padding: 18px 26px 28px; overflow-x: auto; line-height: 1.7; }
+.help .hp h1 { font-size: 22px; margin: 0 0 12px; }
+.help .hp h2 { font-size: 17px; margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--dt-line); }
+.help .hp h3 { font-size: 15px; margin: 20px 0 6px; }
+.help .hp h4 { font-size: 13.5px; margin: 16px 0 4px; color: var(--dt-muted); }
+.help .hp p { margin: 8px 0; }
+.help .hp ul, .help .hp ol { margin: 8px 0; padding-left: 22px; }
+.help .hp li { margin: 3px 0; }
+.help .hp code { background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 3px; padding: 0 5px; font-size: 12.5px; }
+.help .hp pre { margin: 10px 0; max-height: 420px; overflow: auto; white-space: pre; background: var(--dt-input); border: 1px solid var(--dt-line); border-radius: 4px; padding: 8px 12px; font: 12.5px/1.55 var(--dt-f-mono); color: var(--dt-code-text); }
+.help .hp pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+.help .hp mark { background: var(--dt-amber-soft); color: var(--dt-amber); border-radius: 2px; padding: 0 2px; }
+.help .hp .tbl-wrap { overflow-x: auto; margin: 8px 0; }
+.help .hp table { border-collapse: collapse; font-size: 13px; min-width: 60%; }
+.help .hp th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--dt-line-hi); color: var(--dt-muted); font-weight: 600; white-space: nowrap; }
+.help .hp td { padding: 6px 10px; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+.help .hp .tip { margin: 10px 0; padding: 8px 12px; border: 1px solid var(--dt-cyan-line); border-left: 3px solid var(--dt-cyan); border-radius: var(--dt-r); background: var(--dt-cyan-soft); }
+.help .hp .tip.warn { border-color: var(--dt-amber-line); border-left-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.help .hp .hit { padding: 6px 0; border-bottom: 1px solid var(--dt-line); }
+.help .hp .hit .small { margin-top: 2px; color: var(--dt-muted); }
+.help .hp .clear { float: right; }
+
+.help .toc { position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; max-height: calc(100vh - var(--dt-top-h) - 32px); overflow: auto; }
+.help .toc .t { color: var(--dt-dim); margin-bottom: 4px; }
+.help .toc a { color: var(--dt-muted); text-decoration: none; padding: 2px 8px; border-left: 2px solid var(--dt-line); cursor: pointer; }
+.help .toc a:hover { color: var(--dt-cyan-text); border-left-color: var(--dt-cyan); }
+
+@media (max-width: 1200px) { .help { grid-template-columns: 220px minmax(0, 1fr); } .help .toc { display: none; } }
+@media (max-width: 800px) { .help { grid-template-columns: 1fr; } .help .topics, .help .toc { position: static; max-height: none; } .help .hp { padding: 14px 14px 22px; } }
+.help .hp li > ul, .help .hp li > ol { margin: 4px 0 2px; }
+.help .hp td:first-child { min-width: 6em; }

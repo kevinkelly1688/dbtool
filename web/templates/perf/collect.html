@@ -1,0 +1,61 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: collect.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page" id="perf-collect">
+  <div class="page-head"><h1>{{t "采集配置"}}</h1><span class="spacer"></span>
+    <select id="pcc-f-product" aria-label="{{t "产品类型"}}"></select>
+    <select id="pcc-f-enabled" aria-label="{{t "启用状态"}}"><option value="">{{t "启用：全部"}}</option><option value="1">{{t "启用|state"}}</option><option value="0">{{t "停用|state"}}</option></select>
+    <button class="btn" id="pcc-init" type="button" data-btn="perfcfg.collect">{{t "按实例类型批量生成"}}</button>
+    <button class="btn primary" id="pcc-new" type="button" data-btn="perfcfg.collect">{{t "+ 新增采集配置"}}</button></div>
+  <div id="pcc-ro"></div>
+  <div id="pcc-msg"></div>
+  <section class="card" id="pcc-window">
+    <h2>{{t "采集窗口"}}</h2>
+    <div class="form-inline">
+      <span>{{t "每隔"}}</span><input type="number" id="pcc-win-min" min="5" max="1440" step="1" aria-label="{{t "采集窗口（分钟）"}}" class="num-in"><span>{{t "分钟采集一次（5–1440）"}}</span>
+      <button class="btn" id="pcc-win-save" type="button" data-btn="perfcfg.collect">{{t "保存"}}</button>
+    </div>
+    <p class="muted small" id="pcc-win-note"></p>
+  </section>
+  <section class="card" id="pcc-jobs"></section>
+  <section class="card">
+    <table class="list">
+      <thead><tr><th>{{t "实例"}}</th><th>{{t "产品类型"}}</th><th>{{t "采集方式"}}</th><th>{{t "平均耗时阈值(ms)"}}</th><th>{{t "总耗时阈值(s)"}}</th><th>{{t "默认团队"}}</th><th>{{t "启用|state"}}</th><th>{{t "上次采集窗口结束"}}</th><th>{{t "上次采集结果"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="pcc-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+  </section>
+</main>
+</div>
+
+<div class="modal-mask" id="m-collect" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mc-title"><h2 id="mc-title">{{t "采集配置"}}</h2>
+  <div id="mc-msg"></div>
+  <div class="form-grid">
+    <label>{{t "实例"}}<select id="mc-inst"></select></label>
+    <label>{{t "产品类型"}}<select id="mc-product"></select></label>
+    <label>{{t "采集方式"}}<select id="mc-collector"></select></label>
+    <label>{{t "默认归属团队"}}<select id="mc-team"></select></label>
+    <label>{{t "平均耗时阈值(ms)"}}<input type="number" id="mc-avg" min="1" max="36000000"></label>
+    <label>{{t "窗口总耗时阈值(s)"}}<input type="number" id="mc-total" min="1" max="31536000"></label>
+    <label class="full">{{t "排除规则（正则）"}}<input type="text" class="mono" id="mc-regex" maxlength="500"></label>
+    <label class="full">{{t "排除库（逗号分隔）"}}<input type="text" class="mono" id="mc-dbs" maxlength="500"></label>
+    <label class="full" id="mc-custom-wrap">{{t "自定义采集 SQL"}}<textarea rows="4" class="mono" id="mc-sql"></textarea></label>
+    <label class="check"><input type="checkbox" id="mc-enabled"> {{t "启用|state"}}</label>
+  </div>
+  <div class="actions"><button class="btn" id="mc-preview" type="button" data-btn="perfcfg.collect">{{t "试采集（只预览）"}}</button><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" id="mc-ok" type="button" data-btn="perfcfg.collect">{{t "保存"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="m-preview" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-label="{{t "试采集结果"}}"><h2>{{t "试采集结果"}} <small class="muted" id="mp-sub"></small></h2>
+  <div id="mp-msg"></div>
+  <div class="grid-wrap"><table class="list"><thead><tr><th>{{t "库"}}</th><th>SQL</th><th>{{t "次数"}}</th><th>{{t "平均(ms)"}}</th><th>{{t "最大(ms)"}}</th><th>{{t "总耗时(s)"}}</th><th>{{t "结果"}}</th></tr></thead><tbody id="mp-rows"></tbody></table></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "关闭"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/collect.js"></script>{{end}}

@@ -1,0 +1,100 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: confirm.css
+ * @time: 2026/10/28
+ */
+/* 统一确认组件样式（由 js/confirm.js 首次使用时动态加载）。颜色全部取 --dt-* 变量，三套皮肤自动适配。
+   类名一律 cf- 前缀，避免和各页面的 .modal / .btn 冲突。 */
+html.cf-lock { overflow: hidden; }
+.cf-offscreen { position: fixed; left: -9999px; top: 0; }
+.cf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.cf-mask { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+.cf-dialog { display: flex; flex-direction: column; width: min(560px, 100%); max-height: min(88vh, 100%); background: var(--dt-panel); color: var(--dt-fg); border: 1px solid var(--dt-line); border-radius: var(--dt-r-lg); box-shadow: var(--dt-shadow); font-family: var(--dt-f-body); font-size: 14px; line-height: 1.5715; overflow: hidden; }
+.cf-dialog.cf-high { border-color: var(--dt-crit); }
+
+.cf-head { display: flex; align-items: center; gap: 10px; padding: 16px 24px 12px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.cf-title { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.cf-high .cf-title { color: var(--dt-crit); }
+.cf-badge { flex: none; margin-left: auto; padding: 1px 8px; font-size: 12px; font-weight: 600; color: var(--dt-crit); border: 1px solid var(--dt-crit-line); background: var(--dt-crit-soft); border-radius: 10px; }
+
+.cf-body { padding: 16px 24px; overflow: auto; flex: 1 1 auto; min-height: 0; overflow-wrap: anywhere; }
+.cf-body > * + * { margin-top: 12px; }
+.cf-lines { padding: 8px 12px; border-left: 3px solid var(--dt-info); background: var(--dt-info-soft); border-radius: 0 var(--dt-r) var(--dt-r) 0; }
+.cf-lines.cf-lines-high { border-left-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.cf-lines p { margin: 0; white-space: pre-wrap; }
+.cf-lines p + p { margin-top: 4px; }
+
+.cf-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; padding: 8px 12px; background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 4px; }
+.cf-details dt { color: var(--dt-muted); }
+.cf-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.cf-diff-wrap { overflow-x: auto; border: 1px solid var(--dt-line); border-radius: 4px; }
+.cf-diff { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cf-diff th, .cf-diff td { padding: 6px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--dt-line); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cf-diff thead th { color: var(--dt-muted); font-weight: 500; background: var(--dt-raise); }
+.cf-diff tbody tr:last-child > * { border-bottom: 0; }
+.cf-d-label { font-weight: 500; width: 24%; }
+.cf-d-from { color: var(--dt-crit); background: var(--dt-crit-soft); text-decoration: line-through; text-decoration-color: rgba(var(--dt-crit-rgb), .5); }
+.cf-d-to { color: var(--dt-ok); background: var(--dt-ok-soft); }
+.cf-d-empty { font-style: italic; text-decoration: none; opacity: .8; }
+
+.cf-sqlwrap { border: 1px solid var(--dt-line); border-radius: 4px; background: var(--dt-code-ln-bg); }
+.cf-sqlbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border-bottom: 1px solid var(--dt-line); color: var(--dt-muted); font-size: 12px; }
+.cf-sql { margin: 0; padding: 8px 12px; max-height: 36vh; overflow: auto; font-family: var(--dt-f-mono); font-size: 12.5px; line-height: 1.5; color: var(--dt-code-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cf-sql:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: -2px; }
+
+.cf-field { display: flex; flex-direction: column; gap: 4px; }
+.cf-label { color: var(--dt-muted); font-size: 13px; overflow-wrap: anywhere; }
+.cf-label.cf-req::before { content: "* "; color: var(--dt-crit); }
+.cf-typed-code { font-family: var(--dt-f-mono); color: var(--dt-crit); font-weight: 600; background: var(--dt-raise); border: 1px solid var(--dt-line-hi); border-radius: 3px; padding: 0 5px; user-select: all; overflow-wrap: anywhere; }
+.cf-dialog .cf-input { box-sizing: border-box; width: 100%; height: auto; min-height: 40px; padding: 8px 10px; font: inherit; font-size: 16px; color: var(--dt-fg); background: var(--dt-input); border: 1px solid var(--dt-line-hi); border-radius: 4px; }
+.cf-dialog .cf-input:focus { outline: 2px solid var(--dt-cyan); outline-offset: -1px; border-color: var(--dt-cyan); }
+.cf-dialog .cf-textarea { resize: vertical; min-height: 76px; }
+.cf-counter { font-size: 12px; color: var(--dt-muted); text-align: right; }
+.cf-counter.cf-bad { color: var(--dt-crit); }
+
+.cf-err { padding: 8px 12px; color: var(--dt-crit); background: var(--dt-crit-soft); border: 1px solid var(--dt-crit-line); border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cf-err[hidden] { display: none; }
+
+.cf-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 24px; border-top: 1px solid var(--dt-line); background: var(--dt-raise); flex: none; }
+.cf-code { flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--dt-muted); overflow-wrap: anywhere; }
+.cf-code code { font-family: var(--dt-f-mono); color: var(--dt-fg); }
+.cf-high-tag { color: var(--dt-crit); }
+.cf-btns { display: flex; gap: 8px; margin-left: auto; }
+
+.cf-btn { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; min-width: 76px; padding: 0 16px; font: inherit; color: var(--dt-fg); background: var(--dt-btn-bg); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r); cursor: pointer; white-space: nowrap; }
+.cf-btn:hover:not(:disabled) { border-color: var(--dt-accent-hover); color: var(--dt-link-hover); }
+.cf-btn:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 2px; }
+.cf-btn:disabled { opacity: .5; cursor: not-allowed; }
+.cf-btn-sm { min-height: 26px; min-width: 0; padding: 0 8px; font-size: 12px; }
+.cf-btn-primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 500; }
+.cf-btn-primary:hover:not(:disabled) { background: var(--dt-accent-hover); border-color: var(--dt-accent-hover); color: var(--dt-on-accent); }
+.cf-btn-danger { background: var(--dt-crit); border-color: var(--dt-crit); color: #fff; font-weight: 500; }
+.cf-btn-danger:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--dt-crit); color: #fff; }
+.cf-btn.cf-spin { cursor: progress; opacity: .8; }
+.cf-btn.cf-spin::before { content: ""; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: cf-rot .7s linear infinite; }
+@keyframes cf-rot { to { transform: rotate(360deg); } }
+
+/* toast */
+.cf-toasts { position: fixed; z-index: 210; right: 16px; top: calc(var(--dt-top-h, 48px) + 8px); display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 32px)); pointer-events: none; }
+.cf-toast { pointer-events: auto; cursor: pointer; padding: 10px 14px; font-family: var(--dt-f-body); font-size: 14px; line-height: 1.5; color: var(--dt-fg); background: var(--dt-panel); border: 1px solid var(--dt-line); border-left-width: 4px; border-radius: var(--dt-r); box-shadow: var(--dt-shadow); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cf-toast-ok { border-left-color: var(--dt-ok); }
+.cf-toast-warn { border-left-color: var(--dt-amber); }
+.cf-toast-err { border-left-color: var(--dt-crit); }
+
+/* 手机：全屏弹窗，按钮吸底 */
+@media (max-width: 700px) {
+  .cf-mask { padding: 0; align-items: stretch; }
+  .cf-dialog { width: 100%; max-height: none; height: 100%; border-radius: 0; border-width: 0; }
+  .cf-body { padding: 12px 14px; }
+  .cf-head { padding: 12px 14px 8px; }
+  .cf-foot { position: sticky; bottom: 0; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .cf-code { order: 2; text-align: center; }
+  .cf-btns { order: 1; margin-left: 0; }
+  .cf-btns .cf-btn { flex: 1 1 0; }
+  .cf-sql { max-height: 30vh; }
+  .cf-toasts { right: 8px; left: 8px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .cf-btn.cf-spin::before { animation-duration: 2s; } }

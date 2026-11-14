@@ -1,0 +1,98 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: audit.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="au">
+  <div class="page-head">
+    <h1>{{t "审计日志"}}</h1>
+  </div>
+  <div id="au-msg"></div>
+
+  <section class="card fill" id="au-tabs">
+    <div class="tabbar" role="tablist" style="margin-top:0">
+      <button class="tab on" type="button" data-tab="log" role="tab">{{t "通用审计"}}</button>
+      <button class="tab" type="button" data-tab="wf" role="tab">{{t "SQL 上线审计"}}</button>
+      <button class="tab" type="button" data-tab="ql" role="tab">{{t "查询审计"}}</button>
+    </div>
+
+    <div class="fill-pane" data-pane="log">
+      <div class="kpis au-kpis" id="lg-kpis" hidden></div>
+      <div class="au-charts" id="lg-charts" hidden>
+        <div class="card inner"><h2>{{t "近 14 天审计事件"}}</h2><div id="lg-bars"></div></div>
+        <div class="card inner"><h2>{{t "近 7 天最活跃用户"}}</h2><div id="lg-top"></div></div>
+      </div>
+      <form class="inline-form wrap" id="lg-form" style="margin-bottom:10px">
+        <select id="lg-action" aria-label="{{t "动作"}}"></select>
+        <select id="lg-category" aria-label="{{t "动作类别"}}"></select>
+        <select id="lg-result" aria-label="{{t "结果"}}"></select>
+        <input type="search" id="lg-user" placeholder="{{t "用户名"}}" aria-label="{{t "用户名"}}" style="width:130px">
+        <input type="search" id="lg-search" placeholder="{{t "搜索用户 / 动作 / IP / 信息"}}" aria-label="{{t "关键词"}}">
+        <input type="date" id="lg-start" class="date-in" aria-label="{{t "开始日期"}}"> ~ <input type="date" id="lg-end" class="date-in" aria-label="{{t "结束日期"}}">
+        <label class="chk"><input type="checkbox" id="lg-risky"> {{t "仅高危操作"}}</label>
+        <button class="btn" type="submit">{{t "搜索"}}</button>
+        <button class="btn" type="button" id="lg-reset">{{t "重置"}}</button>
+        <button class="btn" type="button" id="lg-export">{{t "导出 CSV"}}</button>
+      </form>
+      <div id="lg-extnote"></div>
+      <div class="grid-wrap"><table class="list">
+        <thead><tr><th>{{t "时间"}}</th><th>{{t "用户"}}</th><th>{{t "类别 / 模块"}}</th><th>{{t "动作"}}</th><th>{{t "结果"}}</th><th>{{t "来源 IP"}}</th><th>{{t "额外信息"}}</th></tr></thead>
+        <tbody id="lg-rows"><tr><td colspan="7" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table></div>
+      <div class="pager" id="lg-pager"></div>
+    </div>
+
+    <div class="fill-pane" data-pane="wf" hidden>
+      <div class="au-dist" id="wf-dist" hidden>
+        <h2>{{t "工单状态分布"}} <span class="muted small" id="wf-dist-sub"></span></h2>
+        <div class="au-stack" id="wf-stack" role="img" aria-label="{{t "工单状态分布"}}"></div>
+        <div class="au-legend" id="wf-legend"></div>
+      </div>
+      <form class="inline-form wrap" id="wf-form" style="margin-bottom:10px">
+        <select id="wf-status" aria-label="{{t "工单状态"}}"></select>
+        <select id="wf-group" aria-label="{{t "资源组"}}"></select>
+        <input type="search" id="wf-search" placeholder="{{t "搜索工单名 / 提交人"}}" aria-label="{{t "关键词"}}">
+        <input type="date" id="wf-start" class="date-in" aria-label="{{t "开始日期"}}"> ~ <input type="date" id="wf-end" class="date-in" aria-label="{{t "结束日期"}}">
+        <button class="btn" type="submit">{{t "搜索"}}</button>
+      </form>
+      <div class="grid-wrap"><table class="list">
+        <thead><tr><th>{{t "工单"}}</th><th>{{t "提交人"}}</th><th>{{t "资源组"}}</th><th>{{t "实例 / 库"}}</th><th>{{t "类型"}}</th><th>{{t "状态"}}</th><th>{{t "创建时间"}}</th><th>{{t "结束时间"}}</th></tr></thead>
+        <tbody id="wf-rows"><tr><td colspan="8" class="empty">{{t "点击页签后加载"}}</td></tr></tbody>
+      </table></div>
+      <div class="pager" id="wf-pager"></div>
+    </div>
+
+    <div class="fill-pane" data-pane="ql" hidden>
+      <div class="kpis au-kpis" id="ql-kpis" hidden></div>
+      <form class="inline-form wrap" id="ql-form" style="margin-bottom:10px">
+        <input type="search" id="ql-user" placeholder="{{t "用户名（精确）"}}" aria-label="{{t "用户名"}}" style="width:150px">
+        <input type="search" id="ql-instance" placeholder="{{t "实例名（精确）"}}" aria-label="{{t "实例名"}}" style="width:150px">
+        <input type="search" id="ql-search" placeholder="{{t "搜索 SQL / 原因 / 库"}}" aria-label="{{t "关键词"}}">
+        <input type="date" id="ql-start" class="date-in" aria-label="{{t "开始日期"}}"> ~ <input type="date" id="ql-end" class="date-in" aria-label="{{t "结束日期"}}">
+        <label class="chk"><input type="checkbox" id="ql-rejected"> {{t "仅被拒绝"}}</label>
+        <button class="btn" type="submit">{{t "搜索"}}</button>
+      </form>
+      <div id="ql-note"></div>
+      <div class="grid-wrap"><table class="list">
+        <thead><tr><th>{{t "时间"}}</th><th>{{t "用户"}}</th><th>{{t "实例"}}</th><th>{{t "库"}}</th><th>SQL</th><th>{{t "行数"}}</th><th>{{t "耗时(s)"}}</th><th>{{t "结果"}}</th></tr></thead>
+        <tbody id="ql-rows"><tr><td colspan="8" class="empty">{{t "点击页签后加载"}}</td></tr></tbody>
+      </table></div>
+      <div class="pager" id="ql-pager"></div>
+    </div>
+  </section>
+
+  <div class="modal-mask" id="au-detail" hidden>
+    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="au-detail-title">
+      <h2 id="au-detail-title">{{t "审计详情"}}</h2>
+      <div id="au-detail-body"></div>
+      <div class="actions"><button class="btn" type="button" data-close>{{t "关闭"}}</button></div>
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysadmin/audit.js"></script>{{end}}

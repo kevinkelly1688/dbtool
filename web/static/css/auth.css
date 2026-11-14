@@ -1,0 +1,116 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: auth.css
+ * @time: 2026/10/28
+ */
+/* 登录页、两步验证页（authx 模块）。管理页（登录方式、登录与安全设置）的样式在本文件下半部分。 */
+
+/* ---- 登录页 ---- */
+.login-card .btn.sso { margin-top: 12px; text-decoration: none; }
+.login-card .btn.sso:first-of-type { margin-top: 0; }
+.login-card details.local-form, .login-card details.signup { margin-top: 14px; }
+.login-card details > summary { cursor: pointer; color: var(--dt-muted); font-size: 12.5px; padding: 4px 0; }
+.login-card details > summary:hover { color: var(--dt-fg); }
+.login-card details[open] > summary { margin-bottom: 4px; }
+.login-card .alert { margin-top: 0; }
+
+/* ---- 两步验证页 ---- */
+.method-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+.method-tabs a { padding: 4px 10px; border: 1px solid var(--dt-line-hi); border-radius: 14px; color: var(--dt-muted); text-decoration: none; font-size: 12.5px; }
+.method-tabs a.on { color: var(--dt-cyan-text); border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); }
+.tfa-qr { display: block; width: 224px; height: 224px; margin: 10px auto; background: #fff; padding: 8px; border-radius: 4px; image-rendering: pixelated; }
+.tfa-secret { display: block; word-break: break-all; padding: 6px 8px; margin: 6px 0; background: var(--dt-input); border: 1px solid var(--dt-line); border-radius: 4px; user-select: all; }
+.login-card .tfa-code { letter-spacing: .3em; font-size: 18px; text-align: center; font-family: ui-monospace, Consolas, monospace; }
+.login-card form + form { margin-top: 6px; }
+.sso-test pre { white-space: pre-wrap; word-break: break-word; }
+
+/* ==== 管理页样式（登录方式 / 登录与安全设置）见下 ==== */
+
+/* 两栏卡片：宽屏并排，窄屏叠成一列（admin.css 只有窄屏规则） */
+#ap .cols, #sec .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; margin-bottom: 14px; }
+#ap .cols > .card, #sec .cols > .card { margin-bottom: 0; min-width: 0; }
+@media (max-width: 900px) { #ap .cols, #sec .cols { grid-template-columns: 1fr; } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* app.css 给所有 select 定了 30px 高，多选框需要放开 */
+#ap select[multiple], #sec select[multiple], .modal select[multiple] { height: auto; min-height: 64px; padding: 4px 6px; }
+#ap .form-grid.one label.check, #sec .form-grid.one label.check { margin-top: 0; }
+
+/* 登录方式列表：排序列、拖动手柄、操作按钮间距 */
+#ap .sort-cell { white-space: nowrap; width: 1%; }
+#ap .drag-handle { cursor: grab; color: var(--dt-dim); padding: 0 4px; user-select: none; letter-spacing: -2px; }
+#ap .btn.mini { height: 24px; padding: 0 7px; }
+#ap .btn.mini:disabled { opacity: .35; cursor: default; }
+#ap tr.dragging td { opacity: .45; }
+#ap .row-actions > * + * { margin-left: 4px; }
+#ap .local-row td { background: var(--dt-sunken); }
+
+/* 配置弹窗 */
+.modal .prov-body { padding: 10px 14px; }
+.modal .prov-fields + .form-grid { margin-top: 12px; }
+.modal table.list input[type=text] { width: 100%; }
+.modal .rule-table td { vertical-align: middle; }
+.modal .rule-table input, .modal .rule-table select { width: 100%; min-width: 110px; }
+.modal .copy-row { display: flex; gap: 8px; margin-top: 4px; }
+.modal .copy-row input { flex: 1; min-width: 0; }
+.modal .form-grid label .secret-clear { margin-top: 4px; height: 24px; font-size: 12px; padding: 0 8px; }
+label.check-inline { display: inline-flex; gap: 6px; align-items: center; color: var(--dt-fg); font-size: 12.5px; }
+label.check-inline input { margin: 0; }
+
+/* 测试结果：逐行显示，保留后端给的 ✔ / ✖ / ℹ / ⚠ 前缀 */
+.test-lines { white-space: pre-wrap; word-break: break-word; font-family: var(--dt-f-mono); font-size: 12.5px; }
+.test-lines div + div { margin-top: 2px; }
+#pt-last .st, #pt-last .badge { vertical-align: middle; }
+
+/* 安全设置：字段错误与短信测试 */
+.field-err { display: block; color: var(--dt-crit); margin-top: 4px; font-size: 12px; }
+#sec input[aria-invalid="true"] { border-color: var(--dt-crit); }
+#sec .sms-test { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+#sec .sms-test input { width: 180px; }
+
+/* ---- 登录页小项：记住账号、显示 / 隐藏密码、忘记密码 ---- */
+.login-card .pw-wrap { position: relative; }
+.login-card .pw-wrap input { padding-right: 56px; }
+.login-card .pw-eye { position: absolute; right: 4px; top: 4px; height: 28px; padding: 0 8px; border: 0; background: none; color: var(--dt-muted); cursor: pointer; font-size: 12.5px; }
+.login-card .pw-eye:hover { color: var(--dt-cyan-text); }
+.login-card .login-opts { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.login-card .login-opts label.check-inline { display: inline-flex; margin: 0; color: var(--dt-muted); }
+.login-card .login-opts input { width: auto; height: auto; }
+.linklike { background: none; border: 0; padding: 0; color: var(--dt-cyan-text); cursor: pointer; font-size: 12.5px; }
+.linklike:hover { text-decoration: underline; }
+.forgot-list li { line-height: 1.8; color: var(--dt-fg); }
+
+/* ---- 修改密码 / 账号绑定 ---- */
+#pw .pw-card { max-width: 520px; }
+#bd .card .toolbar { margin-bottom: 0; }
+
+/* ---- 管理页：概览 KPI 卡片 ---- */
+.kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
+@media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi-row .kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; min-width: 0; }
+.kpi-row .kl { color: var(--dt-muted); font-size: 12px; }
+.kpi-row .kv { font-size: 22px; line-height: 1.25; letter-spacing: -.01em; }
+.kpi-row .kv.ok { color: var(--dt-ok); }
+.kpi-row .kv.warn { color: var(--dt-amber); }
+.kpi-row .kd { color: var(--dt-dim); font-size: 12px; }
+
+/* ---- 安全设置：水印 ---- */
+#sec .btn.mini { height: 24px; padding: 0 7px; font-family: var(--dt-f-mono); font-size: 12px; }
+.wm-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .wm-grid { grid-template-columns: 1fr; } }
+#sec .wm-vars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+#sec .wm-range { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+#sec .wm-range input[type=range] { flex: 1; margin: 0; }
+#sec .wm-range b { width: 44px; text-align: right; color: var(--dt-fg); }
+#sec .wm-prev { height: 170px; margin-top: 4px; border: 1px dashed var(--dt-line-hi); border-radius: 8px; background-color: var(--dt-input); background-repeat: repeat; overflow: hidden; }
+#sec .lbl { display: block; font-size: 12.5px; color: var(--dt-muted); }
+
+/* ---- 登录方式：登录页预览 ---- */
+.login-prev { display: flex; justify-content: center; padding: 6px 0; }
+.lp-card { width: min(380px, 100%); display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--dt-line); border-radius: 12px; background: var(--dt-raise); }
+.lp-title { font-size: 18px; font-weight: 700; }
+.lp-card .lp-btn { justify-content: center; pointer-events: none; }
+.lp-card .lp-form { display: flex; flex-direction: column; gap: 8px; }
+.lp-card .lp-input { padding: 6px 10px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); color: var(--dt-dim); }

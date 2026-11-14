@@ -1,0 +1,56 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: detail.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page" id="perf-detail" data-id="{{.Data.ID}}">
+  <div class="page-head"><a class="btn ghost" href="/perf" aria-label="{{t "返回列表"}}">←</a><h1>{{t "性能工单 #{id}" "id" .Data.ID}}</h1><span id="pd-sev"></span><span id="pd-status"></span><span class="spacer"></span></div>
+  <div id="pd-msg"></div>
+  <p class="muted small" id="pd-sub">{{t "加载中…"}}</p>
+  <p class="small" id="pd-sla"></p>
+  <div id="pd-pending"></div>
+  <section class="card" id="pd-effect-card" hidden><h2>{{t "修复效果"}} <small class="muted" id="pd-effect-sub"></small></h2><div class="kpis pd-effect" id="pd-effect"></div><p class="muted small" id="pd-effect-note"></p></section>
+  <section class="card"><div class="actions perf-actions" id="pd-actions"></div></section>
+  <div class="kpis" id="pd-kpis"></div>
+  <div class="dgrid" style="grid-template-columns:1.4fr 1fr">
+    <div>
+      <section class="card"><h2>{{t "近 30 天趋势"}} <small class="muted">{{t "柱=每日总耗时(s) · 线=平均耗时(ms)"}}</small></h2><div id="pd-trend"></div></section>
+      <section class="card"><h2>{{t "SQL 样例"}} <small class="muted" id="pd-seen"></small><span class="spacer"></span><button class="btn" id="pd-copy" type="button">{{t "复制"}}</button></h2>
+        <pre class="sqlbox mono" id="pd-sql"></pre><p class="muted small" id="pd-fp"></p></section>
+      <section class="card" id="pd-explain-card" hidden><h2>{{t "执行计划"}}</h2><div class="grid-wrap"><table class="list" id="pd-explain"></table></div></section>
+    </div>
+    <div>
+      <section class="card"><h2 id="pd-diag-title">{{t "诊断"}}</h2><ul class="plain" id="pd-diag"></ul><b class="small">{{t "优化建议"}}</b><ol class="plain" id="pd-suggest"></ol>
+        <div id="pd-ddl-box" hidden><b class="small">{{t "建议 DDL（需 DBA 评估）"}}</b><pre class="sqlbox mono" id="pd-ddl"></pre></div></section>
+      <section class="card"><h2>{{t "处理信息"}}</h2><dl class="kv" id="pd-info"></dl></section>
+      <section class="card"><h2>{{t "处理记录"}}</h2><ul class="log" id="pd-log"></ul></section>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="modal-mask" id="m-perf-act" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="pa-title"><h2 id="pa-title">{{t "操作"}}</h2>
+  <div id="pa-msg"></div>
+  <div class="form-grid one">
+    <label data-f="plan">{{t "承诺完成日期"}}<input type="date" id="pa-plan"></label>
+    <label data-f="ext">{{t "申请延期至"}}<input type="date" id="pa-ext"></label>
+    <label data-f="assignee">{{t "负责人"}}<select id="pa-assignee"></select></label>
+    <label data-f="team">{{t "团队"}}<select id="pa-team"></select></label>
+    <label data-f="sev">{{t "级别"}}<select id="pa-sev"></select></label>
+    <label data-f="side">{{t "处理方"}}<select id="pa-side"></select></label>
+    <label data-f="wf">{{t "关联上线工单号（可选）"}}<input type="number" id="pa-wf" min="1" step="1" placeholder="{{t "例：1042"}}"></label>
+    <label data-f="sql">{{t "真实 SQL（可空）"}}<textarea rows="4" class="mono" id="pa-sql"></textarea></label>
+    <label data-f="remark"><span id="pa-remark-label">{{t "备注"}}</span><textarea rows="3" id="pa-remark"></textarea></label>
+  </div>
+  <div id="pa-effect" class="alert info" hidden></div>
+  <p class="muted small" id="pa-tip"></p>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" id="pa-ok" type="button">{{t "提交"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/detail.js"></script>{{end}}

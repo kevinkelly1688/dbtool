@@ -1,0 +1,21 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sso_test.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/auth.css">{{end}}
+
+{{define "content"}}
+<main class="login-wrap sso-test">
+  <div class="login-card wide">
+    <h1>{{t "测试登录结果"}}</h1>
+    {{with .Data}}
+      <div class="alert {{if .OK}}info{{else}}err{{end}}" role="status">{{if .OK}}{{t "授权流程已走通，该登录方式已记录为“测试通过”。"}}{{else}}{{t "测试没有通过，请调整配置后重试。"}}{{end}}</div>
+      <pre>{{range .Lines}}{{.}}
+{{end}}</pre>
+    {{end}}
+    <a class="btn" href="/settings/auth-providers">{{t "回到登录认证"}}</a>
+  </div>
+</main>
+{{end}}

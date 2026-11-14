@@ -1,0 +1,167 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: auth_groups.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="ag">
+  <div class="page-head">
+    <h1>{{t "权限组"}}</h1>
+    <span class="spacer"></span>
+    <button class="btn primary" type="button" id="ag-new">+ {{t "新建权限组"}}</button>
+  </div>
+  <div id="ag-msg"></div>
+
+  <section class="card" id="bp-setting">
+    <h2>{{t "无权限按钮的显示方式"}}</h2>
+    <div class="alert warn" id="bp-tables" hidden>{{t "按钮权限表未创建，请先执行 deploy/sql/019_btnperm.sql。"}}</div>
+    <div class="alert warn" id="bp-compat" hidden>{{t "权限还没有迁移到按钮权限：请在服务器上运行 dbt-admin perm migrate（先不加 --apply 预览，再加 --apply 执行）。迁移完成前，普通用户没有任何按钮权限（超级用户不受影响）。"}}</div>
+    <div class="form-grid">
+      <label>{{t "无权限的按钮"}}
+        <select id="bp-deny" aria-label="{{t "无权限的按钮"}}"><option value="hide">{{t "隐藏（默认）"}}</option><option value="disable">{{t "置灰并提示所需权限"}}</option></select>
+      </label>
+      <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" id="bp-setting-save">{{t "保存"}}</button></div>
+    </div>
+  </section>
+
+  <div class="cols wide-left">
+    <section class="card">
+      <h2>{{t "权限组"}}</h2>
+      <div class="side-list" id="ag-list" role="listbox" aria-label="{{t "权限组列表"}}"></div>
+    </section>
+
+    <section class="card" id="ag-main">
+      <div class="tabbar" role="tablist">
+        <button class="tab on" type="button" data-tab="basic" role="tab">{{t "基本信息"}}</button>
+        <button class="tab" type="button" data-tab="members" role="tab">{{t "成员"}}</button>
+        <button class="tab" type="button" data-tab="user" role="tab">{{t "按用户查看有效权限"}}</button>
+        <button class="tab" type="button" data-tab="btn" role="tab">{{t "按钮权限"}}</button>
+      </div>
+
+      <div data-pane="basic">
+        <div class="form-grid">
+          <label>{{t "组名"}}<input type="text" id="ag-name" maxlength="150" aria-label="{{t "组名"}}"><small class="muted" id="ag-name-hint" hidden>{{t "内置权限组不可改名"}}</small></label>
+          <label>{{t "说明（≤200 字）"}}<input type="text" id="ag-desc" maxlength="200" aria-label="{{t "说明"}}"></label>
+          <div class="full"><span class="lbl">{{t "引用情况"}}</span><div class="small" id="ag-refs">—</div></div>
+        </div>
+        <p class="small muted" style="margin-top:12px">{{t "这个权限组能打开哪些页面、能点哪些按钮，在“按钮权限”页签里设置。"}}</p>
+        <div class="actions">
+          <button class="btn ghost danger" type="button" id="ag-delete" hidden>{{t "删除权限组"}}</button>
+          <button class="btn" type="button" id="ag-copy" hidden>{{t "复制该组"}}</button>
+          <span class="spacer"></span>
+          <button class="btn primary" type="button" id="ag-save">{{t "保存"}}</button>
+        </div>
+      </div>
+
+      <div data-pane="members" hidden>
+        <table class="list">
+          <thead><tr><th>{{t "用户名"}}</th><th>{{t "姓名"}}</th><th>{{t "状态"}}</th></tr></thead>
+          <tbody id="ag-members"><tr><td colspan="3" class="empty">{{t "请先选择一个权限组"}}</td></tr></tbody>
+        </table>
+        <p class="small-note"><a href="/settings/users">{{t "去用户列表"}}</a></p>
+      </div>
+
+      <div data-pane="user" hidden>
+        <div class="toolbar">
+          <input type="search" id="au-q" placeholder="{{t "搜索用户名 / 姓名"}}" aria-label="{{t "搜索用户"}}">
+          <button class="btn" type="button" id="au-search">{{t "搜索"}}</button>
+          <select id="au-user" aria-label="{{t "选择用户"}}" style="min-width:260px"></select>
+        </div>
+        <h3 style="margin-top:12px">{{t "有效权限"}} <small class="muted" id="bu-info"></small></h3>
+        <p class="small" id="bu-sum"></p>
+        <div class="toolbar">
+          <select id="bu-flt" aria-label="{{t "筛选有效权限"}}">
+            <option value="all">{{t "全部按钮"}}</option><option value="allow">{{t "仅允许"}}</option><option value="deny">{{t "仅禁止 / 未授予"}}</option><option value="ovr">{{t "仅单独授权 / 禁用"}}</option>
+          </select>
+          <input type="search" id="bu-q" placeholder="{{t "搜索页面 / 按钮 / 权限码"}}" aria-label="{{t "搜索按钮"}}" style="min-width:220px">
+          <span class="spacer"></span>
+          <button class="btn" type="button" id="bu-open" disabled>{{t "单独授权 / 禁用…"}}</button>
+        </div>
+        <table class="list">
+          <thead><tr><th>{{t "页面"}}</th><th>{{t "按钮"}}</th><th>{{t "权限码"}}</th><th>{{t "结果"}}</th><th>{{t "来源"}}</th></tr></thead>
+          <tbody id="bu-rows"><tr><td colspan="5" class="empty">{{t "请先选择用户"}}</td></tr></tbody>
+        </table>
+        <h4>{{t "单独授权 / 禁用记录"}}</h4>
+        <table class="list">
+          <thead><tr><th>{{t "按钮"}}</th><th>{{t "方式"}}</th><th>{{t "到期"}}</th><th>{{t "原因"}}</th><th>{{t "设置人"}}</th><th>{{t "操作"}}</th></tr></thead>
+          <tbody id="bu-ovr"><tr><td colspan="6" class="empty">{{t "请先选择用户"}}</td></tr></tbody>
+        </table>
+      </div>
+
+      <div data-pane="btn" hidden>
+        <div class="alert info" id="bp-new-hint" hidden>{{t "请先保存权限组，再设置按钮权限。"}}</div>
+        <div class="cols" id="bp-cols" style="grid-template-columns:minmax(260px,1fr) 3fr">
+          <div>
+            <section class="card">
+              <h2>{{t "已授予"}}</h2>
+              <p><b id="bp-total">0</b> / <span id="bp-all">0</span> {{t "个按钮 · 其中高危"}} <b class="crit" id="bp-danger">0</b></p>
+              <p class="small muted" id="bp-members"></p>
+              <label class="muted small">{{t "套用预设"}}
+                <select id="bp-preset" aria-label="{{t "预设角色"}}"></select>
+              </label>
+              <div class="actions">
+                <button class="btn" type="button" id="bp-apply-preset">{{t "套用"}}</button>
+                <span class="spacer"></span>
+                <button class="btn" type="button" id="bp-reset">{{t "还原"}}</button>
+                <button class="btn primary" type="button" id="bp-save">{{t "保存…"}}</button>
+              </div>
+            </section>
+            <section class="card" id="bp-preview">
+              <h2>{{t "页面预览"}} <small class="muted" id="bp-ptitle"></small></h2>
+              <div id="bp-pbody" class="muted small">{{t "未选择页面"}}</div>
+            </section>
+          </div>
+          <div>
+            <div class="toolbar">
+              <input type="search" id="bp-q" placeholder="{{t "搜索页面 / 按钮 / 权限码"}}" aria-label="{{t "搜索按钮权限"}}" style="min-width:260px">
+              <button class="btn" type="button" id="bp-bulk-view">{{t "仅查看类"}}</button>
+              <button class="btn" type="button" id="bp-bulk-all">{{t "全选可授予"}}</button>
+              <button class="btn" type="button" id="bp-bulk-none">{{t "清空"}}</button>
+              <span class="spacer"></span>
+              <a href="#" id="bp-open">{{t "全部展开"}}</a> · <a href="#" id="bp-close">{{t "全部收起"}}</a>
+            </div>
+            <div id="bp-tree"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="modal-mask" id="m-bp-diff" hidden role="dialog" aria-modal="true" aria-labelledby="bd-title">
+  <div class="modal wide">
+    <h2 id="bd-title">{{t "确认按钮权限变更"}}</h2>
+    <p class="small" id="bd-sum"></p>
+    <div id="bd-body"></div>
+    <label class="full">{{t "原因（可选）"}}<input type="text" id="bd-reason" maxlength="200" aria-label="{{t "原因"}}"></label>
+    <label class="check" id="bd-danger-box" hidden><input type="checkbox" id="bd-danger"> {{t "我已确认授予上面标 ⚠ 的高危按钮"}}</label>
+    <div id="bd-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="bd-ok">{{t "确认保存"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-user-perm" hidden role="dialog" aria-modal="true" aria-labelledby="up-title">
+  <div class="modal wide">
+    <h2 id="up-title">{{t "单独授权 / 禁用"}} <small class="muted" id="up-user"></small></h2>
+    <div class="form-grid">
+      <label>{{t "方式"}}
+        <select id="up-effect" aria-label="{{t "方式"}}"><option value="allow">{{t "单独授权（追加）"}}</option><option value="deny">{{t "单独禁用（优先于授权）"}}</option></select>
+      </label>
+      <label>{{t "到期日（可空）"}}<input type="date" id="up-expire" aria-label="{{t "到期日"}}"></label>
+      <div class="full">
+        <span class="lbl">{{t "按钮"}}</span>
+        <input type="search" id="up-q" placeholder="{{t "搜索按钮 / 权限码"}}" aria-label="{{t "搜索按钮"}}" style="width:100%;margin-bottom:6px">
+        <div class="check-list tall" id="up-list"></div>
+      </div>
+      <label class="full">{{t "原因（必填）"}}<input type="text" id="up-reason" maxlength="200" placeholder="{{t "例：大促值班期间临时授权"}}" aria-label="{{t "原因"}}"></label>
+    </div>
+    <div id="up-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="up-save">{{t "保存"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysadmin/auth_groups.js"></script>{{end}}

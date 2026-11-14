@@ -1,0 +1,30 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: redisrule.css
+ * @time: 2026/10/28
+ */
+/* Redis 上线规则页（系统管理 › Redis 上线规则）独有的样式；公共组件见 admin.css / app.css。 */
+#rr [hidden] { display: none !important; }
+#rr .rr-tpl { display: inline-flex; align-items: center; gap: 6px; color: var(--dt-muted); }
+#rr .rr-chips { margin-top: 8px; }
+#rr .rr-chips .chip { font-family: var(--dt-f-mono); }
+#rr .rr-chips .chip.pick { cursor: pointer; background: var(--dt-raise); }
+#rr .rr-chips .chip.pick:hover { border-color: var(--dt-cyan); color: var(--dt-fg); }
+#rr .chip.bad { color: var(--dt-crit); border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+#rr .rr-err { display: block; min-height: 1.2em; margin-top: 3px; color: var(--dt-crit); }
+#rr table.list td.rr-cell { max-width: 260px; word-break: break-all; }
+#rr table.list td .chip { margin: 0 4px 4px 0; font-family: var(--dt-f-mono); }
+#rr table.list tr.rr-off td { opacity: .6; }
+#rr table.list td.rr-ops { white-space: nowrap; }
+#rr details { margin: 8px 0; }
+#rr details summary { cursor: pointer; font-weight: 600; }
+#rr .rr-diff { white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; padding: 8px 10px; background: var(--dt-raise); border-radius: 4px; }
+#rr table.list tr.lv-err td { background: var(--dt-crit-soft); }
+#rr table.list tr.lv-warn td { background: var(--dt-amber-soft); }
+#rr .form-grid label small { display: block; margin-top: 3px; }
+#rr textarea { display: block; width: 100%; margin-top: 4px; box-sizing: border-box; font-family: var(--dt-f-mono); font-size: 12.5px; }
+#rr .form-grid label.check > span { color: var(--dt-fg); }
+#rr .form-grid label.check { margin-top: 4px; }
+#rr .rr-pick { margin: 0; }
+#rr .rr-pick .rr-chips { max-height: 160px; overflow: auto; }

@@ -1,0 +1,64 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: sqlopt.css
+ * @time: 2026/10/28
+ */
+/* SQL 分析 / SQL 优化工具（internal/sqlopt）独有的样式；公共组件见 app.css / admin.css。 */
+.so-progress { height: 6px; background: var(--dt-line); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.so-progress > div { height: 100%; width: 0; background: var(--dt-cyan); border-radius: 3px; transition: width .3s; }
+.so-note { white-space: pre-line; }
+
+/* 建议列表 */
+.so-score { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; }
+.so-score b { font-size: 26px; font-family: var(--dt-f-mono); }
+.so-score b.good { color: var(--dt-ok); }
+.so-score b.mid { color: var(--dt-amber); }
+.so-score b.bad { color: var(--dt-crit); }
+.so-finds { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.so-find { border: 1px solid var(--dt-line); border-left-width: 3px; border-radius: 4px; padding: 8px 12px; background: var(--dt-sunken); }
+.so-find.high { border-left-color: var(--dt-crit); }
+.so-find.medium { border-left-color: var(--dt-amber); }
+.so-find.low { border-left-color: var(--dt-info); }
+.so-find.info { border-left-color: var(--dt-dim); }
+.so-find .t { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-weight: 600; }
+.so-find .t code { font-weight: 400; color: var(--dt-muted); }
+.so-find p { margin: 4px 0 0; color: var(--dt-muted); }
+.so-find pre { margin: 6px 0 0; }
+.so-sec { margin: 14px 0 6px; font-size: 13px; color: var(--dt-muted); font-weight: 600; }
+.so-empty { color: var(--dt-dim); padding: 8px 0; }
+
+/* SOAR 的 Markdown 报告 */
+.so-md { padding: 8px 12px; border: 1px solid var(--dt-line); border-radius: 4px; background: var(--dt-sunken); line-height: 1.7; }
+.so-md h3, .so-md h4, .so-md h5 { margin: 12px 0 4px; }
+.so-md ul { margin: 4px 0; padding-left: 20px; }
+.so-md p { margin: 4px 0; }
+.so-md pre { margin: 6px 0; }
+.so-md code { font-family: var(--dt-f-mono); background: var(--dt-input); padding: 0 4px; border-radius: 3px; }
+.so-md pre code { background: none; padding: 0; }
+
+/* 汇总 */
+.so-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.so-sum > div { border: 1px solid var(--dt-line); border-radius: 4px; padding: 8px 12px; background: var(--dt-sunken); }
+.so-sum b { display: block; font-size: 22px; font-family: var(--dt-f-mono); }
+.so-sum span { color: var(--dt-muted); font-size: 12px; }
+
+/* 优化工具页 */
+.so-kv { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; margin: 0 0 8px; }
+.so-kv dt { color: var(--dt-muted); }
+.so-kv dd { margin: 0; word-break: break-all; }
+.so-plan-json { max-height: 480px; }
+.so-tbl-wrap { overflow: auto; max-height: 360px; border: 1px solid var(--dt-line); border-radius: 4px; }
+.so-tbl-wrap table.list td { white-space: pre-wrap; word-break: break-all; }
+.so-null { color: var(--dt-dim); font-style: italic; }
+td.so-sql { max-width: 560px; }
+
+/* 索引建议的补充：建索引前后的执行计划对比、现有索引清单 */
+.so-cmp td.so-cmp-new { color: var(--dt-ok); font-weight: 600; }
+.so-redundant td { background: color-mix(in srgb, var(--dt-amber) 10%, transparent); }
+.so-tbl-wrap td.warn-text { color: var(--dt-amber); }
+
+/* 优化工具：左侧 SQL 卡片与右侧选项卡片等高，编辑器随右侧高度增长（只作用于本页；窄屏单列时不受影响） */
+#sqladvisor .dgrid { align-items: stretch; }
+#sqladvisor .dgrid > .card:first-child { display: flex; flex-direction: column; }
+#sqladvisor .dgrid > .card:first-child .editor-wrap { flex: 1 1 auto; }

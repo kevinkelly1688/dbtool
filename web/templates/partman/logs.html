@@ -1,0 +1,43 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: logs.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/partman.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="partman-logs">
+  <div class="page-head">
+    <h1>{{t "分区维护"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form" id="pg-filter">
+      <select id="pg-config" aria-label="{{t "配置"}}"><option value="">{{t "全部配置"}}</option></select>
+      <select id="pg-source" aria-label="{{t "来源"}}">
+        <option value="">{{t "全部来源"}}</option>
+        <option value="manual">{{t "手工"}}</option>
+        <option value="auto">{{t "定时"}}</option>
+        <option value="external">{{t "外部程序"}}</option>
+        <option value="system">{{t "系统记录"}}</option>
+      </select>
+      <button class="btn" type="submit">{{t "查询"}}</button>
+    </form>
+  </div>
+  <nav class="pm-tabs" aria-label="{{t "分区维护"}}">
+    <a href="/partman">{{t "分区配置"}}</a>
+    <a class="on" href="/partman/logs" aria-current="page">{{t "维护日志"}}</a>
+  </nav>
+  <div id="pg-msg"></div>
+
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "时间"}}</th><th>{{t "日志 ID"}}</th><th>{{t "实例"}}</th><th>{{t "库.表"}}</th><th>{{t "来源"}}</th><th>{{t "操作人"}}</th><th>{{t "状态"}}</th><th>{{t "语句与结果"}}</th></tr></thead>
+      <tbody id="pg-rows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pm-pager"><span class="muted" id="pg-total"></span><span class="spacer"></span>
+      <button class="btn ghost" id="pg-prev" type="button">{{t "上一页"}}</button><button class="btn ghost" id="pg-next" type="button">{{t "下一页"}}</button></div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/partman/logs.js"></script>{{end}}

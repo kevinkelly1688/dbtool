@@ -1,0 +1,43 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: binlog.css
+ * @time: 2026/10/28
+ */
+/* Binlog 解析（internal/binlog）独有的样式；公共组件见 app.css / admin.css。 */
+#bl .bl-inst-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 24px; }
+#bl .bl-inst-row > label { flex: 0 1 340px; min-width: 240px; }
+#bl .bl-inst-row > .lbl { flex: 1 1 420px; min-width: 0; }
+#bl .bl-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 4px; min-height: 30px; }
+#bl .bl-info .chips { border: 0; background: none; padding: 0; min-height: 0; gap: 6px; }
+#bl .bl-info .chip { cursor: default; border-radius: 4px; padding: 1px 8px; background: var(--dt-sunken); border-color: var(--dt-line); font-size: 12px; }
+#bl .bl-info .chip.ok { color: var(--dt-ok); border-color: var(--dt-ok-line); background: var(--dt-ok-soft); }
+#bl .bl-info .chip.warn { color: var(--dt-amber); border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+#bl .bl-info .small { margin: 0; white-space: nowrap; }
+#bl .bl-ok { color: var(--dt-ok); }
+#bl .bl-warn { color: var(--dt-amber); }
+#bl .bl-modes, #bl .bl-checks { display: flex; flex-wrap: wrap; gap: 4px 0; margin-top: 4px; }
+#bl .bl-modes .radio { display: flex; margin-right: 24px; }
+#bl .bl-checks .radio { margin-right: 18px; }
+#bl .form-grid label textarea { display: block; width: 100%; margin-top: 4px; }
+#bl select[multiple] { height: auto; min-height: 112px; }
+#bl .bl-actions { align-self: end; display: flex; gap: 8px; flex-wrap: wrap; }
+
+#bl .bl-progress { height: 6px; background: var(--dt-line); border-radius: 3px; margin: 0 0 10px; overflow: hidden; position: relative; }
+#bl .bl-progress > div { position: absolute; top: 0; bottom: 0; width: 30%; background: var(--dt-cyan); border-radius: 3px; animation: bl-slide 1.4s ease-in-out infinite; }
+@keyframes bl-slide { 0% { left: -30%; } 100% { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { #bl .bl-progress > div { animation: none; left: 0; width: 100%; opacity: .5; } }
+#bl .bl-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 0 10px; }
+#bl .bl-kpis b { font-size: 18px; word-break: break-all; }
+@media (max-width: 900px) { #bl .bl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+#bl table.bl-table td.bl-sql { max-width: 720px; white-space: pre-wrap; word-break: break-all; }
+#bl td.bl-sql { max-height: 9em; }
+#bl td.nw { white-space: nowrap; }
+#bl td.bl-range { max-width: 360px; word-break: break-all; }
+#bl .badge.ok { background: var(--dt-ok-soft); color: var(--dt-ok); border-color: var(--dt-ok-line); }
+#bl .badge.warn { background: var(--dt-amber-soft); color: var(--dt-amber); border-color: var(--dt-amber-line); }
+#bl .badge.crit { background: var(--dt-crit-soft); color: var(--dt-crit); border-color: var(--dt-crit-line); }
+
+/* 回滚分段提示条：段号和“继续下一段”按钮之间留点间距 */
+.bl-seg .btn { margin-left: 8px; }

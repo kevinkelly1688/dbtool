@@ -1,0 +1,82 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: slowlogs.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/slowlog.css"><link rel="stylesheet" href="/static/css/slowlog_logs.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="slowlogs" data-can-opt="{{if .Data.CanOptimize}}1{{end}}">
+  <div class="page-head">
+    <h1>{{t "慢日志检索"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form" id="sl-form">
+      <select id="sl-inst" aria-label="{{t "实例"}}"><option value="">{{t "全部实例"}}</option></select>
+      <select id="sl-db" aria-label="{{t "库"}}"><option value="">{{t "全部库"}}</option></select>
+      <select id="sl-range" aria-label="{{t "时间范围"}}">
+        <option value="1">{{t "今日"}}</option>
+        <option value="7">{{t "最近 {n} 天" "n" 7}}</option>
+        <option value="31" selected>{{t "最近 {n} 天" "n" 31}}</option>
+        <option value="93">{{t "最近 {n} 天" "n" 93}}</option>
+        <option value="custom">{{t "自定义"}}</option>
+      </select>
+      <input type="date" id="sl-start" aria-label="{{t "开始日期"}}" required>
+      <input type="date" id="sl-end" aria-label="{{t "结束日期"}}" required>
+      <input type="search" id="sl-q" maxlength="200" placeholder="{{t "搜索 SQL / 库 / 用户"}}" aria-label="{{t "搜索 SQL、库、用户"}}">
+      <button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+  </div>
+  <div id="sl-msg"></div>
+
+  <div class="kpis sl-kpis" id="sl-kpis" aria-live="polite">
+    <div><b id="sl-k-total">—</b><span>{{t "慢 SQL 总次数"}}</span></div>
+    <div><b id="sl-k-fps">—</b><span>{{t "SQL 指纹数"}}</span></div>
+    <div><b id="sl-k-time">—</b><span>{{t "累计耗时"}}</span></div>
+    <div><b id="sl-k-max">—</b><span>{{t "最慢单条"}}</span><small class="muted" id="sl-k-maxnote"></small></div>
+  </div>
+  <div class="sl-charts">
+    <section class="card"><h2>{{t "每日慢 SQL 次数"}} <span class="sub muted small" id="sl-chart-count-sub"></span></h2><div id="sl-chart-count" class="sl-chart"></div></section>
+    <section class="card"><h2>{{t "每日累计耗时"}} <span class="sub muted small">{{t "秒"}}</span></h2><div id="sl-chart-time" class="sl-chart"></div></section>
+  </div>
+
+  <section class="card">
+    <table class="list" id="sl-table">
+      <thead id="sl-head"><tr>
+        <th>{{t "实例"}}</th><th>{{t "库名"}}</th><th>{{t "SQL 指纹"}}</th><th data-sort="count">{{t "合计"}}</th><th data-sort="exec_date">{{t "执行时间"}}</th><th>{{t "用户@主机"}}</th>
+        <th data-sort="total_time">{{t "总耗时(s)"}}</th><th data-sort="query_time_avg">AVG(s)</th><th data-sort="query_time_max">MAX(s)</th><th>MIN(s)</th>
+        <th data-sort="rows_sent_avg">{{t "返回 AVG/MAX/MIN"}}</th><th data-sort="rows_examined_avg">{{t "扫描 AVG/MAX/MIN"}}</th><th>{{t "查看"}}</th>
+      </tr></thead>
+      <tbody id="sl-rows"><tr><td colspan="13" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+    <div class="pager" id="sl-pager"></div>
+  </section>
+
+  <details class="acc">
+    <summary>{{t "采集器状态"}} <span class="muted small" id="sl-cstate"></span></summary>
+    <p class="muted small sl-cnote" id="sl-cnote"></p>
+    <table class="list">
+      <thead><tr><th>{{t "实例"}}</th><th>{{t "状态"}}</th><th>{{t "最近采集"}}</th><th>{{t "最近成功"}}</th><th>{{t "本次写入"}}</th><th>{{t "累计写入"}}</th><th>{{t "耗时(ms)"}}</th><th>{{t "错误"}}</th></tr></thead>
+      <tbody id="sl-crows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+  </details>
+
+  <div class="modal-mask sl-drawer" id="sl-modal" hidden>
+    <div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="sl-mtitle">
+      <h2 id="sl-mtitle">{{t "慢 SQL 明细"}}</h2>
+      <div class="sl-sum" id="sl-msum"></div>
+      <h3 class="sl-h3">{{t "SQL 指纹"}}</h3>
+      <pre class="sqlbox mono" id="sl-mfp"></pre>
+      <p class="small" id="sl-mopt-wrap" hidden><a id="sl-mopt" href="/sqladvisor">{{t "去智能调优 →"}}</a></p>
+      <h3 class="sl-h3" id="sl-mlist-title">{{t "最近 {n} 条" "n" 100}}</h3>
+      <table class="list">
+        <thead><tr><th>{{t "执行时间"}}</th><th>{{t "用户@主机"}}</th><th>{{t "库名"}}</th><th>{{t "查询时长(s)"}}</th><th>{{t "锁定时长(s)"}}</th><th>{{t "返回行数"}}</th><th>{{t "扫描行数"}}</th><th>SQL</th></tr></thead>
+        <tbody id="sl-mrows"></tbody>
+      </table>
+      <div class="actions"><span class="spacer"></span><button class="btn" type="button" id="sl-mclose">{{t "关闭"}}</button></div>
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/slowlog/slowlogs.js"></script>{{end}}

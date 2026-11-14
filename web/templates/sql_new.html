@@ -1,0 +1,76 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sql_new.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sqlflow.css">{{end}}
+{{define "content"}}
+<main class="page" id="sql-new" data-superuser="{{.Data.IsSuperuser}}">
+  <div class="page-head">
+    <a class="btn ghost" href="/sqlworkflow">&larr; {{t "返回列表"}}</a>
+    <h1>{{t "提交 SQL 工单"}}</h1>
+    <div class="wf-flow" id="flow-prev" aria-label="{{t "审批流程预览"}}"></div>
+  </div>
+
+  <div id="flow-note"></div>
+  <div id="new-msg"></div>
+
+  <section class="card">
+    <div class="form-grid">
+      <label class="wf-name">{{t "工单名称"}}<input type="text" id="wf-name" maxlength="50" placeholder="{{t "例如：orders 表加索引"}}" aria-label="{{t "工单名称"}}"></label>
+      <div class="wf-opts" id="wf-opts" role="group" aria-label="{{t "提交选项"}}">
+        <label class="check batch off" id="wf-batch-wrap" aria-disabled="true"><input type="checkbox" id="wf-batch" disabled> <b class="batch-title">{{t "批量提交"}}</b></label>
+        <label class="check" id="wf-backup-wrap"><input type="checkbox" id="wf-backup" checked> {{t "执行前备份，以便生成回滚语句"}}</label>
+        {{if .Data.IsSuperuser}}<label class="check risk" id="wf-skip-wrap"><input type="checkbox" id="wf-skip"> {{t "跳过语法检查（仅管理员）"}}</label>{{end}}
+      </div>
+      <label>{{t "资源组"}}<select id="wf-group" aria-label="{{t "资源组"}}"></select></label>
+      <label id="wf-inst-label">{{t "目标实例"}}<select id="wf-inst" aria-label="{{t "目标实例"}}"></select></label>
+      <label>{{t "数据库"}}<select id="wf-db" aria-label="{{t "数据库"}}"></select></label>
+      <label>{{t "需求链接（可不填）"}}<input type="url" id="wf-url" maxlength="500" placeholder="https://" aria-label="{{t "需求链接"}}"></label>
+      <label>{{t "可执行开始时间（可不填）"}}<input type="datetime-local" id="wf-start" aria-label="{{t "可执行开始时间"}}"></label>
+      <label>{{t "可执行结束时间（可不填）"}}<input type="datetime-local" id="wf-end" aria-label="{{t "可执行结束时间"}}"></label>
+      <div class="full" id="wf-batch-list" hidden>
+        <span class="lbl"><span class="bl-title">{{t "选择要上线的实例"}}</span>
+          <input type="search" id="wf-batch-q" placeholder="{{t "搜索实例"}}" aria-label="{{t "搜索实例"}}" autocomplete="off" class="batch-q">
+          <button class="btn ghost" type="button" id="wf-batch-all">{{t "全选"}}</button><button class="btn ghost" type="button" id="wf-batch-none">{{t "清空"}}</button>
+          <span class="muted" id="wf-batch-count"></span></span>
+        <div class="check-list" id="wf-batch-checks"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 id="wf-sql-title">{{t "SQL 内容"}}</h2>
+    <div class="alert warn rds-note" id="wf-redis-note" role="note" hidden>{{th "<b>Redis 命令模式：</b>每行一条命令，遇错即停，<b>没有自动回滚</b>。"}}</div>
+    <div id="wf-editor" class="editor-wrap tall" aria-label="{{t "SQL 编辑器"}}"></div>
+    <div class="actions">
+      <span class="muted" id="wf-engine-note"></span>
+      <span class="spacer"></span>
+      <button class="btn" id="wf-check" type="button">{{t "检查 SQL"}}</button>
+      <button class="btn primary" id="wf-submit" type="button" disabled>{{t "提交工单"}}</button>
+    </div>
+  </section>
+
+  <section class="card" id="inst-check" hidden>
+    <h2>{{t "实例预检"}}</h2>
+    <table class="list" id="inst-check-table">
+      <thead><tr><th>{{t "实例"}}</th><th>{{t "状态"}}</th><th>{{t "说明"}}</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="check-card" hidden>
+    <h2>{{t "检查结果"}} <span id="check-summary" class="muted"></span></h2>
+    <div id="check-notice"></div>
+    <div class="grid-wrap"><table class="list" id="check-table">
+      <thead><tr><th>#</th><th>{{t "阶段"}}</th><th>{{t "级别"}}</th><th>{{t "信息"}}</th><th>SQL</th><th>{{t "影响行数"}}</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script src="/static/vendor/ace/ace.js"></script>
+<script src="/static/vendor/ace/ext-language_tools.js"></script>
+<script type="module" src="/static/js/sqlflow/new.js"></script>{{end}}

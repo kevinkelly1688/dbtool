@@ -1,0 +1,95 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/duty.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="duty" data-edit="{{if .Btn.Can "duty.edit"}}1{{end}}" data-swap="{{if .Btn.Can "duty.swap"}}1{{end}}">
+  <div class="page-head">
+    <h1>{{t "值班表"}}</h1>
+    <span class="spacer"></span>
+    {{if .Btn.Show "duty.swap"}}<button class="btn" type="button" id="duty-swap-new"{{.Btn.Attr "duty.swap"}}>{{t "临时调班"}}</button>{{end}}
+    {{if .Btn.Show "duty.edit"}}<button class="btn primary" type="button" id="duty-shift-new"{{.Btn.Attr "duty.edit"}}>{{t "新建班次"}}</button>{{end}}
+  </div>
+  <div id="duty-msg" aria-live="polite"></div>
+  <div id="duty-missing" class="alert err" role="alert" hidden>{{th "值班表还没有创建，请先执行 <code>deploy/sql/300_duty.sql</code>；在此之前顶栏不显示值班信息。"}}</div>
+
+  <div id="duty-body" hidden>
+    <section class="card" id="duty-now"></section>
+
+    <section class="card">
+      <h2>{{t "排班预览"}} <span class="spacer"></span><span class="muted small" id="duty-tz"></span></h2>
+      <div class="duty-days" id="duty-days" role="group" aria-label="{{t "选择日期"}}"></div>
+      <div class="duty-day" id="duty-day"></div>
+    </section>
+
+    <section class="card">
+      <h2>{{t "班次"}} <span class="spacer"></span><span class="muted small">{{t "每天（或每周几天）循环；结束时间不晚于开始时间表示第二天，开始和结束相同表示 24 小时。"}}</span></h2>
+      <div class="grid-wrap">
+        <table class="list" id="duty-shifts">
+          <thead><tr><th>{{t "班次"}}</th><th>{{t "值班人"}}</th><th>{{t "时间"}}</th><th>{{t "适用星期"}}</th><th>{{t "联系方式"}}</th><th>{{t "最近修改"}}</th><th>{{t "操作"}}</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>{{t "临时调班"}} <span class="spacer"></span><span class="muted small">{{t "请假、换班、节假日顶班：这段时间由调班指定的人值班，优先于班次，不改班次本身。"}}</span></h2>
+      <div class="grid-wrap">
+        <table class="list" id="duty-overrides">
+          <thead><tr><th>{{t "时间"}}</th><th>{{t "值班人"}}</th><th>{{t "原因"}}</th><th>{{t "状态"}}</th><th>{{t "创建"}}</th><th>{{t "操作"}}</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-mask" id="duty-sm" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="duty-sm-title">
+    <h2 id="duty-sm-title">{{t "新建班次"}}</h2>
+    <div id="duty-sm-msg"></div>
+    <div class="form-grid">
+      <label>{{t "班次名称"}}<input type="text" id="duty-f-name" maxlength="40" autocomplete="off" placeholder="{{t "白班"}}"></label>
+      <label>{{t "值班人"}}<input type="text" id="duty-f-user" list="duty-users" autocomplete="off" placeholder="{{t "输入姓名或登录名"}}"></label>
+      <label>{{t "开始时间"}}<input type="time" id="duty-f-start" value="08:00"></label>
+      <label>{{t "结束时间"}}<input type="time" id="duty-f-end" value="19:00"></label>
+      <div class="full duty-span" id="duty-f-span" aria-live="polite"></div>
+      <div class="full"><span class="lbl">{{t "适用星期"}}</span>
+        <div class="duty-wd" id="duty-f-wd"></div>
+        <div class="duty-wd-quick"><button class="btn ghost" type="button" data-wd="all">{{t "每天"}}</button><button class="btn ghost" type="button" data-wd="work">{{t "工作日"}}</button><button class="btn ghost" type="button" data-wd="weekend">{{t "周末"}}</button></div>
+      </div>
+      <label>{{t "联系方式（选填）"}}<input type="text" id="duty-f-contact" maxlength="100" autocomplete="off" placeholder="{{t "电话或分机；不填则显示邮箱"}}"></label>
+      <label>{{t "备注（选填）"}}<input type="text" id="duty-f-remark" maxlength="200" autocomplete="off"></label>
+      <label class="check full"><input type="checkbox" id="duty-f-enabled" checked> {{t "启用（取消勾选则暂时不参与排班）"}}</label>
+    </div>
+    <div class="actions"><span class="spacer"></span>
+      <button class="btn" type="button" id="duty-sm-cancel">{{t "取消"}}</button>
+      <button class="btn primary" type="button" id="duty-sm-ok">{{t "保存"}}</button>
+    </div>
+  </div></div>
+
+  <div class="modal-mask" id="duty-om" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="duty-om-title">
+    <h2 id="duty-om-title">{{t "临时调班"}}</h2>
+    <div id="duty-om-msg"></div>
+    <div class="form-grid">
+      <label>{{t "值班人"}}<input type="text" id="duty-o-user" list="duty-users" autocomplete="off" placeholder="{{t "输入姓名或登录名"}}"></label>
+      <label>{{t "原因（选填）"}}<input type="text" id="duty-o-reason" maxlength="200" autocomplete="off" placeholder="{{t "请假 / 换班"}}"></label>
+      <label>{{t "按班次填入时间"}}<select id="duty-o-shift"></select></label>
+      <label>{{t "日期"}}<input type="date" id="duty-o-date"></label>
+      <label>{{t "开始时间"}}<input type="datetime-local" id="duty-o-start"></label>
+      <label>{{t "结束时间"}}<input type="datetime-local" id="duty-o-end"></label>
+      <label class="full">{{t "联系方式（选填）"}}<input type="text" id="duty-o-contact" maxlength="100" autocomplete="off" placeholder="{{t "电话或分机；不填则显示邮箱"}}"></label>
+    </div>
+    <div class="actions"><span class="spacer"></span>
+      <button class="btn" type="button" id="duty-om-cancel">{{t "取消"}}</button>
+      <button class="btn primary" type="button" id="duty-om-ok">{{t "保存"}}</button>
+    </div>
+  </div></div>
+
+  <datalist id="duty-users"></datalist>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/duty/main.js"></script>{{end}}

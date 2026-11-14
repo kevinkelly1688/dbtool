@@ -1,0 +1,99 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: applies.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/apply.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="applies" data-reason-required="{{.Data.ReasonRequired}}">
+  <div class="page-head">
+    <h1>{{t "查询权限申请"}}</h1>
+    <span class="spacer"></span>
+    <form method="get" action="/query/applies" class="inline-form" id="ap-filter">
+      <input type="hidden" name="tab" value="{{.Data.Tab}}">
+      <select name="status" aria-label="{{t "状态筛选"}}">
+        <option value="">{{t "全部状态"}}</option>
+        {{range .Data.Statuses}}<option value="{{.Value}}"{{if eq .Value $.Data.Status}} selected{{end}}>{{tp .Label}}</option>{{end}}
+      </select>
+      <input type="search" name="q" value="{{.Data.Q}}" placeholder="{{t "搜索编号 / 申请人 / 实例"}}" aria-label="{{t "搜索"}}" size="28">
+      <button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <button class="btn primary" id="new-apply" type="button">{{t "申请权限"}}</button>
+  </div>
+
+  <section class="card" id="apply-panel" hidden aria-label="{{t "提交权限申请"}}">
+    <h2>{{t "申请查询权限"}}</h2>
+    <div id="apply-msg"></div>
+    <div class="form-grid">
+      <label>{{t "实例"}}<select id="ap-inst" aria-label="{{t "实例"}}"></select></label>
+      <label>{{t "资源组"}}<select id="ap-group" aria-label="{{t "资源组"}}"></select></label>
+      <div class="full">
+        <span class="lbl">{{t "权限类型"}}</span>
+        <label class="radio"><input type="radio" name="ap-type" value="2" checked> {{t "表权限（指定表）"}}</label>
+        <label class="radio"><input type="radio" name="ap-type" value="1"> {{t "库权限（整个库）"}}</label>
+      </div>
+      <label id="ap-db-one">{{t "数据库"}}<select id="ap-db" aria-label="{{t "数据库"}}"></select></label>
+      <div class="full" id="ap-dbs-many" hidden>
+        <span class="lbl">{{t "数据库（可多选）"}}</span>
+        <div class="check-list" id="ap-db-checks"></div>
+      </div>
+      <div class="full" id="ap-tables-wrap">
+        <span class="lbl">{{t "表（可多选）"}}</span>
+        <input type="search" id="ap-table-q" placeholder="{{t "过滤表名"}}" aria-label="{{t "过滤表名"}}">
+        <div class="check-list" id="ap-table-checks"></div>
+      </div>
+      <label>{{t "有效期至"}}<input type="date" id="ap-date" aria-label="{{t "有效期"}}"></label>
+      <label>{{t "返回行数上限"}}<input type="number" id="ap-limit" min="1" max="1000000" value="500" aria-label="{{t "行数上限"}}"></label>
+      <label class="full" id="ap-reason-wrap"{{if not .Data.ReasonRequired}} hidden{{end}}>{{t "申请理由（必填，至少 5 个字）"}}<textarea id="ap-reason" rows="2" maxlength="500" aria-label="{{t "申请理由"}}"></textarea></label>
+      <label class="full">{{t "标题（可不填）"}}<input type="text" id="ap-title" maxlength="50" aria-label="{{t "标题"}}"></label>
+    </div>
+    <div class="actions">
+      <button class="btn" id="ap-cancel" type="button">{{t "取消"}}</button>
+      <button class="btn primary" id="ap-submit" type="button">{{t "提交申请"}}</button>
+    </div>
+  </section>
+
+  <div class="ap-tabs" role="tablist" aria-label="{{t "申请范围"}}">
+    <a class="tab{{if eq .Data.Tab "mine"}} on{{end}}" role="tab" href="/query/applies?tab=mine&status={{.Data.Status}}&q={{.Data.Q}}">{{t "我的申请"}} <span class="cnt">{{.Data.Counts.Mine}}</span></a>
+    {{if .Data.CanTodo}}<a class="tab{{if eq .Data.Tab "todo"}} on{{end}}" role="tab" href="/query/applies?tab=todo&status={{.Data.Status}}&q={{.Data.Q}}">{{t "待我审批"}} <span class="cnt{{if .Data.Counts.Todo}} hot{{end}}">{{.Data.Counts.Todo}}</span></a>{{end}}
+    {{if .Data.CanAll}}<a class="tab{{if eq .Data.Tab "all"}} on{{end}}" role="tab" href="/query/applies?tab=all&status={{.Data.Status}}&q={{.Data.Q}}">{{t "全部"}} <span class="cnt">{{.Data.Counts.All}}</span></a>{{end}}
+  </div>
+
+  <div id="list-msg"></div>
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "编号"}}</th><th>{{t "标题"}}</th><th>{{t "实例"}}</th><th>{{t "类型"}}</th><th>{{t "对象"}}</th><th>{{t "行数"}}</th><th>{{t "有效期至"}}</th><th>{{t "申请人"}}</th><th>{{t "审批进度"}}</th><th>{{t "状态"}}</th><th>{{t "提交时间"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody>
+        {{range .Data.Rows}}
+        <tr>
+          <td><a href="/query/applies/{{.ApplyID}}">#{{.ApplyID}}</a></td>
+          <td>{{.Title}}{{if .Reason}}<div class="small muted ap-reason">{{t "理由：{reason}" "reason" .Reason}}</div>{{end}}</td>
+          <td>{{.InstanceName}}</td>
+          <td>{{privType .PrivType}}</td>
+          <td class="mono">{{.DBList}}{{if .TableList}} / {{.TableList}}{{end}}</td>
+          <td class="num">{{.LimitNum}}</td>
+          <td>{{.ValidDate.Format "2006-01-02"}}</td>
+          <td>{{.UserDisplay}}</td>
+          <td>{{with .Progress}}<span class="st running">{{t "{name} 审批中" "name" .Current}}</span> <span class="small muted">{{.Level}}/{{.Total}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+          <td><span class="st {{statusClass .EffStatus}}">{{tp .StatusLabel}}</span>{{if .CanReview}} <span class="st waiting">{{t "待我审批"}}</span>{{end}}</td>
+          <td>{{.CreateTime.Format "2006-01-02 15:04"}}</td>
+          <td class="row-actions"><a class="btn ghost" href="/query/applies/{{.ApplyID}}">{{t "详情"}}</a>{{if .CanAbort}}<button class="btn ghost danger" type="button" data-abort-id="{{.ApplyID}}">{{t "撤回"}}</button>{{end}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="12" class="empty">{{if eq .Data.Tab "todo"}}{{t "没有需要你审批的申请。"}}{{else if or .Data.Status .Data.Q}}{{t "没有符合条件的申请。"}}{{else}}{{t "还没有权限申请。"}}{{end}}</td></tr>
+        {{end}}
+      </tbody>
+    </table></div>
+    <div class="pager">
+      <span>{{t "共 {total} 条，第 {page} / {pages} 页" "total" .Data.Total "page" .Data.Page "pages" .Data.Pages}}</span>
+      <span class="spacer"></span>
+      {{if gt .Data.Page 1}}<a class="btn" href="/query/applies?tab={{.Data.Tab}}&status={{.Data.Status}}&q={{.Data.Q}}&page={{.Data.PrevPage}}">{{t "上一页"}}</a>{{end}}
+      {{if lt .Data.Page .Data.Pages}}<a class="btn" href="/query/applies?tab={{.Data.Tab}}&status={{.Data.Status}}&q={{.Data.Q}}&page={{.Data.NextPage}}">{{t "下一页"}}</a>{{end}}
+    </div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/apply/apply.js"></script>{{end}}

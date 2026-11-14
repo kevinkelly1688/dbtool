@@ -1,0 +1,117 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: users.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="us">
+  <div class="page-head">
+    <h1>{{t "用户"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form wrap" id="us-filter">
+      <select id="us-auth" aria-label="{{t "权限组筛选"}}"></select>
+      <select id="us-res" aria-label="{{t "资源组筛选"}}"></select>
+      <select id="us-status" aria-label="{{t "状态筛选"}}">
+        <option value="">{{t "全部状态"}}</option><option value="active">{{t "正常"}}</option><option value="locked">{{t "已锁定"}}</option>
+        <option value="inactive">{{t "已停用"}}</option><option value="superuser">{{t "超级用户"}}</option><option value="no2fa">{{t "未绑定 2FA"}}</option>
+      </select>
+      <select id="us-sort" aria-label="{{t "排序"}}">
+        <option value="last_login">{{t "按最近登录"}}</option><option value="username">{{t "按账号"}}</option><option value="status">{{t "按状态"}}</option>
+      </select>
+      <input type="search" id="us-search" placeholder="{{t "搜索用户名 / 姓名 / 邮箱 / 部门"}}" aria-label="{{t "搜索用户"}}">
+      <button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <button class="btn primary" type="button" id="us-new">+ {{t "新建用户"}}</button>
+  </div>
+  <div class="kpis kpis-4" id="us-kpis" aria-live="polite"></div>
+  <div id="us-msg"></div>
+
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "用户名"}}</th><th>{{t "姓名 / 邮箱"}}</th><th>{{t "部门"}}</th><th>{{t "权限组"}}</th><th>{{t "资源组"}}</th><th>{{t "认证方式"}}</th><th>{{t "状态"}}</th><th>2FA</th><th>{{t "最近登录"}}</th><th>{{t "通知标识"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="us-rows"><tr><td colspan="11" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pager" id="us-pager"></div>
+  </section>
+</main>
+
+<div class="modal-mask" id="m-user-edit" hidden role="dialog" aria-modal="true" aria-labelledby="ue-title">
+  <div class="modal wide">
+    <h2 id="ue-title">{{t "新建用户"}}</h2>
+    <div class="form-grid">
+      <label>{{t "用户名（≤30 字）"}}<input type="text" id="ue-username" maxlength="30" autocomplete="off" aria-label="{{t "用户名"}}"></label>
+      <label>{{t "姓名（≤10 字）"}}<input type="text" id="ue-display" maxlength="10" aria-label="{{t "姓名"}}"></label>
+      <label>{{t "邮箱"}}<input type="text" id="ue-email" maxlength="254" autocomplete="off" aria-label="{{t "邮箱"}}"></label>
+      <label>{{t "部门（≤50 字）"}}<input type="text" id="ue-dept" maxlength="50" autocomplete="off" aria-label="{{t "部门"}}"></label>
+      <label id="ue-auth-box">{{t "认证方式"}}
+        <select id="ue-authtype" aria-label="{{t "认证方式"}}"><option value="local">{{t "本地"}}</option><option value="ldap">LDAP</option></select>
+      </label>
+      <label id="ue-auth-ro" hidden>{{t "认证方式"}}<input type="text" id="ue-auth-text" disabled aria-label="{{t "认证方式"}}"></label>
+      <label id="ue-pw-box">{{t "初始密码（至少 9 位）"}}<input type="password" id="ue-password" autocomplete="new-password" aria-label="{{t "初始密码"}}"></label>
+      <label>{{t "钉钉 UserID"}}<input type="text" id="ue-ding" maxlength="20" autocomplete="off" aria-label="{{t "钉钉 UserID"}}"></label>
+      <label>{{t "飞书 OpenID"}}<input type="text" id="ue-feishu" maxlength="50" autocomplete="off" aria-label="{{t "飞书 OpenID"}}"></label>
+      <label>Slack ID<input type="text" id="ue-slack" maxlength="50" autocomplete="off" aria-label="Slack ID"></label>
+      <label class="check"><input type="checkbox" id="ue-active" checked> {{t "启用"}}</label>
+      <div class="full"><span class="lbl">{{t "权限组"}}</span><div class="check-list" id="ue-auth"></div></div>
+      <div class="full"><span class="lbl">{{t "资源组"}}</span><div class="check-list" id="ue-res"></div></div>
+      <label class="check full"><input type="checkbox" id="ue-super"> {{t "超级用户（绕过全部权限检查）"}}</label>
+    </div>
+    <div id="ue-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="ue-save">{{t "保存"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-user-pw" hidden role="dialog" aria-modal="true" aria-labelledby="up-title">
+  <div class="modal">
+    <h2 id="up-title">{{t "重置密码"}}</h2>
+    <div id="up-form">
+      <div class="form-grid one">
+        <label class="check"><input type="radio" name="up-mode" value="generate" id="up-mode-gen" checked> {{t "系统生成临时密码（仅显示一次）"}}</label>
+        <label class="check"><input type="radio" name="up-mode" value="manual" id="up-mode-man"> {{t "管理员手输新密码"}}</label>
+        <div id="up-manual" hidden class="form-grid one">
+          <label>{{t "新密码（至少 9 位）"}}<input type="password" id="up-password" autocomplete="new-password" aria-label="{{t "新密码"}}"></label>
+          <label>{{t "再输入一次"}}<input type="password" id="up-password2" autocomplete="new-password" aria-label="{{t "确认新密码"}}"></label>
+          <label class="check"><input type="checkbox" id="up-force"> {{t "要求用户下次登录先修改密码"}}</label>
+        </div>
+      </div>
+    </div>
+    <div id="up-result" hidden>
+      <div class="alert warn">{{th "临时密码<b>只显示这一次</b>，请立即告知用户。"}}</div>
+      <div class="pw-show"><code id="up-pw-text" class="mono"></code><button class="btn" type="button" id="up-copy">{{t "复制"}}</button></div>
+    </div>
+    <div id="up-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close id="up-cancel">{{t "取消"}}</button><button class="btn primary" type="button" id="up-save">{{t "重置"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-user-ovr" hidden role="dialog" aria-modal="true" aria-labelledby="uo-title">
+  <div class="modal wide">
+    <h2 id="uo-title">{{t "单独授权 / 禁用"}} <small class="muted" id="uo-user"></small></h2>
+    <div class="form-grid">
+      <label>{{t "方式"}}
+        <select id="uo-effect" aria-label="{{t "方式"}}"><option value="allow">{{t "单独授权（追加）"}}</option><option value="deny">{{t "单独禁用（优先于授权）"}}</option></select>
+      </label>
+      <label>{{t "到期日（可空）"}}<input type="date" id="uo-expire" aria-label="{{t "到期日"}}"></label>
+      <div class="full">
+        <span class="lbl">{{t "按钮"}}</span>
+        <input type="search" id="uo-q" placeholder="{{t "搜索按钮 / 权限码"}}" aria-label="{{t "搜索按钮"}}" style="width:100%;margin-bottom:6px">
+        <div class="check-list tall" id="uo-list"></div>
+      </div>
+      <label class="full">{{t "原因（必填）"}}<input type="text" id="uo-reason" maxlength="200" placeholder="{{t "例：大促值班期间临时授权"}}" aria-label="{{t "原因"}}"></label>
+    </div>
+    <div id="uo-msg"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="uo-save">{{t "保存"}}</button></div>
+  </div>
+</div>
+
+<div class="sy-drawer-mask" id="us-drawer-mask" hidden></div>
+<aside class="sy-drawer" id="us-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="ud-title">
+  <div class="sy-drawer-head"><h2 id="ud-title">{{t "用户详情"}}</h2><span class="spacer"></span><button class="btn ghost" type="button" id="ud-close" aria-label="{{t "关闭"}}">✕</button></div>
+  <div class="sy-drawer-body" id="ud-body"></div>
+</aside>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysadmin/users.js"></script>{{end}}

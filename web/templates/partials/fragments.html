@@ -1,0 +1,15 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: fragments.html
+@time: 2026/10/28
+*/ -}}
+{{define "alert"}}<div class="alert err" role="alert">{{.}}</div>{{end}}
+
+{{define "db_options"}}{{range .}}<option value="{{.}}">{{.}}</option>{{else}}<option value="">{{t "（没有可用数据库）"}}</option>{{end}}{{end}}
+
+{{define "tree_hint"}}<div class="tree-hint">{{.}}</div>{{end}}
+
+{{define "tree"}}{{range .Tables}}<button type="button" class="tbl" data-table="{{.}}"><svg class="ico" aria-hidden="true"><use href="/static/img/icons.svg#table"/></svg><span>{{.}}</span></button>{{else}}<div class="tree-hint">{{if .Q}}{{t "没有匹配的表"}}{{else}}{{t "这个库里没有表"}}{{end}}</div>{{end}}{{end}}
+
+{{define "policy"}}{{if .IsAdmin}}<span class="chip ok">{{t "管理员 · 最多 {n} 行" "n" .Pol.AdminLimit}}</span>{{end}}<span class="chip">{{t "超时 {n} 秒" "n" .Pol.MaxExecSeconds}}</span>{{if .Pol.DisableStar}}<span class="chip">{{t "已禁用 SELECT *"}}</span>{{end}}{{if .Pol.DataMasking}}<span class="chip ok">{{t "数据脱敏已启用"}}</span>{{end}}{{end}}

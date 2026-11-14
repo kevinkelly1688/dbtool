@@ -1,0 +1,11 @@
+{
+  "切换到库 %s 失败: %s": "Failed to switch to database %s: %s",
+  "切换到库 %s 失败: %w": "Failed to switch to database %s: %w",
+  "只读会话拒绝了会修改数据的语句": "The read-only session rejected a statement that would modify data",
+  "库 %s 是只读的，禁止执行变更语句": "Database %s is read-only; modifying statements are not allowed",
+  "脚本结束时仍有未提交的事务（缺少 COMMIT），已回滚，本次变更没有生效。": "The script ended with an uncommitted transaction (a COMMIT is missing). It was rolled back, so this change did not take effect.",
+  "暂不支持的数据库类型: %s": "Unsupported database type: %s",
+  "查询返回 %d 行": "The query returned %d rows",
+  "脚本第 %d 条语句执行失败：%w": "Statement %d of the script failed: %w",
+  "该批处理没有返回结果集（需要一条 SELECT 输出结果）": "The batch returned no result set (a SELECT that outputs the result is required)"
+}

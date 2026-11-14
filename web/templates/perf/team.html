@@ -1,0 +1,67 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: team.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page" id="perf-team">
+  <div class="page-head"><h1>{{t "团队配置"}}</h1><span class="spacer"></span><button class="btn primary" id="pt-new" type="button" data-btn="perfcfg.team">{{t "+ 新增团队"}}</button></div>
+  <div id="pt-ro"></div>
+  <div id="pt-msg"></div>
+  <section class="card">
+    <div class="tabbar" id="pt-tabs"><button class="tab on" type="button" data-pane="teams">{{t "团队"}}</button><button class="tab" type="button" data-pane="routes">{{t "路由规则"}}</button></div>
+    <div id="pt-pane-teams">
+      <table class="list"><thead><tr><th>{{t "资源组"}}</th><th>{{t "默认接口人"}}</th><th>{{t "团队 TL（L2）"}}</th><th>{{t "总监（L3）"}}</th><th>{{t "群通知"}}</th><th>{{t "参与排行与周报"}}</th><th>{{t "备注"}}</th><th>{{t "操作"}}</th></tr></thead><tbody id="pt-rows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody></table>
+    </div>
+    <div id="pt-pane-routes" hidden>
+      <div class="toolbar"><button class="btn primary" id="pr-new" type="button" data-btn="perfcfg.team">{{t "+ 新增路由规则"}}</button></div>
+      <table class="list"><thead><tr><th>{{t "优先级"}}</th><th>{{t "实例"}}</th><th>{{t "库名（正则）"}}</th><th>{{t "表名（正则）"}}</th><th>{{t "团队"}}</th><th>{{t "负责人"}}</th><th>{{t "操作"}}</th></tr></thead><tbody id="pr-rows"></tbody></table>
+      <div class="card flat" id="rt-card">
+        <h3>{{t "路由测试"}}</h3>
+        <div class="form-inline">
+          <select id="rt-inst" aria-label="{{t "实例"}}"></select>
+          <input type="text" id="rt-db" class="mono" maxlength="128" placeholder="{{t "库名"}}" aria-label="{{t "库名"}}">
+          <input type="text" id="rt-tbl" class="mono" maxlength="200" placeholder="{{t "表名（多个用逗号分隔）"}}" aria-label="{{t "表名"}}">
+          <select id="rt-side" aria-label="{{t "处理方"}}"><option value="dev">{{t "研发处理"}}</option><option value="dba">{{t "DBA 处理"}}</option></select>
+          <button class="btn" id="rt-go" type="button">{{t "测试"}}</button>
+        </div>
+        <details><summary class="muted small">{{t "或粘贴一条 SQL"}}</summary><textarea id="rt-sql" class="mono" rows="3" maxlength="20000" aria-label="SQL"></textarea></details>
+        <div id="rt-res" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="modal-mask" id="m-team" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mt-title"><h2 id="mt-title">{{t "团队配置"}}</h2>
+  <div id="mt-msg"></div>
+  <div class="form-grid">
+    <label>{{t "资源组（团队）"}}<select id="mt-group"></select></label>
+    <label>{{t "默认接口人"}}<select id="mt-default"></select></label>
+    <label class="full">{{t "团队 TL（L2，可多选）"}}<select id="mt-leaders" multiple size="5"></select></label>
+    <label class="full">{{t "总监（L3，可多选）"}}<select id="mt-directors" multiple size="4"></select></label>
+    <label class="check"><input type="checkbox" id="mt-enabled"> {{t "参与排行与周报"}}</label>
+    <label>{{t "备注"}}<input type="text" id="mt-remark" maxlength="200"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" id="mt-ok" type="button" data-btn="perfcfg.team">{{t "保存"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="m-route" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mr-title"><h2 id="mr-title">{{t "路由规则"}}</h2>
+  <div id="mr-msg"></div>
+  <div class="form-grid">
+    <label>{{t "实例（空 = 全部）"}}<select id="mr-inst"></select></label>
+    <label>{{t "库名正则"}}<input type="text" class="mono" id="mr-regex" maxlength="200" placeholder="pay_.*"></label>
+    <label>{{t "团队"}}<select id="mr-team"></select></label>
+    <label>{{t "负责人（可空）"}}<select id="mr-user"></select></label>
+    <label class="full">{{t "表名正则（可空）"}}<input type="text" class="mono" id="mr-tbl" maxlength="200" placeholder="(payments|refunds)"></label>
+    <label>{{t "优先级（小的优先）"}}<input type="number" id="mr-prio" min="0" max="100000"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" id="mr-ok" type="button" data-btn="perfcfg.team">{{t "保存"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/team.js"></script>{{end}}

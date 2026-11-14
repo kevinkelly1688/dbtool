@@ -1,0 +1,39 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: inspect.css
+ * @time: 2026/10/28
+ */
+/* 性能巡检页面：沿用 app.css / admin.css 的组件，这里只补本页独有的样式。 */
+.modal h3 { margin: 0 0 8px; font-size: 14px; }
+.modal .form-grid.one label.check, .modal .form-grid label.check { margin-top: 0; }
+.modal-mask .check-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.modal-mask .check-list.tall { display: flex; }
+.modal-mask .check-list.tall label { width: 100%; }
+.quick a { margin-right: 10px; cursor: pointer; }
+#insp td.num, #insp-detail td.num { text-align: right; font-family: var(--dt-f-mono); }
+#insp .score { min-width: 34px; }
+.item-detail td { background: var(--dt-sunken); padding: 4px 10px 10px; }
+.item-detail table { margin: 0; font-size: 12.5px; }
+.item-detail td.cell-sql { max-width: 420px; white-space: pre-wrap; word-break: break-all; font-family: var(--dt-f-mono); }
+tr.detail-row td { color: var(--dt-muted); }
+tr.detail-row td:first-child { padding-left: 26px; }
+td.val { white-space: pre-wrap; word-break: break-word; max-width: 560px; }
+.expander { background: none; border: 0; color: var(--dt-cyan-text); cursor: pointer; padding: 0 0 0 6px; font: inherit; font-size: 12px; }
+details.acc > summary .badge { margin-left: 6px; }
+.err-text { color: var(--dt-crit); }
+td.advice { max-width: 360px; font-size: 12.5px; color: var(--dt-fg); }
+/* 同实例趋势图（SVG） */
+svg.trend { width: 100%; max-width: 760px; height: auto; display: block; }
+svg.trend .trend-grid { stroke: var(--dt-line); stroke-width: 1; }
+svg.trend .trend-ref { stroke: var(--dt-line-hi); stroke-width: 1; stroke-dasharray: 4 3; }
+svg.trend .trend-lbl { fill: var(--dt-muted); font-size: 11px; }
+svg.trend .trend-line { fill: none; stroke-width: 2; }
+svg.trend .trend-line.score { stroke: var(--dt-cyan); }
+svg.trend .trend-line.alert { stroke: var(--dt-crit); }
+svg.trend .trend-line.attention { stroke: var(--dt-amber); }
+svg.trend .trend-dot.score { fill: var(--dt-cyan); }
+svg.trend .trend-dot.alert { fill: var(--dt-crit); }
+svg.trend .trend-dot.attention { fill: var(--dt-amber); }
+svg.trend .trend-dot.cur { stroke: var(--dt-fg); stroke-width: 2; }
+svg.trend a { cursor: pointer; }

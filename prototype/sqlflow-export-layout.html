@@ -1,0 +1,478 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: sqlflow-export-layout.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>提交数据导出工单：布局调整 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*（深空 / 明亮 / 护眼），与正式页面一致 ===== */
+:root {
+  --dt-bg: #17171a; --dt-panel: #232324; --dt-raise: #2c2c2e; --dt-hover: #2a2a2d;
+  --dt-line: #35353a; --dt-line-hi: #4a4a50;
+  --dt-fg: #eceef2; --dt-muted: #a6abb5; --dt-dim: #767c87;
+  --dt-cyan: #1d6aff; --dt-cyan-rgb: 29, 106, 255; --dt-cyan-soft: rgba(29, 106, 255, .18); --dt-cyan-text: #6197ff;
+  --dt-amber: #ff9626; --dt-amber-rgb: 255, 150, 38; --dt-amber-soft: rgba(255, 150, 38, .14);
+  --dt-ok: #2fc75a; --dt-ok-rgb: 47, 199, 90; --dt-ok-soft: rgba(47, 199, 90, .14);
+  --dt-crit: #f9766f; --dt-crit-rgb: 249, 118, 111; --dt-crit-soft: rgba(249, 118, 111, .15);
+  --dt-info: #5b9cff; --dt-info-soft: rgba(91, 156, 255, .14);
+  --dt-input: #1b1b1d; --dt-input-ro: #2a2a2d; --dt-sunken: rgba(0, 0, 0, .22); --dt-btn-bg: #2c2c2e;
+  --dt-on-accent: #ffffff; --dt-accent-hover: #2c73ff; --dt-accent-active: #1456d9; --dt-link-hover: #8db3ff;
+  --dt-code-ln: #6b717c; --dt-code-ln-bg: #1b1b1d;
+  --dt-f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+  --dt-f-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+  --dt-h: 32px; --dt-h-sm: 24px; --dt-r: 4px; --dt-r-lg: 8px; --dt-ease: cubic-bezier(.34, .69, .1, 1);
+  --dt-focus: rgba(var(--dt-cyan-rgb), .22);
+  --dt-cyan-line: rgba(var(--dt-cyan-rgb), .42); --dt-ok-line: rgba(var(--dt-ok-rgb), .42);
+  --dt-amber-line: rgba(var(--dt-amber-rgb), .45); --dt-crit-line: rgba(var(--dt-crit-rgb), .45);
+  color-scheme: dark;
+}
+:root[data-skin="light"] {
+  color-scheme: light;
+  --dt-bg: #f2f3f5; --dt-panel: #ffffff; --dt-raise: #f7f8fa; --dt-hover: #f2f3f5; --dt-line: #e5e6eb; --dt-line-hi: #c9cdd4;
+  --dt-fg: #1d2129; --dt-muted: #4e5969; --dt-dim: #86909c;
+  --dt-cyan: #165dff; --dt-cyan-rgb: 22, 93, 255; --dt-cyan-soft: rgba(22, 93, 255, .09); --dt-cyan-text: #165dff;
+  --dt-ok: #007f22; --dt-ok-rgb: 0, 127, 34; --dt-ok-soft: rgba(0, 160, 40, .1);
+  --dt-amber: #b15000; --dt-amber-rgb: 177, 80, 0; --dt-amber-soft: rgba(255, 125, 0, .11);
+  --dt-crit: #da0808; --dt-crit-rgb: 218, 8, 8; --dt-crit-soft: rgba(245, 63, 63, .09);
+  --dt-info: #165dff; --dt-info-soft: rgba(22, 93, 255, .09);
+  --dt-input: #ffffff; --dt-input-ro: #f2f3f5; --dt-sunken: #f7f8fa; --dt-btn-bg: #ffffff;
+  --dt-on-accent: #ffffff; --dt-accent-hover: #216cff; --dt-accent-active: #0e42d2; --dt-link-hover: #0e42d2;
+  --dt-code-ln: #86909c; --dt-code-ln-bg: #f7f8fa;
+}
+:root[data-skin="sepia"] {
+  color-scheme: light;
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #efe7d3; --dt-hover: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #cfc1a1;
+  --dt-fg: #3b3428; --dt-muted: #6f6450; --dt-dim: #988a71;
+  --dt-cyan: #267060; --dt-cyan-rgb: 38, 112, 96; --dt-cyan-soft: rgba(38, 112, 96, .11); --dt-cyan-text: #267060;
+  --dt-ok: #3a7335; --dt-ok-rgb: 58, 115, 53; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-amber: #8d5a0f; --dt-amber-rgb: 141, 90, 15; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-crit: #ae4339; --dt-crit-rgb: 174, 67, 57; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-info: #396a8f; --dt-info-soft: rgba(60, 111, 150, .1);
+  --dt-input: #fbf7ec; --dt-input-ro: #f1e9d6; --dt-sunken: #f3ecda; --dt-btn-bg: #fbf7ec;
+  --dt-on-accent: #fbf7ec; --dt-accent-hover: #2d7e6d; --dt-accent-active: #1c5a4d; --dt-link-hover: #1c5a4d;
+  --dt-code-ln: #a89b80; --dt-code-ln-bg: #efe6d2;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 14px/1.5715 var(--dt-f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--dt-cyan-text); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; border-radius: var(--dt-r); }
+[hidden] { display: none !important; }
+.spacer { flex: 1; }
+.muted { color: var(--dt-muted); }
+
+/* ===== 以下按正式页面（app.css / sqlflow.css）的写法 ===== */
+button, select, input, textarea { font: inherit; color: var(--dt-fg); }
+select, textarea, input:not([type]), input[type=text], input[type=url], input[type=search], input[type=datetime-local] {
+  height: var(--dt-h); padding: 0 11px; background: var(--dt-input); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r);
+  transition: border-color .2s var(--dt-ease), box-shadow .2s var(--dt-ease);
+}
+textarea { height: auto; min-height: 64px; padding: 5px 11px; line-height: 1.5715; resize: vertical; }
+select:not([multiple]):not([size]) { appearance: none; padding-right: 30px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--dt-muted) 50%), linear-gradient(135deg, var(--dt-muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+select:hover, textarea:hover, input:not([type=checkbox]):hover { border-color: var(--dt-accent-hover); }
+select:focus, textarea:focus, input:not([type=checkbox]):focus { outline: 0; border-color: var(--dt-cyan); box-shadow: 0 0 0 2px var(--dt-focus); }
+input[type=checkbox] { accent-color: var(--dt-cyan); }
+::placeholder { color: var(--dt-dim); opacity: 1; }
+.btn { height: var(--dt-h); padding: 0 15px; background: var(--dt-btn-bg); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; text-decoration: none; line-height: 1; }
+.btn:hover { border-color: var(--dt-accent-hover); color: var(--dt-link-hover); text-decoration: none; }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 500; }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.alert { padding: 9px 16px; border-radius: var(--dt-r); border: 1px solid; margin: 0 0 12px; }
+.alert.err { background: var(--dt-crit-soft); border-color: var(--dt-crit-line); color: var(--dt-crit); }
+.alert.warn { background: var(--dt-amber-soft); border-color: var(--dt-amber-line); color: var(--dt-amber); }
+.alert.info { background: var(--dt-cyan-soft); border-color: var(--dt-cyan-line); color: var(--dt-cyan-text); }
+.page { width: 100%; margin: 0; padding: 20px clamp(16px, 1.6vw, 24px) 40px; }
+.page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; min-height: 32px; }
+.page-head h1 { font-size: 20px; font-weight: 600; line-height: 28px; margin: 0; }
+.card { background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: var(--dt-r-lg); padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; }
+.card h2 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; line-height: 24px; margin: 0 0 16px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px 24px; }
+.form-grid label, .form-grid .lbl { display: block; font-size: 13px; color: var(--dt-muted); }
+.form-grid label select, .form-grid label input { display: block; width: 100%; margin-top: 4px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-grid label.check { display: flex; align-items: center; gap: 6px; color: var(--dt-fg); margin-top: 22px; }
+.form-grid label.check input { width: auto; margin: 0; }
+@media (max-width: 800px) { .form-grid { grid-template-columns: 1fr; } }
+.check-list { max-height: 180px; overflow: auto; border: 1px solid var(--dt-line); border-radius: 4px; padding: 6px 8px; margin-top: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2px 12px; background: var(--dt-input); }
+.check-list label { display: flex; gap: 6px; align-items: center; color: var(--dt-fg); font-family: var(--dt-f-mono); font-size: 12.5px; margin: 0; }
+.check-list label input { width: auto; margin: 0; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; align-items: center; }
+.editor-wrap { height: 300px; display: flex; overflow: hidden; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); font-family: var(--dt-f-mono); font-size: 12.5px; }
+.editor-wrap .gut { width: 44px; padding: 3px 8px 0 0; text-align: right; color: var(--dt-code-ln); background: var(--dt-code-ln-bg); }
+.editor-wrap .line { flex: 1; height: 21px; margin-top: 3px; background: var(--dt-cyan-soft); border-radius: 2px; }
+/* sqlflow.css：审批流预览 */
+.sf-flowprev { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.sf-flowprev .lv { padding: 4px 10px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-sunken); font-size: 12.5px; }
+.sf-flowprev .lv.ok { border-color: var(--dt-ok); }
+.sf-flowprev .lv.bad { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); color: var(--dt-crit); }
+.sf-flowprev .arrow { color: var(--dt-dim); }
+.sf-flowprev .who { color: var(--dt-muted); }
+.batch-on { align-self: start; padding: 6px 12px; border: 1px solid var(--dt-amber-line); border-radius: 6px; background: var(--dt-amber-soft); }
+.batch-title { color: var(--dt-amber); font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+.batch-q { display: block; width: 100%; margin: 6px 0; }
+/* sqlflow.css：导出原值（不脱敏）——现在是页面里一块单独的卡片 */
+.sf-unmask { padding: 12px 14px; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-sunken); transition: border-color .2s var(--dt-ease), background-color .2s var(--dt-ease); }
+.sf-unmask:has(.unmask-chk:checked) { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.sf-unmask > label.check { margin-top: 0; }
+.sf-unmask > label.check b { font-size: 14px; }
+.sf-unmask:has(.unmask-chk:checked) > label.check b { color: var(--dt-crit); }
+.sf-unmask-note { margin: 4px 0 0 22px; font-size: 12.5px; color: var(--dt-muted); }
+.sf-unmask-reason { margin-top: 12px; }
+.sf-unmask-reason textarea { display: block; width: 100%; margin-top: 6px; resize: vertical; }
+.sf-unmask-count { display: block; margin-top: 4px; text-align: right; font-size: 12px; color: var(--dt-dim); font-variant-numeric: tabular-nums; }
+.sf-unmask-count.ok { color: var(--dt-ok); }
+
+/* ===== 新布局的样式（正式页面实现时加进 sqlflow.css；和“提交 SQL 工单”页是同一套）=====
+   1. 审批流预览挪进页头右侧（“导出工单列表”按钮仍在最右），原来的“审批流程预览”卡片去掉。
+   2. “批量导出”“合并成一个文件”“导出原值（不脱敏）”放进同一个框（选项组），横着排，放在工单名称右边。
+      “批量导出”始终显示：不是 SQL Server（或没有批量权限）时置灰、不能勾，鼠标停上去提示原因；可用的条件和现在完全一样。
+      “合并成一个文件”和现在一样，只有打开批量并且有合并权限时才出现（出现在“批量导出”右边）。
+      “导出原值”只有超级用户有；勾上后选项组变红，理由输入框就在选项组下面展开（原来是页面中间的一块卡片）。
+   第一行按表单实际宽度换布局（.form-grid 是 auto-fit，每列最窄 300px、间距 24px：624px 起 2 列，948px 起 3 列，1272px 起 4 列）：
+     ≥4 列：名称占前 2 列，选项组占后 2 列，正好对齐下面第 3、4 列；  3 列：名称占第 1 列，选项组占后 2 列；
+     ≤2 列：名称一行，选项组在它下面一行；  不足 624px（手机）：选项组里的各项改成上下排。 */
+#v-new .form-grid { container-type: inline-size; }
+#v-new .wf-name { grid-column: 1 / -1; }
+#v-new .wf-opts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; min-height: var(--dt-h); padding: 4px 0; background: var(--dt-input); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r); transition: border-color .2s var(--dt-ease), background-color .2s var(--dt-ease); }
+#v-new .wf-opts > label.check { margin: 0; padding: 0 16px; min-height: 22px; cursor: pointer; }
+#v-new .wf-opts > label.check:not([hidden]) ~ label.check:not([hidden]) { border-left: 1px solid var(--dt-line); }
+#v-new .wf-opts > label.check input { width: 15px; height: 15px; cursor: pointer; }
+#v-new .wf-opts > label.risk:has(input:checked) { color: var(--dt-crit); }
+#v-new .wf-opts:has(label.risk input:checked) { background: var(--dt-crit-soft); border-color: var(--dt-crit-line); }
+#v-new .wf-opts > label.batch .batch-title { color: var(--dt-amber); font-size: 14px; font-weight: 600; letter-spacing: 0; }
+#v-new .wf-opts > label.batch.off { cursor: not-allowed; }
+#v-new .wf-opts > label.batch.off .batch-title { color: var(--dt-dim); }
+#v-new .wf-opts > label.batch.off input { pointer-events: none; opacity: .55; }
+#v-new .unmask-block { grid-column: 1 / -1; padding: 12px 14px; border: 1px solid var(--dt-crit-line); border-radius: 6px; background: var(--dt-crit-soft); }
+#v-new .unmask-block .sf-unmask-reason { margin-top: 0; }
+#v-new .unmask-block .sf-unmask-reason > label { color: var(--dt-fg); }
+#v-new .unmask-block .sf-unmask-note { margin: 0 0 8px; }
+@media (min-width: 801px) {
+  @container (min-width: 948px) { #v-new .wf-name { grid-column: span 1; } #v-new .wf-opts { grid-column: span 2; align-self: end; } }
+  @container (min-width: 1272px) { #v-new .wf-name { grid-column: span 2; } }
+}
+@container (max-width: 623px) {
+  #v-new .wf-opts { flex-direction: column; align-items: stretch; padding: 0; }
+  #v-new .wf-opts > label.check { padding: 6px 12px; }
+  #v-new .wf-opts > label.check:not([hidden]) ~ label.check:not([hidden]) { border-left: 0; border-top: 1px solid var(--dt-line); }
+}
+#v-new.tipdemo #batch-wrap-new[data-tip]:not([data-tip=""]) { position: relative; }
+#v-new.tipdemo #batch-wrap-new[data-tip]:not([data-tip=""])::after { content: attr(data-tip); position: absolute; left: 16px; top: calc(100% + 6px); z-index: 20; padding: 3px 9px; border-radius: 3px; background: var(--dt-raise); color: var(--dt-fg); border: 1px solid var(--dt-line-hi); font-size: 12px; font-weight: 400; line-height: 1.5; white-space: nowrap; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
+.wf-head-right { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; margin-left: auto; min-width: 0; }
+.wf-flow { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
+.wf-flow-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0 10px; }
+.wf-flow .sf-flowprev { margin-top: 0; justify-content: flex-end; }
+.wf-flow-l { color: var(--dt-muted); font-size: 12.5px; white-space: nowrap; }
+#v-new[data-label="off"] .wf-flow-l { display: none; }
+.wf-flow .alert { max-width: 560px; margin: 6px 0 0; font-size: 12.5px; padding: 6px 12px; }
+@media (max-width: 800px) { .wf-head-right { margin-left: 0; flex-basis: 100%; } .wf-head-right > a.btn { margin-left: auto; } .wf-flow { align-items: flex-start; } .wf-flow-row, .wf-flow .sf-flowprev { justify-content: flex-start; } }
+#v-new.mark .wf-flow:not(:empty), #v-new.mark .wf-opts { outline: 2px dashed #3d8bff; outline-offset: 5px; border-radius: 4px; }
+#v-new.mark .wf-name input { outline: 2px dashed #e0533f; outline-offset: 2px; }
+/* ---- C 审批流样式 = 药丸步骤条（默认）：只有最后一步是绿色，起点带蓝点；只作用在页头里的审批流 ---- */
+#v-new[data-style="polish"] .wf-flow .sf-flowprev { gap: 6px; }
+#v-new[data-style="polish"] .wf-flow .lv { display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 13px; border-color: var(--dt-line-hi); background: var(--dt-raise); }
+#v-new[data-style="polish"] .wf-flow .lv.bad { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+#v-new[data-style="polish"] .wf-flow .lv.start::before { content: ""; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: var(--dt-cyan); }
+#v-new[data-style="polish"] .wf-flow .lv.end { border-color: var(--dt-ok-line); background: var(--dt-ok-soft); color: var(--dt-ok); }
+#v-new[data-style="polish"] .wf-flow .lv.end::before { content: "✓"; margin-right: 6px; font-weight: 700; }
+#v-new[data-style="polish"] .wf-flow .lv[title] { cursor: help; }
+#v-new[data-style="polish"] .wf-flow .lv[title]:hover { border-color: var(--dt-accent-hover); }
+#v-new[data-style="polish"] .wf-flow .lv.bad[title]:hover { border-color: var(--dt-crit); }
+#v-new[data-style="polish"] .wf-flow .arrow { font-size: 12px; }
+
+/* ===== 原型外壳（只在原型里有，不属于正式页面）===== */
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 46px; padding: 6px 24px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); font-weight: 600; }
+.skins { display: flex; gap: 6px; align-items: center; color: var(--dt-muted); font-size: 12px; }
+.skins button { width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1px solid var(--dt-line-hi); cursor: pointer; }
+.skins button[aria-pressed="true"] { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+.skins [data-skin-set="dark"] { background: #232324; } .skins [data-skin-set="light"] { background: #fff; } .skins [data-skin-set="sepia"] { background: #f1ead9; }
+.proto { padding: 18px clamp(16px, 1.6vw, 24px) 0; }
+.intro h1 { margin: 0 0 6px; font-size: 20px; line-height: 28px; font-weight: 600; }
+.intro p { margin: 0 0 12px; color: var(--dt-muted); }
+.opts { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; padding: 10px 14px; border: 1px dashed var(--dt-line-hi); border-radius: var(--dt-r-lg); }
+.opts .row { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; }
+.opts .tag { font-size: 12px; color: var(--dt-amber); border: 1px solid var(--dt-amber-line); background: var(--dt-amber-soft); border-radius: var(--dt-r); padding: 0 8px; line-height: 20px; white-space: nowrap; }
+.opt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.opt .l { color: var(--dt-muted); font-size: 13px; }
+.clean .top, .clean .proto, .clean .sepline { display: none; }
+.seg { display: inline-flex; flex-wrap: wrap; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-input); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 4px; background: none; color: var(--dt-muted); cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--dt-fg); }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan-text); font-weight: 600; }
+.how { margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--dt-line); border-radius: var(--dt-r-lg); background: var(--dt-panel); color: var(--dt-muted); }
+.how summary { cursor: pointer; }
+.how b { color: var(--dt-fg); font-weight: 600; } .how ul { margin: 8px 0 2px; padding-left: 20px; color: var(--dt-muted); } .how li { margin: 3px 0; }
+.sepline { margin: 4px clamp(16px, 1.6vw, 24px) 0; padding-top: 10px; border-top: 1px solid var(--dt-line); color: var(--dt-dim); font-size: 12px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="crumb">原型 · SQL 上线 › <b>提交数据导出工单</b>（布局调整）</span>
+  <span class="spacer"></span>
+  <div class="skins" role="group" aria-label="皮肤">
+    <span>皮肤</span>
+    <button type="button" data-skin-set="dark" aria-pressed="true" title="深空" aria-label="深空"></button>
+    <button type="button" data-skin-set="light" aria-pressed="false" title="明亮" aria-label="明亮"></button>
+    <button type="button" data-skin-set="sepia" aria-pressed="false" title="护眼" aria-label="护眼"></button>
+  </div>
+</header>
+
+<div class="proto">
+  <div class="intro">
+    <h1>提交数据导出工单：和“提交 SQL 工单”同一套新设计</h1>
+    <p>照“提交 SQL 工单”页的新设计改：①审批流预览挪进页头右侧（“导出工单列表”按钮仍在最右）；②“批量导出”“合并成一个文件”“导出原值（不脱敏）”放进同一个框，横着排在工单名称右边；③“批量导出”始终显示，不是 SQL Server 时置灰，鼠标停上去提示“仅支持 MSSQL”，可用的条件不变。字段位置不变，这一页本来就是 4 列整齐排满。</p>
+  </div>
+  <div class="opts" role="group" aria-label="原型选项">
+    <div class="row">
+      <span class="tag">看效果</span>
+      <div class="opt"><span class="l">视图</span><div class="seg" data-k="view"><button type="button" data-v="now">当前样子</button><button type="button" data-v="new">新布局</button></div></div>
+      <div class="opt"><span class="l">身份</span><div class="seg" data-k="role"><button type="button" data-v="su">超级用户</button><button type="button" data-v="user">普通用户</button></div></div>
+      <div class="opt"><span class="l">目标实例</span><div class="seg" data-k="inst"><button type="button" data-v="mysql">MySQL 系</button><button type="button" data-v="mssql">SQL Server</button><button type="button" data-v="batch">批量导出</button></div></div>
+      <div class="opt"><span class="l">批量导出权限</span><div class="seg" data-k="bperm"><button type="button" data-v="yes">有</button><button type="button" data-v="no">没有</button></div></div>
+      <div class="opt"><span class="l">合并导出权限</span><div class="seg" data-k="mperm"><button type="button" data-v="yes">有</button><button type="button" data-v="no">没有</button></div></div>
+      <div class="opt"><span class="l">导出原值</span><div class="seg" data-k="unmask"><button type="button" data-v="off">没勾</button><button type="button" data-v="on">已勾（展开理由框）</button></div></div>
+      <div class="opt"><span class="l">审批流</span><div class="seg" data-k="flow"><button type="button" data-v="one">1 级</button><button type="button" data-v="three">3 级</button><button type="button" data-v="noone">某级无人可审</button><button type="button" data-v="auto">流程为空（直接通过）</button><button type="button" data-v="none">未配置</button><button type="button" data-v="fail">读取失败</button><button type="button" data-v="load">读取中</button><button type="button" data-v="empty">没选资源组</button></div></div>
+      <div class="opt"><span class="l">标出挪动的位置</span><div class="seg" data-k="mark"><button type="button" data-v="off">关</button><button type="button" data-v="on">开</button></div></div>
+      <div class="opt"><span class="l">模拟“批量导出”的悬停提示</span><div class="seg" data-k="tip"><button type="button" data-v="off">关</button><button type="button" data-v="on">开</button></div></div>
+    </div>
+    <div class="row">
+      <span class="tag">待你定</span>
+      <div class="opt"><span class="l">A 审批流前面加小字“审批流程”</span><div class="seg" data-k="label"><button type="button" data-v="off">不加</button><button type="button" data-v="on">加</button></div></div>
+      <div class="opt"><span class="l">B 无人可审 / 未配置 / 读取失败的提示放哪</span><div class="seg" data-k="note"><button type="button" data-v="strip">页头下面整行条（推荐）</button><button type="button" data-v="head">页头右侧</button></div></div>
+      <div class="opt"><span class="l">C 审批流样式</span><div class="seg" data-k="style"><button type="button" data-v="polish">药丸步骤条（推荐）</button><button type="button" data-v="plain">原样（每步绿框）</button></div></div>
+      <div class="opt"><span class="l">D “合并成一个文件”放哪</span><div class="seg" data-k="merge"><button type="button" data-v="group">选项组里（推荐）</button><button type="button" data-v="panel">还在批量实例列表里（现状）</button></div></div>
+    </div>
+  </div>
+  <details class="how">
+    <summary><b>说明</b>（改了什么、窗口变窄时怎么办）</summary>
+    <ul>
+      <li>审批流预览不再占一张卡片，查询语句编辑区整体上移；悬停看可审批人员、某一级无人可审标红，都保留。“导出工单列表”按钮还在页头最右。</li>
+      <li><b>选项组</b>：各项放在一个和输入框一样高的框里，项与项之间一条细线，顺序是 批量导出、合并成一个文件、导出原值（不脱敏）。</li>
+      <li><b>批量导出</b>始终显示。可用的条件和现在完全一样（有批量权限、资源组里有可批量的实例、当前选的实例是可批量的类型，默认只有 SQL Server；已经打开批量时一直可用）；不可用时置灰、不能勾，鼠标停上去提示原因：不是 SQL Server 提示“仅支持 MSSQL”，是 SQL Server 但没有权限提示“没有批量导出的权限”。</li>
+      <li><b>合并成一个文件</b>的出现条件不变：打开批量并且有合并权限。选项 D 选“选项组里”时它出现在“批量导出”右边，说明文字（各实例的数据按勾选顺序写进同一个文件、各实例返回的列必须一致）放在悬停提示里；选“现状”时还在批量实例列表下面。</li>
+      <li><b>导出原值（不脱敏）</b>只有超级用户有。勾上要先过高危确认（不变）；勾上后整个选项组变红，必填的理由框紧挨着在选项组下面展开（原来是页面中间的一块卡片，选项和理由框隔得很远）。</li>
+      <li>窗口变窄时：审批流和“导出工单列表”按钮一起换到标题下面一行；3 列宽度时名称框占第 1 列、选项组占后 2 列；2 列及以下名称框一行、选项组在它下面一行；手机宽度选项组里各项上下排。</li>
+      <li>只改“提交数据导出工单”页；和“提交 SQL 工单”页共用审批流预览的脚本，所以两页的审批流预览一起变（药丸步骤条只作用在页头里的这一份，别处不变）。</li>
+    </ul>
+  </details>
+</div>
+<div class="sepline">↓ 页面（照正式页面的样式画，左上角起算）</div>
+
+<!-- ============ 新布局 ============ -->
+<main class="page" id="v-new" data-label="off" data-style="polish">
+  <div class="page-head">
+    <a class="btn ghost" href="#">&larr; 返回列表</a>
+    <h1>提交数据导出工单</h1>
+    <div class="wf-head-right">
+      <div class="wf-flow" id="flow-head" aria-label="审批流程预览"></div>
+      <a class="btn" href="#">导出工单列表</a>
+    </div>
+  </div>
+  <div id="note-new"></div>
+  <section class="card">
+    <div class="form-grid">
+      <label class="wf-name" id="name-new">工单名称<input type="text" maxlength="50" placeholder="例如：11 月订单对账" aria-label="工单名称"></label>
+      <div class="wf-opts" id="opts-new" role="group" aria-label="提交选项">
+        <label class="check batch" id="batch-wrap-new"><input type="checkbox"> <b class="batch-title">批量导出</b></label>
+        <label class="check" id="merge-wrap-new" data-opt="merge" title="各实例导出的数据按勾选顺序依次写进同一个文件；各实例返回的列必须一致"><input type="checkbox"> 合并成一个文件</label>
+        <label class="check risk" data-opt="unmask" title="仅超级用户；SQL 防火墙要求强制脱敏的列仍会脱敏"><input type="checkbox" class="unmask-chk" data-unmask> 导出原值（不脱敏）</label>
+      </div>
+      <div class="unmask-block" id="unmask-block-new" hidden>
+        <p class="sf-unmask-note">仅超级用户；SQL 防火墙要求强制脱敏的列仍会脱敏</p>
+        <div class="sf-unmask-reason">
+          <label>导出原值的理由（必填，至少 5 个字，审批人会看到）<textarea maxlength="200" rows="2" placeholder="例如：财务对账需要核对完整手机号" aria-label="导出原值的理由" data-reason></textarea></label>
+          <span class="sf-unmask-count" data-count aria-hidden="true">0 / 200</span>
+        </div>
+      </div>
+      <label>资源组<select aria-label="资源组"><option>UAT上线</option></select></label>
+      <label class="js-inst">目标实例<select aria-label="目标实例"><option>(UAT) V3-PayPlatform [PolarDB]（polardb）</option></select></label>
+      <label>数据库<select aria-label="数据库"><option>_mv_container_db_</option></select></label>
+      <label>导出格式<select aria-label="导出格式"><option>CSV</option></select></label>
+      <label>需求链接（可不填）<input type="url" placeholder="https://" aria-label="需求链接"></label>
+      <label>可执行开始时间（可不填）<input type="datetime-local" aria-label="可执行开始时间"></label>
+      <label>可执行结束时间（可不填）<input type="datetime-local" aria-label="可执行结束时间"></label>
+      <label>定时导出时间（可不填）<input type="datetime-local" aria-label="定时导出时间"></label>
+      <div class="full js-batch-list" hidden>
+        <span class="lbl">选择要导出的实例 <button class="btn ghost" type="button">全选</button><button class="btn ghost" type="button">清空</button> <span class="muted">已选 2 / 100</span></span>
+        <input type="search" class="batch-q" placeholder="搜索实例" aria-label="搜索实例">
+        <div class="check-list"><label><input type="checkbox" checked> sqlsrv-prod-01</label><label><input type="checkbox" checked> sqlsrv-prod-02</label><label><input type="checkbox"> sqlsrv-uat-01</label><label><input type="checkbox"> sqlsrv-uat-02</label></div>
+        <div class="full js-merge-panel" hidden style="margin-top:10px"><label class="check" style="margin-top:0"><input type="checkbox"> <b>合并成一个文件</b> <span class="muted">各实例导出的数据按勾选顺序依次写进同一个文件；各实例返回的列必须一致</span></label></div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>查询语句</h2>
+    <div class="editor-wrap"><div class="gut">1</div><div class="line"></div></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button">检查并统计行数</button><button class="btn primary" type="button" disabled>提交工单</button></div>
+  </section>
+</main>
+
+<!-- ============ 当前样子（照正式页面的模板复现）============ -->
+<main class="page" id="v-now" hidden>
+  <div class="page-head">
+    <a class="btn ghost" href="#">&larr; 返回列表</a>
+    <h1>提交数据导出工单</h1>
+    <span class="spacer"></span>
+    <a class="btn" href="#">导出工单列表</a>
+  </div>
+  <section class="card">
+    <div class="form-grid">
+      <label class="full">工单名称<input type="text" maxlength="50" placeholder="例如：11 月订单对账" aria-label="工单名称"></label>
+      <label>资源组<select aria-label="资源组"><option>UAT上线</option></select></label>
+      <label class="js-inst">目标实例<select aria-label="目标实例"><option>(UAT) V3-PayPlatform [PolarDB]（polardb）</option></select></label>
+      <label>数据库<select aria-label="数据库"><option>_mv_container_db_</option></select></label>
+      <label>导出格式<select aria-label="导出格式"><option>CSV</option></select></label>
+      <label>需求链接（可不填）<input type="url" placeholder="https://" aria-label="需求链接"></label>
+      <label>可执行开始时间（可不填）<input type="datetime-local" aria-label="可执行开始时间"></label>
+      <label>可执行结束时间（可不填）<input type="datetime-local" aria-label="可执行结束时间"></label>
+      <label>定时导出时间（可不填）<input type="datetime-local" aria-label="定时导出时间"></label>
+      <div class="full sf-unmask" id="unmask-now" data-opt="unmask">
+        <label class="check"><input type="checkbox" class="unmask-chk" data-unmask> <b>导出原值（不脱敏）</b></label>
+        <p class="sf-unmask-note">仅超级用户；SQL 防火墙要求强制脱敏的列仍会脱敏</p>
+        <div class="sf-unmask-reason" id="unmask-reason-now" hidden>
+          <label>导出原值的理由（必填，至少 5 个字，审批人会看到）</label>
+          <textarea maxlength="200" rows="2" placeholder="例如：财务对账需要核对完整手机号" aria-label="导出原值的理由" data-reason></textarea>
+          <span class="sf-unmask-count" data-count aria-hidden="true">0 / 200</span>
+        </div>
+      </div>
+      <label class="check batch-on js-batch-wrap" style="margin-top:0" hidden><input type="checkbox"> <b class="batch-title">批量导出</b></label>
+      <div class="full js-batch-list" hidden>
+        <span class="lbl">选择要导出的实例 <button class="btn ghost" type="button">全选</button><button class="btn ghost" type="button">清空</button> <span class="muted">已选 2 / 100</span></span>
+        <input type="search" class="batch-q" placeholder="搜索实例" aria-label="搜索实例">
+        <div class="check-list"><label><input type="checkbox" checked> sqlsrv-prod-01</label><label><input type="checkbox" checked> sqlsrv-prod-02</label><label><input type="checkbox"> sqlsrv-uat-01</label><label><input type="checkbox"> sqlsrv-uat-02</label></div>
+        <div class="full js-merge-now" hidden style="margin-top:10px"><label class="check" style="margin-top:0"><input type="checkbox"> <b>合并成一个文件</b> <span class="muted">各实例导出的数据按勾选顺序依次写进同一个文件；各实例返回的列必须一致</span></label></div>
+      </div>
+    </div>
+  </section>
+  <section class="card" id="flow-card">
+    <h2>审批流程预览</h2>
+    <div id="flow-now"></div>
+  </section>
+  <section class="card">
+    <h2>查询语句</h2>
+    <div class="editor-wrap"><div class="gut">1</div><div class="line"></div></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button">检查并统计行数</button><button class="btn primary" type="button" disabled>提交工单</button></div>
+  </section>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const state = { view: 'new', role: 'su', inst: 'mysql', bperm: 'yes', mperm: 'yes', unmask: 'off', flow: 'one', mark: 'off', tip: 'off', label: 'off', note: 'strip', style: 'polish', merge: 'group' };
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
+// ---- 审批流预览的各种状态（文案取自 flowprev.js / internal/sqlflow/flowview.go）----
+const lv = (n, name, who) => ({ n, name, tip: `可审批人员（${who.length}）：${who.join('、')}` });
+const NOONE_WARN = '第 2 级「DBA」：没有符合条件的审批人（资源组内属于「DBA」且有 sql_review 权限的启用用户；提交人本人是否可自审取决于系统设置）。仅超级用户可以审批';
+const FLOWS = {
+  one: { levels: [lv(1, 'TL', ['王强', '李梅'])] },
+  three: { levels: [lv(1, 'TL', ['王强', '李梅']), lv(2, 'DBA', ['陈浩（超级用户）', '刘洋', '周宁']), lv(3, '架构组', ['赵敏'])] },
+  noone: { levels: [lv(1, 'TL', ['王强', '李梅']), { n: 2, name: 'DBA', warn: true, tip: NOONE_WARN }], notes: [{ cls: 'warn', text: NOONE_WARN }] },
+  auto: { notes: [{ cls: 'info', text: '资源组「UAT上线」的审批流为空：提交后系统直接审核通过，不需要人工审批。' }] },
+  none: { notes: [{ cls: 'err', text: '该资源组还没有配置 SQL 上线审批流，提交会被拒绝，请联系管理员。' }] },
+  fail: { notes: [{ cls: 'warn', text: '审批流读取失败：请求超时，请稍后重试。' }] },
+  load: { loading: true },
+  empty: {},
+};
+function chipLine(levels) {
+  const line = el('div', 'sf-flowprev');
+  line.append(el('span', 'lv ok start', '提交'));
+  levels.forEach((l) => {
+    line.append(el('span', 'arrow', '→'));
+    const node = el('span', 'lv ' + (l.warn ? 'bad' : 'ok'));
+    node.append(el('b', '', `第 ${l.n} 级 · ${l.name}`));
+    if (l.warn) node.append(el('span', 'who', '：无人可审'));
+    node.title = l.tip; node.tabIndex = 0;
+    line.append(node);
+  });
+  line.append(el('span', 'arrow', '→'), el('span', 'lv ok end', '审核通过，可执行'));
+  return line;
+}
+const loadingText = () => el('span', 'muted', '读取审批流…');
+const alerts = (f) => (f.notes || []).map((n) => { const a = el('div', 'alert ' + n.cls, n.text); a.setAttribute('role', 'alert'); return a; });
+
+function renderFlows() {
+  const f = FLOWS[state.flow];
+  const now = $('#flow-now'); now.replaceChildren();
+  if (f.loading) now.append(loadingText());
+  if (f.levels) now.append(chipLine(f.levels));
+  alerts(f).forEach((a) => now.append(a));
+  const head = $('#flow-head'); head.replaceChildren();
+  const row = el('div', 'wf-flow-row');
+  row.append(el('span', 'wf-flow-l', '审批流程'));
+  if (f.loading) row.append(loadingText());
+  if (f.levels) row.append(chipLine(f.levels));
+  head.append(row);
+  const strip = $('#note-new'); strip.replaceChildren();
+  (state.note === 'head' ? head : strip).append(...alerts(f));
+  if (!f.levels && !f.loading && !(state.note === 'head' && f.notes)) head.replaceChildren();
+}
+
+function apply() {
+  $('#v-new').hidden = state.view !== 'new';
+  $('#v-now').hidden = state.view !== 'now';
+  document.body.classList.toggle('clean', !!state.clean);
+  const v = $('#v-new');
+  v.dataset.label = state.label; v.dataset.style = state.style;
+  v.classList.toggle('mark', state.mark === 'on');
+  v.classList.toggle('tipdemo', state.tip === 'on');
+  // 选项的出现规则（和 export_new.js 一致）：
+  //   批量可用 = 有批量权限 && 当前实例是可批量的类型（默认只有 SQL Server）；已经打开批量时一直可用，免得没法关闭
+  //   合并成一个文件：打开批量并且有合并权限才出现；导出原值：只有超级用户
+  const kind = state.inst === 'batch' ? 'mssql' : state.inst;
+  const perm = state.bperm === 'yes';
+  const capable = kind === 'mssql';
+  const on = state.inst === 'batch' && perm;
+  const avail = capable && perm;
+  const mergeShow = on && state.mperm === 'yes';
+  const su = state.role === 'su';
+  const unmaskOn = su && state.unmask === 'on';
+  $$('.js-inst').forEach((x) => { x.hidden = on; });
+  $$('.js-batch-list').forEach((x) => { x.hidden = !on; });
+  // 当前样子：批量开关可用才显示；合并在批量列表里；导出原值是页面中间的一块卡片（只有超级用户）
+  $$('#v-now .js-batch-wrap').forEach((x) => { x.hidden = !avail; $('input', x).checked = on; });
+  $('#v-now .js-merge-now').hidden = !mergeShow;
+  $('#unmask-now').hidden = !su;
+  $('#unmask-reason-now').hidden = !unmaskOn;
+  // 新布局：批量导出始终显示；不可用时置灰、不能勾，鼠标停上去（title）提示原因
+  const bw = $('#batch-wrap-new'), tip = avail ? '' : (capable ? '没有批量导出的权限' : '仅支持 MSSQL');
+  bw.classList.toggle('off', !avail);
+  $('input', bw).disabled = !avail;
+  $('input', bw).checked = on;
+  bw.title = tip; bw.dataset.tip = tip;
+  bw.setAttribute('aria-disabled', String(!avail));
+  $('#merge-wrap-new').hidden = !(mergeShow && state.merge === 'group');
+  $('#v-new .js-merge-panel').hidden = !(mergeShow && state.merge === 'panel');
+  $$('#v-new [data-opt="unmask"]').forEach((x) => { x.hidden = !su; });
+  $$('[data-unmask]').forEach((x) => { x.checked = unmaskOn; });
+  $('#unmask-block-new').hidden = !unmaskOn;
+  renderFlows();
+  $$('.seg').forEach((s) => $$('button', s).forEach((b) => b.setAttribute('aria-pressed', String(state[s.dataset.k] === b.dataset.v))));
+}
+$$('.seg').forEach((s) => s.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state[s.dataset.k] = b.dataset.v; apply(); }));
+$$('[data-unmask]').forEach((c) => c.addEventListener('change', () => { state.unmask = c.checked ? 'on' : 'off'; apply(); }));
+$$('[data-reason]').forEach((t) => t.addEventListener('input', () => {
+  const n = [...t.value].length;
+  $$('[data-count]').forEach((c) => { c.textContent = `${n} / 200`; c.classList.toggle('ok', n >= 5); });
+  $$('[data-reason]').forEach((o) => { if (o !== t) o.value = t.value; });
+}));
+$$('[data-skin-set]').forEach((b) => b.addEventListener('click', () => {
+  document.documentElement.dataset.skin = b.dataset.skinSet;
+  $$('[data-skin-set]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+}));
+window.__setState = (o) => { Object.assign(state, o); apply(); }; // 给检查脚本用
+apply();
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: list.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page fill-list" id="perf-list" data-create="{{.Data.CanCreate}}">
+  <div class="page-head">
+    <h1>{{t "问题工单"}}</h1><span class="spacer"></span>
+    <form class="inline-form" id="pl-filters">
+      <select id="pl-sev" aria-label="{{t "级别"}}"></select>
+      <select id="pl-team" aria-label="{{t "团队"}}"></select>
+      <select id="pl-inst" aria-label="{{t "实例"}}"></select>
+      <select id="pl-side" aria-label="{{t "处理方"}}"></select>
+      <select id="pl-cat" aria-label="{{t "问题类型"}}"></select>
+      <select id="pl-status" aria-label="{{t "状态"}}"></select>
+      <select id="pl-src" aria-label="{{t "来源"}}"></select>
+      {{if .Data.IsDBA}}<select id="pl-scope" aria-label="{{t "可见范围"}}"><option value="">{{t "全部团队"}}</option><option value="mine">{{t "我的团队与我负责的"}}</option></select>{{end}}
+      <input type="search" id="pl-search" placeholder="{{t "指纹 / 库 / 表 / #工单号"}}" aria-label="{{t "搜索"}}">
+    </form>
+    {{if .Data.CanCreate}}<button class="btn primary" id="pl-new" type="button">{{t "手工建单|action"}}</button>{{end}}
+  </div>
+  <div id="pl-msg"></div>
+  <div class="kpis" id="pl-kpis" aria-live="polite">
+    <div><b id="pl-k-todo">—</b><span>{{t "我的待办"}}</span><small class="muted" id="pl-k-todo-sub"></small></div>
+    <div><b id="pl-k-overdue" class="crit">—</b><span>{{t "已超时"}}</span></div>
+    <div><b id="pl-k-new">—</b><span>{{t "待分派"}}</span></div>
+    <div><b id="pl-k-fixed">—</b><span>{{t "待验证"}}</span></div>
+    <div><b id="pl-k-created">—</b><span>{{t "本周新增"}}</span></div>
+    <div><b id="pl-k-closed" class="ok">—</b><span>{{t "本周完成"}}</span></div>
+  </div>
+  <div class="tabbar" id="pl-tabs">
+    <button class="tab on" type="button" data-view="todo">{{t "我的待办"}} <span class="badge warn" data-count="todo" id="pl-b-todo" hidden></span></button>
+    <button class="tab" type="button" data-view="open">{{t "全部未关闭"}} <span class="badge" data-count="open" hidden></span></button>
+    <button class="tab" type="button" data-view="new">{{t "待分派"}} <span class="badge" data-count="new" hidden></span></button>
+    <button class="tab" type="button" data-view="assigned">{{t "待受理"}} <span class="badge" data-count="assigned" hidden></span></button>
+    <button class="tab" type="button" data-view="accepted">{{t "处理中"}} <span class="badge" data-count="accepted" hidden></span></button>
+    <button class="tab" type="button" data-view="fixed">{{t "待验证"}} <span class="badge" data-count="fixed" hidden></span></button>
+    <button class="tab" type="button" data-view="approve">{{t "审批中"}} <span class="badge warn" data-count="approve" hidden></span></button>
+    <button class="tab" type="button" data-view="overdue">{{t "已超时"}} <span class="badge crit" data-count="overdue" id="pl-b-overdue" hidden></span></button>
+    <button class="tab" type="button" data-view="closed">{{t "已关闭"}} <span class="badge" data-count="closed" hidden></span></button>
+    <button class="tab" type="button" data-view="all">{{t "全部"}} <span class="badge" data-count="all" hidden></span></button>
+    <a class="tabnote" href="/perf/board">{{t "团队榜单 →"}}</a>
+  </div>
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list perf">
+      <thead><tr><th>#</th><th>{{t "级别"}}</th><th>{{t "状态"}}</th><th>SQL</th><th><button class="sort" type="button" data-sort="impact_score">{{t "日均浪费 DB 时间"}}</button></th><th>{{t "占比"}}</th><th><button class="sort" type="button" data-sort="avg_time_ms">{{t "平均耗时"}}</button></th><th><button class="sort" type="button" data-sort="per_day_count">{{t "日均次数"}}</button></th><th>{{t "处理方"}}</th><th>{{t "团队"}}</th><th>{{t "负责人"}}</th><th><button class="sort" type="button" data-sort="resolve_deadline">SLA</button></th></tr></thead>
+      <tbody id="pl-rows"><tr><td colspan="12" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pager"><span id="pl-info"></span><span class="spacer"></span><button class="btn" id="pl-prev" type="button">{{t "上一页"}}</button><button class="btn" id="pl-next" type="button">{{t "下一页"}}</button></div>
+  </section>
+</main>
+</div>
+
+{{if .Data.CanCreate}}
+<div class="modal-mask" id="m-perf-create" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="{{t "手工创建性能工单"}}"><h2>{{t "手工创建性能工单"}}</h2>
+  <div id="pc-msg"></div>
+  <div class="form-grid">
+    <label>{{t "实例"}}<select id="pc-inst"></select></label>
+    <label>{{t "库名（可空）"}}<input type="text" id="pc-db" maxlength="128" autocomplete="off" placeholder="{{t "例：shop"}}"></label>
+    <label>{{t "级别"}}<select id="pc-sev"></select></label>
+    <label>{{t "负责人（可空）"}}<select id="pc-user"></select></label>
+    <label class="full">SQL<textarea rows="5" class="mono" id="pc-sql"></textarea></label>
+    <label class="full">{{t "备注"}}<input type="text" id="pc-remark" maxlength="500"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" id="pc-ok" type="button">{{t "创建"}}</button></div>
+</div></div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/list.js"></script>{{end}}

@@ -1,0 +1,56 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: databases.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/instmgr.css">{{end}}
+
+{{define "content"}}
+<div class="with-side">{{template "instmgr_side" .Data}}
+<main class="page fill-list" id="db">
+  <div class="page-head">
+    <h1>{{t "数据库"}}</h1><span class="spacer"></span>
+    <form class="inline-form" id="db-filter">
+      <select id="db-inst" aria-label="{{t "实例"}}"></select>
+      <select id="db-saved" aria-label="{{t "范围"}}"><option value="">{{t "全部"}}</option><option value="1">{{t "已录入"}}</option><option value="0">{{t "未录入"}}</option></select>
+      <input type="search" id="db-q" placeholder="{{t "搜索库名"}}" aria-label="{{t "搜索库名"}}"><button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <button class="btn primary" type="button" id="db-create">{{t "+ 创建数据库"}}</button>
+  </div>
+  <div id="db-msg"></div>
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "数据库名"}}</th><th>{{t "字符集"}}</th><th>{{t "排序规则"}}</th><th>{{t "表数 / 大小"}}</th><th>{{t "授权账号"}}</th><th>{{t "负责人"}}</th><th>{{t "备注"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="db-rows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+</main></div>
+
+<div class="modal-mask" id="db-m-create" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="db-m-create-t">
+  <h2 id="db-m-create-t">{{t "创建数据库"}}</h2>
+  <div id="db-create-msg"></div>
+  <div class="form-grid">
+    <label class="full">{{t "数据库名称 *"}}<input type="text" id="c-name" maxlength="64" autocomplete="off" placeholder="{{t "字母开头，≤ 64 位"}}"></label>
+    <label id="c-cs-box">{{t "字符集"}}<select id="c-charset"></select></label>
+    <label id="c-co-box">{{t "排序规则"}}<select id="c-collation"></select></label>
+    <label class="full">{{t "负责人 *"}}<select id="c-owner"></select></label>
+    <label class="full">{{t "备注"}}<input type="text" id="c-remark" maxlength="255" autocomplete="off"></label>
+  </div>
+  <p class="muted small" id="c-hint"></p>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="c-submit">{{t "创建"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="db-m-edit" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="db-m-edit-t">
+  <h2 id="db-m-edit-t">{{t "编辑 / 录入数据库信息"}}</h2>
+  <div id="db-edit-msg"></div>
+  <div class="form-grid">
+    <label class="full">{{t "数据库名称"}}<input type="text" id="e-name" readonly></label>
+    <label class="full">{{t "负责人"}}<select id="e-owner"></select></label>
+    <label class="full">{{t "备注"}}<input type="text" id="e-remark" maxlength="255" autocomplete="off"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="e-submit">{{t "保存"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/instmgr/databases.js"></script>{{end}}

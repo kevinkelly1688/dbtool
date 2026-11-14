@@ -1,0 +1,107 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: list.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/instmgr.css">{{end}}
+
+{{define "content"}}
+<div class="with-side">{{template "instmgr_side" .Data}}
+<main class="page fill-list" id="il">
+  <div class="page-head">
+    <h1>{{t "实例列表"}}</h1><span class="spacer"></span>
+    <form class="inline-form" id="il-filter">
+      <select id="il-role" aria-label="{{t "实例角色"}}"><option value="">{{t "全部角色"}}</option><option value="master">{{t "主库 master"}}</option><option value="slave">{{t "从库 slave"}}</option></select>
+      <select id="il-dbtype" aria-label="{{t "数据库类型"}}"><option value="">{{t "全部类型"}}</option></select>
+      <select id="il-tag" aria-label="{{t "标签"}}"><option value="">{{t "全部标签"}}</option></select>
+      <select id="il-env" aria-label="{{t "环境"}}"><option value="">{{t "全部环境"}}</option></select>
+      <select id="il-state" aria-label="{{t "实例状态"}}"><option value="">{{t "状态：全部"}}</option><option value="enabled">{{t "状态：未停用"}}</option><option value="disabled">{{t "状态：已停用"}}</option></select>
+      <select id="il-health" aria-label="{{t "健康状态"}}"><option value="">{{t "健康：全部"}}</option><option value="ok">{{t "健康：正常"}}</option><option value="bad">{{t "健康：异常"}}</option></select>
+      <select id="il-status" aria-label="{{t "慢日志采集"}}"><option value="">{{t "采集：全部"}}</option><option value="1">{{t "采集：已开启"}}</option><option value="0">{{t "采集：未开启"}}</option></select>
+      <input type="search" id="il-q" placeholder="{{t "搜索实例名称 / HOST"}}" aria-label="{{t "关键字"}}"><button class="btn" type="submit">{{t "搜索"}}</button>
+    </form>
+    <button class="btn" id="il-refresh" type="button">{{t "刷新状态"}}</button>
+    <button class="btn primary" id="il-add" type="button" hidden>{{t "+ 添加实例"}}</button>
+  </div>
+  <div id="il-msg"></div>
+  <div class="kpis im-kpis" id="il-kpis" aria-label="{{t "实例统计"}}"></div>
+  <section class="card fill">
+    <div class="im-batch" id="il-batch" hidden>
+      <span class="muted small">{{th "已选 {n} 个" "n" .Data.SelCount}}</span>
+      <button class="btn" id="il-b-enable" type="button" disabled>{{t "批量启用"}}</button>
+      <button class="btn ghost danger" id="il-b-disable" type="button" disabled>{{t "批量停用"}}</button>
+      <button class="btn" id="il-b-collect-on" type="button" disabled>{{t "批量开启采集"}}</button>
+      <button class="btn ghost" id="il-b-collect-off" type="button" disabled>{{t "批量关闭采集"}}</button>
+      <select id="il-b-env" aria-label="{{t "批量设置环境"}}"><option value="">{{t "未设置"}}</option></select>
+      <button class="btn" id="il-b-env-go" type="button" disabled>{{t "批量设置环境"}}</button>
+      <button class="btn ghost danger" id="il-b-delete" type="button" disabled>{{t "批量删除"}}</button>
+      <button class="btn ghost" id="il-b-clear" type="button" disabled>{{t "取消选择"}}</button>
+    </div>
+    <div class="grid-wrap il-scroll"><table class="list">
+      <thead><tr><th class="im-sel"><input type="checkbox" id="il-all" aria-label="{{t "全选当前页"}}"></th><th>ID</th><th>{{t "实例名称"}}</th><th>{{t "角色"}}</th><th>{{t "类型 / 版本"}}</th><th>HOST:PORT</th><th>{{t "状态"}}</th><th>{{t "QPS / 连接"}}</th><th>{{t "慢SQL"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="il-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pager" id="il-pager"></div>
+  </section>
+</main></div>
+
+<div class="modal-mask im-drawer" id="il-drawer" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="il-drawer-t">
+  <h2 id="il-drawer-t">{{t "实例详情"}}</h2>
+  <div id="il-drawer-body"></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "关闭"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="il-edit" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="il-edit-t">
+  <h2 id="il-edit-t">{{t "添加实例"}}</h2>
+  <div id="il-edit-msg"></div>
+  <div class="form-grid">
+    <label>{{t "实例名称（唯一）"}}<input type="text" id="f-name" maxlength="50" autocomplete="off"></label>
+    <label>{{t "角色"}}<select id="f-role"><option value="master">{{t "主库 master"}}</option><option value="slave">{{t "从库 slave"}}</option></select></label>
+    <label>{{t "数据库类型"}}<select id="f-dbtype"></select></label>
+    <label>{{t "环境"}}<select id="f-env"><option value="">{{t "未设置"}}</option></select><small class="muted" id="f-env-hint"></small></label>
+    <label>{{t "模式"}}<select id="f-mode"><option value="">{{t "（不填）"}}</option><option value="standalone">{{t "单机 standalone"}}</option><option value="cluster">{{t "集群 cluster"}}</option></select></label>
+    <label>HOST<input type="text" id="f-host" placeholder="10.20.0.13" autocomplete="off"></label>
+    <label>PORT<input type="text" id="f-port" value="3306" inputmode="numeric" autocomplete="off"></label>
+    <label>{{t "用户名"}}<input type="text" id="f-user" autocomplete="off"></label>
+    <label>{{t "密码"}}<input type="password" id="f-pass" autocomplete="new-password"></label>
+    <label>{{t "默认数据库（可空）"}}<input type="text" id="f-db" maxlength="64" autocomplete="off"></label>
+    <label>{{t "字符集"}}<input type="text" id="f-charset" placeholder="utf8mb4" maxlength="20" autocomplete="off"></label>
+    <label class="full">{{t "显示的库（正则）"}}<input type="text" class="mono" id="f-show" placeholder="^(shop|report)$" autocomplete="off"></label>
+    <label class="full">{{t "隐藏的库（正则）"}}<input type="text" class="mono" id="f-denied" placeholder="^(mysql|sys)$" autocomplete="off"></label>
+    <div class="full" id="f-oracle" hidden>
+      <div class="form-grid">
+        <label>Oracle service_name<input type="text" id="f-service" maxlength="50" autocomplete="off"></label>
+        <label>Oracle sid<input type="text" id="f-sid" maxlength="50" autocomplete="off"></label>
+      </div>
+    </div>
+    <div class="full"><span class="lbl">{{t "资源组（可不选）"}}</span><div class="check-list" id="f-groups"></div></div>
+    <div class="full"><span class="lbl">{{t "标签"}}</span><div class="check-list" id="f-tags"></div></div>
+    <label>{{t "SSH 隧道（可空）"}}<select id="f-tunnel"><option value="0">—</option></select></label>
+    <label class="check"><input type="checkbox" id="f-ssl"> {{t "启用 SSL"}}</label>
+    <label class="check"><input type="checkbox" id="f-verify" checked> {{t "验证服务端证书"}}</label>
+    <label class="check"><input type="checkbox" id="f-enable"> {{t "慢日志采集"}}</label>
+  </div>
+  <div class="actions"><button class="btn" type="button" id="il-edit-test">{{t "测试连接"}}</button><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="il-edit-save">{{t "保存"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="il-binlog" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="il-binlog-t">
+  <h2 id="il-binlog-t">{{t "清理 Binlog 日志"}}</h2>
+  <div id="il-binlog-msg"></div>
+  <div class="form-grid">
+    <label class="full">{{t "实例名称"}}<input type="text" id="bl-name" readonly></label>
+    <label class="full">{{t "保留起始文件（早于它的 binlog 将被删除）"}}<select id="bl-file"></select></label>
+  </div>
+  <div id="bl-plan" hidden>
+    <div class="alert err" id="bl-plan-text"></div>
+    <div id="bl-replicas"></div>
+    <pre class="sqlbox mono" id="bl-plan-sql"></pre>
+    <label class="muted small">{{t "再次确认：请输入要保留的起始文件名"}} <b id="bl-plan-name" class="mono crit"></b><input type="text" id="bl-confirm" autocomplete="off" style="display:block;width:100%;margin-top:4px"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button>
+    <button class="btn" type="button" id="bl-preview">{{t "预览清理范围"}}</button>
+    <button class="btn danger" type="button" id="bl-purge" disabled>{{t "确认清理"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/instmgr/list.js"></script>{{end}}

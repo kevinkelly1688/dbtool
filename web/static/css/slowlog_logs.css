@@ -1,0 +1,48 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: slowlog_logs.css
+ * @time: 2026/10/28
+ */
+/* 查慢日志（/slowlogs）独有的样式：KPI、折线图、行内指纹、明细抽屉。颜色全部用 --dt-* 变量，三套皮肤通用。 */
+#slowlogs .inline-form { flex-wrap: wrap; justify-content: flex-end; }
+
+/* 顶部 KPI：沿用 admin.css 的 .kpis，这里只改成 4 列并补副标题 */
+#slowlogs .kpis.sl-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { #slowlogs .kpis.sl-kpis { grid-template-columns: repeat(2, 1fr); } }
+#slowlogs .kpis.sl-kpis small { font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 每日折线图 */
+.sl-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.sl-charts > .card { margin-bottom: 0; min-width: 0; }
+@media (max-width: 900px) { .sl-charts { grid-template-columns: 1fr; } }
+.sl-chart svg { width: 100%; height: auto; display: block; }
+svg.slchart .axis { stroke: var(--dt-line-hi); stroke-width: 1; }
+svg.slchart .grid { stroke: var(--dt-line); stroke-width: 1; stroke-dasharray: 3 3; }
+svg.slchart .ax { fill: var(--dt-muted); font-size: 10px; }
+svg.slchart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+svg.slchart .area { opacity: .12; stroke: none; }
+svg.slchart .dot { stroke: none; }
+svg.slchart .hit { fill: transparent; }
+svg.slchart.c1 .ln { stroke: var(--dt-cyan); }
+svg.slchart.c1 .dot, svg.slchart.c1 .area { fill: var(--dt-cyan); }
+svg.slchart.c2 .ln { stroke: var(--dt-amber); }
+svg.slchart.c2 .dot, svg.slchart.c2 .area { fill: var(--dt-amber); }
+
+/* 表格里的 SQL 指纹：单行省略，悬停看全文 */
+table.list td.fp { max-width: 280px; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+table.list td.num.strong { font-weight: 600; }
+table.list td.num.hot { color: var(--dt-crit); font-weight: 600; }
+
+/* 明细抽屉：复用 .modal-mask / .modal，靠右贴边、全高 */
+.modal-mask.sl-drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
+.modal-mask.sl-drawer > .modal { width: min(1040px, 100%); max-height: 100vh; height: 100vh; border-radius: 8px 0 0 8px; border-right: 0; }
+.sl-h3 { font-size: 14px; margin: 14px 0 6px; }
+.sl-sum { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 8px 0 4px; }
+.sl-sum > div { background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; min-width: 0; }
+.sl-sum b { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-sum span { color: var(--dt-muted); font-size: 12px; }
+
+/* 采集器状态折叠区里的一句话提示（为空时不占位） */
+.sl-cnote { margin: 0; padding: 8px 14px 0; }
+.sl-cnote:empty { display: none; }

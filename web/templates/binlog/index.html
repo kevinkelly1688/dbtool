@@ -1,0 +1,104 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/binlog.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="bl">
+  <div class="page-head">
+    <h1>{{t "日志解析"}}</h1>
+  </div>
+  <div id="bl-msg"></div>
+
+  <section class="card">
+    <h2>{{t "解析范围"}}</h2>
+    <div class="form-grid">
+      <div class="full bl-inst-row">
+        <label>{{t "实例（仅 MySQL）"}}<select id="bl-inst" aria-label="{{t "实例"}}"><option value="">{{t "加载中…"}}</option></select></label>
+        <div class="lbl">{{t "实例状态"}}<div class="bl-info" id="bl-info" aria-live="polite"><span class="muted">{{t "请选择实例"}}</span></div></div>
+      </div>
+
+      <div class="lbl full">{{t "模式"}}
+        <div class="bl-modes">
+          <label class="radio"><input type="radio" name="bl-mode" value="sql" checked> {{t "还原 SQL"}}</label>
+          <label class="radio"><input type="radio" name="bl-mode" value="rollback" id="bl-mode-rb"> {{t "生成回滚 SQL"}}</label>
+        </div>
+        <div class="muted small" id="bl-mode-note"></div>
+      </div>
+
+      <label>{{t "起始文件"}}<select id="bl-sfile" aria-label="{{t "起始文件"}}"></select></label>
+      <label>{{t "起始位置"}}<input type="text" id="bl-spos" inputmode="numeric" placeholder="{{t "留空 = 文件开头"}}" autocomplete="off"></label>
+      <label>{{t "结束文件"}}<select id="bl-efile" aria-label="{{t "结束文件"}}"><option value="">{{t "最后一个文件末尾"}}</option></select></label>
+      <label>{{t "结束位置"}}<input type="text" id="bl-epos" inputmode="numeric" placeholder="{{t "留空 = 文件末尾"}}" autocomplete="off" disabled></label>
+      <label>{{t "开始时间（服务器时区）"}}<input type="text" id="bl-stime" placeholder="2026-10-01 10:00:00" autocomplete="off"></label>
+      <label>{{t "结束时间（服务器时区）"}}<input type="text" id="bl-etime" placeholder="2026-10-01 10:30:00" autocomplete="off"></label>
+
+      <label>{{t "数据库（可多选）"}}<select id="bl-dbs" multiple size="5" aria-label="{{t "数据库"}}"></select></label>
+      <label>{{t "表"}}<textarea id="bl-tables" rows="4" placeholder="orders&#10;shop.users" autocomplete="off"></textarea></label>
+
+      <div class="lbl">{{t "语句类型"}}
+        <div class="bl-checks">
+          <label class="radio"><input type="checkbox" name="bl-type" value="insert" checked> INSERT</label>
+          <label class="radio"><input type="checkbox" name="bl-type" value="update" checked> UPDATE</label>
+          <label class="radio"><input type="checkbox" name="bl-type" value="delete" checked> DELETE</label>
+          <label class="radio"><input type="checkbox" name="bl-type" value="ddl"> DDL</label>
+        </div>
+      </div>
+      <div class="lbl">{{t "输出选项"}}
+        <div class="bl-checks">
+          <label class="radio"><input type="checkbox" id="bl-noprefix"> {{t "不带库名前缀"}}</label>
+          <label class="radio"><input type="checkbox" id="bl-extra"> {{t "语句后附位置 / 时间注释"}}</label>
+          <label class="radio"><input type="checkbox" id="bl-full"> {{t "SET / WHERE 带全部列"}}</label>
+        </div>
+      </div>
+
+      <label>{{th "最多条数（≤ {n}）" "n" .Data.HardRows}}<input type="text" id="bl-max-rows" inputmode="numeric" autocomplete="off"></label>
+      <label>{{th "结果体积上限 MB（≤ {n}）" "n" .Data.HardMB}}<input type="text" id="bl-max-mb" inputmode="numeric" autocomplete="off"></label>
+      <label>{{th "超时秒数（10 – {n}）" "n" .Data.MaxTimeout}}<input type="text" id="bl-timeout" inputmode="numeric" autocomplete="off"></label>
+      <div class="bl-actions">
+        <button class="btn primary" type="button" id="bl-start" disabled>{{t "开始解析"}}</button>
+        <button class="btn danger" type="button" id="bl-cancel" hidden>{{t "取消任务"}}</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="bl-job-card" hidden>
+    <h2>{{t "当前任务"}} <span class="sub" id="bl-job-meta"></span></h2>
+    <div class="bl-progress" id="bl-progress" hidden><div id="bl-progress-bar"></div></div>
+    <div class="kpis bl-kpis" id="bl-kpis" aria-label="{{t "任务统计"}}"></div>
+    <div id="bl-job-notes"></div>
+  </section>
+
+  <section class="card" id="bl-result-card" hidden>
+    <h2>{{t "结果"}} <span class="sub" id="bl-result-meta"></span></h2>
+    <div class="toolbar">
+      <button class="btn" type="button" id="bl-copy-all">{{t "复制全部"}}</button>
+      <button class="btn" type="button" id="bl-download" data-btn="binlog.download">{{t "下载 .sql 文件"}}</button>
+      <span class="spacer"></span>
+      <span class="muted small" id="bl-copy-state"></span>
+    </div>
+    <div class="grid-wrap" style="max-height:none">
+      <table class="list bl-table">
+        <thead><tr><th>#</th><th>{{t "事务"}}</th><th>{{t "时间"}}</th><th>{{t "位置"}}</th><th>{{t "库.表"}}</th><th>{{t "类型"}}</th><th>SQL</th><th></th></tr></thead>
+        <tbody id="bl-rows"><tr><td colspan="8" class="empty">{{t "还没有结果"}}</td></tr></tbody>
+      </table>
+    </div>
+    <div class="pager"><span id="bl-pager-info"></span><button class="btn" type="button" id="bl-more" hidden>{{t "加载更多"}}</button></div>
+  </section>
+
+  <section class="card">
+    <h2>{{t "我的任务"}} <span class="spacer"></span><button class="btn ghost" type="button" id="bl-jobs-refresh">{{t "刷新"}}</button></h2>
+    <div class="grid-wrap" style="max-height:none">
+      <table class="list">
+        <thead><tr><th>{{t "创建时间"}}</th><th>{{t "创建人"}}</th><th>{{t "实例"}}</th><th>{{t "模式"}}</th><th>{{t "范围"}}</th><th>{{t "状态"}}</th><th>{{t "结果"}}</th><th>{{t "剩余保留"}}</th><th></th></tr></thead>
+        <tbody id="bl-jobs"><tr><td colspan="9" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/binlog/binlog.js"></script>{{end}}

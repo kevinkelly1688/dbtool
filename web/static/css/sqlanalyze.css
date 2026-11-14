@@ -1,0 +1,21 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: sqlanalyze.css
+ * @time: 2026/10/28
+ */
+/* SQL 分析页（internal/sqlopt analyze）独有的样式。公共样式见 sqlopt.css / app.css。 */
+.sa-actions { align-self: end; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.grid-wrap.sa-wrap { max-height: none; }
+#sa-job-meta { font-size: 12.5px; font-weight: 400; color: var(--dt-muted); }
+.sa-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.sa-chip { display: inline-block; padding: 1px 8px; border: 1px solid var(--dt-line); border-radius: 10px; background: var(--dt-sunken); font-size: 12px; color: var(--dt-muted); }
+.sa-chip b { color: var(--dt-fg); font-family: var(--dt-f-mono); margin-left: 4px; }
+.sa-fpid { font-family: var(--dt-f-mono); font-size: 12px; color: var(--dt-muted); }
+.sa-score { font-family: var(--dt-f-mono); font-weight: 700; }
+.sa-score.good { color: var(--dt-ok); }
+.sa-score.mid { color: var(--dt-amber); }
+.sa-score.bad { color: var(--dt-crit); }
+.sa-recent-cur td { background: var(--dt-sunken); }
+.sa-keep-warn { color: var(--dt-amber); }
+td.sa-tables { max-width: 220px; word-break: break-all; font-family: var(--dt-f-mono); font-size: 12px; }

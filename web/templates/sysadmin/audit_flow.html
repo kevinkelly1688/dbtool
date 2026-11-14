@@ -1,0 +1,101 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: audit_flow.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sysadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="af">
+  <div class="page-head">
+    <h1>{{t "审批流程"}}</h1>
+  </div>
+  <div id="af-msg"></div>
+
+  <div id="af-tabs">
+    <div class="tabbar" role="tablist" aria-label="{{t "审批流程"}}">
+      <button class="tab on" type="button" data-tab="edit" role="tab">{{t "按组配置"}}</button>
+      <button class="tab" type="button" data-tab="matrix" role="tab">{{t "总览矩阵"}}</button>
+      <button class="tab" type="button" data-tab="chart" role="tab">{{t "审批与通知链路"}}</button>
+    </div>
+
+    <div data-pane="edit" class="cols wide-left">
+      <section class="card">
+        <h2>{{t "资源组"}} <small class="muted">{{t "已配置"}} / <span id="af-type-n">3</span></small></h2>
+        <div class="side-list" id="af-glist" role="listbox" aria-label="{{t "资源组"}}"></div>
+        <select id="af-group" aria-label="{{t "资源组"}}" hidden></select>
+      </section>
+
+      <section class="card">
+        <h2 class="h-row">{{t "操作"}} <span class="spacer"></span>
+          <select id="af-type" aria-label="{{t "工单类型"}}"></select>
+        </h2>
+        <p>{{t "当前审批流程："}}<b id="af-cur">—</b> <span class="muted small" id="af-cur-n"></span></p>
+        <div class="form-grid one">
+          <div>
+            <span class="lbl">{{t "变更审批流程"}}</span>
+            <div class="chips flow" id="af-chips" aria-live="polite"></div>
+            <div class="toolbar" style="margin-top:8px">
+              <select id="af-add" aria-label="{{t "添加审批权限组"}}"></select>
+              <button class="btn" type="button" id="af-reset">{{t "恢复为当前流程"}}</button>
+              <button class="btn ghost danger" type="button" id="af-clear">{{t "清空"}}</button>
+              <span class="badge warn" id="af-dirty" role="status" hidden>● {{t "有未保存的修改"}}</span>
+              <span class="spacer"></span>
+              <button class="btn ghost danger" type="button" id="af-delete" hidden>{{t "删除此审批流"}}</button>
+              <button class="btn primary" type="button" id="af-save">{{t "变更"}}</button>
+            </div>
+          </div>
+        </div>
+        <div id="af-ok"></div>
+        <h3>{{t "每一级的审批人"}}</h3>
+        <table class="list">
+          <thead><tr><th>{{t "级别"}}</th><th>{{t "权限组"}}</th><th>{{t "该组在“"}}<span id="af-levels-group">{{t "所选"}}</span>{{t "”资源组内的用户"}}</th><th>{{t "状态"}}</th></tr></thead>
+          <tbody id="af-levels"><tr><td colspan="4" class="empty">{{t "加载中…"}}</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+    <section data-pane="matrix" hidden>
+      <div class="kpis kpis-3" id="af-kpis"></div>
+      <div class="card">
+        <h2>{{t "审批流总览"}}</h2>
+        <table class="list" id="af-matrix">
+          <thead><tr id="af-matrix-head"><th>{{t "资源组"}}</th></tr></thead>
+          <tbody id="af-matrix-body"><tr><td colspan="4" class="empty">{{t "加载中…"}}</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section data-pane="chart" hidden>
+      <div class="card">
+        <h2>{{t "审批与通知链路"}}</h2>
+        <svg viewBox="0 0 1000 380" class="diagram" role="img" aria-label="{{t "审批与通知链路示意图"}}">
+          <defs><marker id="sy-ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="ah"/></marker></defs>
+          <g class="n info"><rect x="10" y="140" width="120" height="50" rx="7"/><text x="70" y="162">{{t "提交工单"}}</text><text x="70" y="180" class="sub">{{t "三种工单类型"}}</text></g>
+          <g class="n"><rect x="160" y="140" width="150" height="50" rx="7"/><text x="235" y="162">{{t "读取审批流"}}</text><text x="235" y="180" class="sub">{{t "资源组 × 工单类型"}}</text></g>
+          <g class="n bad"><rect x="160" y="30" width="150" height="50" rx="7"/><text x="235" y="52">{{t "拒绝提交"}}</text><text x="235" y="70" class="sub">{{t "审批类型未配置审流"}}</text></g>
+          <g class="n cur"><rect x="350" y="140" width="130" height="50" rx="7"/><text x="415" y="162">{{t "第 1 级审批"}}</text><text x="415" y="180" class="sub">{{t "权限组 A 内任一人"}}</text></g>
+          <g class="n cur"><rect x="520" y="140" width="130" height="50" rx="7"/><text x="585" y="162">{{t "第 2 级审批"}}</text><text x="585" y="180" class="sub">{{t "权限组 B 内任一人"}}</text></g>
+          <g class="n cur"><rect x="700" y="140" width="130" height="50" rx="7"/><text x="765" y="162">{{t "第 N 级审批"}}</text><text x="765" y="180" class="sub">{{t "最多 10 级"}}</text></g>
+          <g class="n ok"><rect x="870" y="140" width="110" height="50" rx="7"/><text x="925" y="162">{{t "全部通过"}}</text><text x="925" y="180" class="sub">{{t "生效 / 可执行"}}</text></g>
+          <g class="n bad"><rect x="350" y="240" width="300" height="44" rx="7"/><text x="500" y="267">{{t "任一级驳回 / 提交人撤回 → 流程终止"}}</text></g>
+          <g class="n info"><rect x="10" y="320" width="970" height="44" rx="7"/><text x="495" y="337">{{t "机器人通知（资源组机器人：钉钉 / 飞书 / Slack ＋ 通知渠道 @ 规则）"}}</text><text x="495" y="355" class="sub">{{t "提交 → 通知第 1 级审批人；每级通过 / 驳回 / 终止 → 通知提交人与资源组群；全部通过 → 通知提交人与可执行人"}}</text></g>
+          <g class="e"><path d="M130,165 H160"/><path d="M310,165 H350"/><path d="M480,165 H520"/><path d="M650,165 H700"/><path d="M830,165 H870"/><path d="M235,140 V80"/><path d="M415,190 V240"/><path d="M585,190 V240"/>
+            <path d="M70,190 V320" class="dash"/><path d="M500,284 V320" class="dash"/><path d="M925,190 V320" class="dash"/></g>
+          <g class="t"><text x="145" y="157">{{t "按类型"}}</text><text x="330" y="157">{{t "已配置"}}</text><text x="500" y="157">{{t "通过|flow"}}</text><text x="675" y="157">…</text><text x="850" y="157">{{t "通过|flow"}}</text><text x="262" y="112">{{t "未配置"}}</text><text x="432" y="220">{{t "驳回|flow"}}</text><text x="602" y="220">{{t "驳回|flow"}}</text><text x="90" y="262" class="l">{{t "通知|flow"}}</text><text x="515" y="306" class="l">{{t "通知|flow"}}</text><text x="940" y="262" class="l">{{t "通知|flow"}}</text></g>
+        </svg>
+      </div>
+      <section class="card">
+        <h2 class="h-row">{{t "实际示例"}} <span class="spacer"></span>
+          <select id="af-chart-group" aria-label="{{t "资源组"}}"></select>
+          <select id="af-chart-type" aria-label="{{t "工单类型"}}"></select>
+        </h2>
+        <ol class="tline" id="af-timeline"><li class="muted">{{t "加载中…"}}</li></ol>
+      </section>
+    </section>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sysadmin/audit_flow.js"></script>{{end}}

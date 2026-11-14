@@ -1,0 +1,604 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: partman-alert.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分区可用数量告警 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*，与正式页面一致 ===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-amber-soft: rgba(255, 181, 71, .13);
+  --dt-ok: #37d99a; --dt-ok-soft: rgba(55, 217, 154, .12);
+  --dt-crit: #ff5577; --dt-crit-soft: rgba(255, 85, 119, .14);
+  --dt-input: #0a111c; --dt-sunken: rgba(0, 0, 0, .2); --dt-on-accent: #04121a;
+  --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-amber-soft: rgba(219, 140, 20, .12);
+  --dt-ok: #1a8f5c; --dt-ok-soft: rgba(26, 143, 92, .1);
+  --dt-crit: #cf2c46; --dt-crit-soft: rgba(207, 44, 70, .09);
+  --dt-input: #f8fafc; --dt-sunken: #f5f7fa; --dt-on-accent: #ffffff;
+  --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3f7d3a; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #b2443a; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-on-accent: #fbf7ec;
+  --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 13.5px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono, code { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; }
+code { padding: 0 4px; border-radius: 3px; background: var(--dt-raise); font-size: 12px; }
+.muted { color: var(--dt-muted); } .dim { color: var(--dt-dim); } .small { font-size: 12px; }
+[hidden] { display: none !important; }
+
+/* 顶栏（仅示意位置，正式页面用全局顶栏） */
+.top { flex: none; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 20px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); }
+.top .sp { flex: 1; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 16px; gap: 12px; overflow: auto; }
+.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 19px; }
+.btn { height: 30px; padding: 0 12px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-panel); white-space: nowrap; }
+.btn:hover { border-color: var(--dt-cyan); }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+.btn.sm { height: 24px; padding: 0 8px; font-size: 12px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.link { border: 0; background: none; color: var(--dt-cyan); padding: 0 4px; }
+.link:hover { text-decoration: underline; }
+.ipt, select.ipt { height: 30px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); min-width: 0; }
+.ipt:focus, button:focus-visible, select:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+.ipt.num { width: 76px; text-align: center; font-variant-numeric: tabular-nums; }
+input[type=checkbox], input[type=radio] { width: 15px; height: 15px; accent-color: var(--dt-cyan); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dt-line); flex: none; }
+.tabs button { height: 36px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--dt-muted); }
+.tabs button[aria-selected="true"] { color: var(--dt-cyan); border-bottom-color: var(--dt-cyan); font-weight: 600; }
+.tabs .n { margin-left: 6px; padding: 0 6px; border-radius: 9px; background: var(--dt-raise); color: var(--dt-muted); font-size: 11.5px; }
+.badge { display: inline-block; padding: 0 7px; font-size: 11.5px; line-height: 18px; border: 1px solid var(--dt-line-hi); border-radius: 9px; color: var(--dt-muted); white-space: nowrap; }
+.badge.ok { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.badge.warn { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.info { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.badge.crit { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.tag { margin-left: 6px; padding: 0 6px; border: 1px solid var(--dt-line-hi); border-radius: 4px; font-size: 11px; color: var(--dt-muted); }
+
+/* 功能说明 */
+.note { border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.note > summary { padding: 9px 14px; cursor: pointer; font-weight: 600; }
+.note .bd { padding: 0 16px 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; }
+.note h4 { margin: 8px 0 2px; font-size: 13px; color: var(--dt-cyan); }
+.note ul { margin: 0; padding-left: 18px; color: var(--dt-muted); }
+.note li { margin: 2px 0; }
+.note b { color: var(--dt-fg); }
+.note .try { grid-column: 1 / -1; margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: var(--dt-cyan-soft); color: var(--dt-cyan); }
+
+/* 概览 */
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.stat { padding: 10px 14px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.stat .k { color: var(--dt-muted); font-size: 12px; }
+.stat .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .d { font-size: 12px; color: var(--dt-muted); }
+.stat.crit .v { color: var(--dt-crit); } .stat.warn .v { color: var(--dt-amber); } .stat.ok .v { color: var(--dt-ok); }
+
+/* 表格 */
+.panel { background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--dt-line); }
+.toolbar .grow { flex: 1; min-width: 160px; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper .btn { width: 28px; padding: 0; }
+.scroll { overflow: auto; }
+table.list { width: 100%; border-collapse: collapse; }
+table.list th { text-align: left; padding: 8px 12px; font-weight: 600; font-size: 12.5px; color: var(--dt-muted); background: var(--dt-raise); border-bottom: 1px solid var(--dt-line); white-space: nowrap; }
+table.list td { padding: 9px 12px; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+table.list tr:hover td { background: var(--dt-cyan-soft); }
+table.list tr.hot td:first-child { box-shadow: inset 3px 0 0 var(--dt-amber); }
+table.list tr.hot.zero td:first-child { box-shadow: inset 3px 0 0 var(--dt-crit); }
+.empty { padding: 36px 16px; text-align: center; color: var(--dt-muted); }
+.sub { display: block; color: var(--dt-muted); font-size: 12px; }
+.st { display: inline-block; padding: 0 8px; line-height: 18px; font-size: 12px; border: 1px solid var(--dt-line-hi); border-radius: 4px; }
+.st.passed { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.st.waiting { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.st.rejected { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.st.aborted { color: var(--dt-muted); }
+
+/* 可用分区：小方块（实心 = 可用，虚线 = 还差几个才到阈值） */
+.slots { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 8px; }
+.slots i { width: 8px; height: 14px; border-radius: 2px; border: 1px solid var(--dt-line-hi); }
+.slots i.on { background: var(--dt-ok); border-color: var(--dt-ok); }
+.slots.warn i.on { background: var(--dt-amber); border-color: var(--dt-amber); }
+.slots.crit i.on { background: var(--dt-crit); border-color: var(--dt-crit); }
+.slots i.need { border-style: dashed; border-color: var(--dt-amber); }
+.slots.crit i.need { border-color: var(--dt-crit); }
+.num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.crit-t { color: var(--dt-crit); } .warn-t { color: var(--dt-amber); } .ok-t { color: var(--dt-ok); }
+
+/* 分区时间线 */
+.pt { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt .c { padding: 3px 8px; border-radius: 6px; border: 1px solid var(--dt-line-hi); background: var(--dt-raise); color: var(--dt-muted); font: 12px "JetBrains Mono", Consolas, monospace; }
+.pt .c.past { opacity: .55; }
+.pt .c.cur { border-color: var(--dt-cyan); color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.pt .c.fut { border-color: var(--dt-ok); color: var(--dt-ok); background: var(--dt-ok-soft); }
+.pt .c.gap { border-style: dashed; border-color: var(--dt-amber); color: var(--dt-amber); background: var(--dt-amber-soft); }
+.pt .c.max { border-style: dashed; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; color: var(--dt-muted); font-size: 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; border: 1px solid var(--dt-line-hi); }
+.legend .past { opacity: .55; } .legend .cur { background: var(--dt-cyan-soft); border-color: var(--dt-cyan); }
+.legend .fut { background: var(--dt-ok-soft); border-color: var(--dt-ok); }
+.legend .gap { border-style: dashed; border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+
+/* 表单 / 设置页 */
+.cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }
+.box { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.box h3 { margin: 0; font-size: 14px; }
+.fgrid { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px 14px; align-items: center; }
+.fgrid > label, .fgrid > .lb { color: var(--dt-muted); font-size: 12.5px; }
+.hint { color: var(--dt-muted); font-size: 12px; }
+.sw { position: relative; display: inline-block; width: 34px; height: 18px; }
+.sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.sw b { position: absolute; inset: 0; border-radius: 9px; background: var(--dt-line-hi); transition: background .12s; pointer-events: none; }
+.sw b::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--dt-fg); opacity: .85; transition: transform .12s; }
+.sw input:checked + b { background: var(--dt-ok); }
+.sw input:checked + b::after { transform: translateX(16px); background: #fff; opacity: 1; }
+pre.msg { margin: 0; padding: 10px 12px; border: 1px solid var(--dt-line); border-radius: 6px; background: var(--dt-sunken); font: 12.5px/1.65 "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace; white-space: pre-wrap; word-break: break-all; }
+.fake { border: 1px dashed var(--dt-line-hi); border-radius: 8px; padding: 12px 14px; }
+.fake .t { font-size: 12px; color: var(--dt-muted); margin-bottom: 8px; }
+
+/* 抽屉 */
+.mask { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .45); display: flex; justify-content: flex-end; }
+.drawer { width: min(680px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--dt-panel); border-left: 1px solid var(--dt-line-hi); box-shadow: var(--dt-shadow); }
+.drawer > h3 { margin: 0; padding: 14px 18px; font-size: 16px; border-bottom: 1px solid var(--dt-line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.drawer .bd { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 18px; }
+.drawer .ft { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--dt-line); }
+.sec > h4 { margin: 0 0 8px; font-size: 13px; }
+.big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.big .n { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.opt { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.verdict { margin-top: 8px; padding: 8px 12px; border-radius: 6px; border: 1px solid; }
+.verdict.warn { background: var(--dt-amber-soft); border-color: var(--dt-amber); color: var(--dt-amber); }
+.verdict.crit { background: var(--dt-crit-soft); border-color: var(--dt-crit); color: var(--dt-crit); }
+.verdict.ok { background: var(--dt-ok-soft); border-color: var(--dt-ok); color: var(--dt-ok); }
+.verdict.mid { background: var(--dt-raise); border-color: var(--dt-line-hi); color: var(--dt-muted); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; padding: 8px 16px; border-radius: 8px; background: var(--dt-raise); border: 1px solid var(--dt-line-hi); box-shadow: var(--dt-shadow); max-width: 90vw; }
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, 1fr); } .cols, .note .bd { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="crumb">数据服务 / <b>分区维护</b></span>
+  <span class="sp"></span>
+  <span class="muted small">原型 · 数据均为示意 · 模拟“现在”：<b id="nowtxt"></b></span>
+  <div class="seg" id="skins">
+    <button type="button" data-s="light">明亮</button><button type="button" data-s="dark">深空</button><button type="button" data-s="sepia">护眼</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="head">
+    <h1>分区维护</h1>
+    <span class="badge info">新增：可用分区数量告警</span>
+    <span style="flex:1"></span>
+    <button class="btn primary" type="button" data-act="round" title="模拟定时维护跑一轮（间隔 180 分钟）：能续建的续建，之后检查可用分区数并按规则推送">模拟一轮定时维护</button>
+  </div>
+
+  <details class="note" open>
+    <summary>功能说明（请先确认口径，再看下面的交互）</summary>
+    <div class="bd">
+      <div>
+        <h4>什么叫“可用分区数”</h4>
+        <ul>
+          <li>目标表里<b>上界晚于当前时间</b>的分区个数：含正在写入的当前分区，不含已经过去的历史分区，不含 MAXVALUE 兜底分区。</li>
+          <li>维护正常时它稳定在 <b>预创建数 + 1</b>（预创建 3 → 4 个）；定时维护跑不动（关了、报错、实例连不上）时，它会一天天变少，直到写入报错。</li>
+        </ul>
+        <h4>告警条件与数量</h4>
+        <ul>
+          <li><b>可用分区数 &lt; 阈值</b> 就告警，默认阈值 <b>3</b>。</li>
+          <li>数量可以自己定义：<b>全局默认</b>一个值；<b>每张表</b>可以单独设置（填 0 = 这张表不告警）。小时分区的表 3 个只有 3 小时，可以给它设大一点。</li>
+          <li>阈值不要超过“预创建数 + 1”，否则续建之后也达不到，会一直告警（列表标“阈值过高”，设置时给提示）。</li>
+        </ul>
+      </div>
+      <div>
+        <h4>什么时候检查、什么时候推送</h4>
+        <ul>
+          <li>打开 / 刷新页面时，随“状态检查”在列表里标出；不额外连目标库。</li>
+          <li>定时维护<b>每轮结束后</b>再检查一次：续建成功就不会推，仍然不足才推送。</li>
+          <li>去重：首次不足推一次，之后按“重复提醒间隔”提醒；回到阈值以上时可选推送“已恢复”。</li>
+          <li>通道沿用现有“推送设置”里的钉钉 / 飞书 / 企业微信 / Slack。</li>
+        </ul>
+        <h4>待你确认</h4>
+        <ul>
+          <li>数量是否包含当前分区（原型：包含）。</li>
+          <li>含 MAXVALUE 的表写入不会失败，是否也告警（原型：告警，并标注）。</li>
+          <li>不同周期共用一个数量阈值是否合适（原型：列表里额外给出“预计用尽”时间辅助判断）。</li>
+        </ul>
+      </div>
+      <div class="try">试试看：改全局阈值（列表上方的 − / +）· 点某一行的“告警设置”改这张表的阈值 · 点“模拟一轮定时维护”看推送与恢复 · 切到“告警设置”“告警记录”。</div>
+    </div>
+  </details>
+
+  <div class="stats" id="stats"></div>
+  <div class="tabs" id="tabs" role="tablist">
+    <button type="button" role="tab" data-act="tab" data-t="list">分区配置</button>
+    <button type="button" role="tab" data-act="tab" data-t="set">告警设置</button>
+    <button type="button" role="tab" data-act="tab" data-t="hist">告警记录<span class="n" id="n-hist"></span></button>
+  </div>
+  <section id="p-list"></section>
+  <section id="p-set" hidden></section>
+  <section id="p-hist" hidden></section>
+</main>
+
+<div class="mask" id="mask" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+
+  // ===================== 时间与分区窗口（口径与 internal/partman/plan.go 一致：分区名 = 起始时刻格式化后加 p，周分区用窗口最后一天）=====================
+  var NOW0 = new Date(2026, 9, 20, 10, 0, 0);
+  function floorTo(d, p) {
+    var x = new Date(d.getTime()); x.setSeconds(0, 0);
+    if (p === 'minute') return x;
+    x.setMinutes(0); if (p === 'hour') return x;
+    x.setHours(0); if (p === 'day') return x;
+    if (p === 'week') { x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+    x.setDate(1); if (p === 'month') return x;
+    x.setMonth(0); return x;
+  }
+  function add(d, p, n) {
+    var x = new Date(d.getTime());
+    if (p === 'minute') x.setMinutes(x.getMinutes() + n);
+    else if (p === 'hour') x.setHours(x.getHours() + n);
+    else if (p === 'day') x.setDate(x.getDate() + n);
+    else if (p === 'week') x.setDate(x.getDate() + 7 * n);
+    else if (p === 'month') x.setMonth(x.getMonth() + n);
+    else x.setFullYear(x.getFullYear() + n);
+    return x;
+  }
+  function ymd(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); }
+  function pname(p, start, step) {
+    switch (p) {
+      case 'minute': return 'p' + ymd(start) + pad(start.getHours()) + pad(start.getMinutes());
+      case 'hour': return 'p' + ymd(start) + pad(start.getHours());
+      case 'day': return 'p' + ymd(start);
+      case 'week': return 'p' + ymd(add(start, 'day', 7 * step - 1));
+      case 'month': return 'p' + start.getFullYear() + pad(start.getMonth() + 1);
+      default: return 'p' + start.getFullYear();
+    }
+  }
+  function fmtT(d) { return (d.getFullYear() === 2026 ? '' : d.getFullYear() + '-') + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function dur(ms) {
+    var m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
+    if (d >= 1) return d + ' 天' + (h && d < 10 ? ' ' + h + ' 小时' : '');
+    if (h >= 1) return h + ' 小时' + (m % 60 ? ' ' + (m % 60) + ' 分钟' : '');
+    return m + ' 分钟';
+  }
+  var PERIOD = { minute: '分钟', hour: '小时', day: '天', week: '周', month: '月', year: '年' };
+
+  // ===================== 示例数据 =====================
+  function ago(min) { return NOW0.getTime() - min * 60000; }
+  var ROWS = [
+    { id: 1, inst: 'prod-mysql-01', db: 'order_db', tb: 'order_event', period: 'day', step: 1, pre: 3, enabled: true, avail: 4, state: 'ok', lastRun: '10-20 09:00', lastOk: true },
+    { id: 2, inst: 'prod-mysql-01', db: 'order_db', tb: 'order_operate_log', period: 'day', step: 1, pre: 3, enabled: true, avail: 4, state: 'ok', lastRun: '10-20 09:00', lastOk: true },
+    { id: 3, inst: 'prod-mysql-01', db: 'pay_db', tb: 'pay_callback_log', period: 'day', step: 1, pre: 3, enabled: true, avail: 2, state: 'error', lastRun: '10-20 09:00', lastOk: false, lastErr: '边界不连续：p20261018 与 p20261019 之间缺分区', alerting: true, lastAlert: ago(120) },
+    { id: 4, inst: 'prod-mysql-02', db: 'shop', tb: 'user_login_log', period: 'day', step: 1, pre: 3, enabled: false, avail: 2, state: 'pending', lastRun: '10-17 16:40', lastOk: true, alerting: true, lastAlert: ago(26 * 60) },
+    { id: 5, inst: 'prod-mysql-02', db: 'shop', tb: 'sms_send_log', period: 'day', step: 1, pre: 3, enabled: false, avail: 0, state: 'pending', lastRun: '10-12 10:05', lastOk: true, alerting: true, lastAlert: ago(3 * 60) },
+    { id: 6, inst: 'prod-mysql-01', db: 'pay_db', tb: 'refund_record', period: 'month', step: 1, pre: 3, enabled: true, avail: 4, state: 'ok', lastRun: '10-20 09:00', lastOk: true },
+    { id: 7, inst: 'prod-mysql-01', db: 'risk_db', tb: 'risk_hit_record', period: 'month', step: 1, pre: 2, enabled: true, avail: 3, state: 'ok', lastRun: '10-20 09:00', lastOk: true, thr: 2 },
+    { id: 8, inst: 'sit-polardb', db: 'shop', tb: 'coupon_use_record', period: 'week', step: 1, pre: 2, enabled: true, avail: 3, state: 'ok', lastRun: '10-20 09:00', lastOk: true },
+    { id: 9, inst: 'prod-mysql-02', db: 'log_db', tb: 'api_access_log', period: 'hour', step: 1, pre: 12, enabled: true, avail: 11, state: 'pending', lastRun: '10-20 09:00', lastOk: true, thr: 12 },
+    { id: 10, inst: 'prod-mysql-01', db: 'msg_db', tb: 'push_task_log', period: 'day', step: 1, pre: 3, enabled: true, avail: 2, state: 'pending', lastRun: '10-20 09:00', lastOk: true, maxv: true },
+    { id: 11, inst: 'doris-01', dialect: 'Doris', db: 'dw', tb: 'dws_order_day', period: 'day', step: 1, pre: 3, enabled: true, avail: 4, state: 'ok', lastRun: '10-20 09:00', lastOk: true },
+    { id: 12, inst: 'sit-polardb', db: 'test_db', tb: 'tmp_event_log', period: 'day', step: 1, pre: 3, enabled: true, avail: 1, state: 'pending', lastRun: '10-20 09:00', lastOk: true, thr: 0 },
+    { id: 13, inst: 'prod-mysql-02', db: 'shop', tb: 'cart_item_snapshot', period: 'day', step: 1, pre: 3, enabled: true, avail: 1, state: 'pending', lastRun: '10-20 09:00', lastOk: true, silence: '10-27 00:00' },
+    { id: 14, inst: 'sdb-01', dialect: 'SelectDB', db: 'ads', tb: 'ads_user_retention', period: 'day', step: 1, pre: 3, enabled: true, avail: 0, state: 'unknown', lastRun: '10-20 09:00', lastOk: false, lastErr: '连接目标实例失败：i/o timeout' }
+  ];
+  var CH = [
+    { id: 1, type: '钉钉', name: 'DBA 运维群', alert: true, mention: '13800000000' },
+    { id: 2, type: '飞书', name: '数据库告警群', alert: true, mention: '' },
+    { id: 3, type: '企业微信', name: '备用群', alert: false, mention: '' },
+    { id: 4, type: 'Slack', name: '#db-oncall', alert: false, mention: '' }
+  ];
+  var HIST = [
+    { t: '10-20 08:00', rid: 3, kind: 'alert', avail: 2, thr: 3, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true },
+    { t: '10-20 07:00', rid: 5, kind: 'repeat', avail: 0, thr: 3, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true },
+    { t: '10-19 08:00', rid: 4, kind: 'alert', avail: 2, thr: 3, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true },
+    { t: '10-19 07:00', rid: 5, kind: 'repeat', avail: 0, thr: 3, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true },
+    { t: '10-18 11:00', rid: 9, kind: 'recover', avail: 7, thr: 6, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true },
+    { t: '10-18 08:00', rid: 9, kind: 'alert', avail: 5, thr: 6, ch: ['钉钉·DBA 运维群'], ok: false, err: '钉钉返回 errcode=310000：关键词不匹配' },
+    { t: '10-15 08:00', rid: 5, kind: 'alert', avail: 2, thr: 3, ch: ['钉钉·DBA 运维群', '飞书·数据库告警群'], ok: true }
+  ];
+  var S = { now: new Date(NOW0), tab: 'list', q: '', only: false, g: { enabled: true, min: 3, repeat: 24, recover: true }, rows: ROWS, ch: CH, hist: HIST, dr: 0, draft: null };
+
+  // ===================== 口径与判定 =====================
+  function eff(r) { return r.thr == null ? S.g.min : r.thr; }
+  function adds(r) { return Math.max(0, r.pre + 1 - r.avail); }
+  function lv(r, e) {
+    if (e == null) e = eff(r);
+    if (!S.g.enabled) return { k: 'off', t: '告警未启用', cls: '' };
+    if (r.state === 'unknown') return { k: 'na', t: '无法判断', cls: '' };
+    if (e === 0) return { k: 'off', t: '已关闭', cls: '' };
+    if (r.avail < e) return r.silence ? { k: 'silent', t: '静默至 ' + r.silence, cls: 'info' } : { k: 'alert', t: r.avail === 0 ? '已用尽' : '告警中', cls: r.avail === 0 ? 'crit' : 'warn' };
+    return { k: 'ok', t: '正常', cls: 'ok' };
+  }
+  function win(r, i) { var s = add(floorTo(S.now, r.period), r.period, r.step * i); return { start: s, end: add(s, r.period, r.step) }; }
+  function runway(r) {
+    if (r.state === 'unknown') return { t: '—', sub: '读不到目标表' };
+    if (r.avail === 0) return { t: '已用尽', sub: r.maxv ? '数据正落入 MAXVALUE 分区' : '新数据写入会报错（无分区可用）', cls: 'crit-t' };
+    var end = win(r, r.avail - 1).end;
+    return { t: fmtT(end), sub: '约 ' + dur(end - S.now) + '后' + (r.maxv ? '，之后落入 MAXVALUE' : '') };
+  }
+  function chNames() { return S.ch.filter(function (c) { return c.alert; }).map(function (c) { return c.type + '·' + c.name; }); }
+
+  function msg(r, kind, e) {
+    var rw = runway(r), L = ['【分区告警' + (kind === 'recover' ? '·已恢复' : kind === 'repeat' ? '·持续' : '') + '】可用分区数' + (kind === 'recover' ? '已恢复' : '不足'),
+      '实例：' + r.inst + '　库表：' + r.db + '.' + r.tb,
+      '可用分区：' + r.avail + ' 个（阈值 ' + e + (r.thr != null ? '，本表自定义' : '') + '）'];
+    if (kind !== 'recover') {
+      L.push('预计用尽：' + (r.avail === 0 ? '已用尽，' + rw.sub : rw.t + '（' + rw.sub + '）'));
+      L.push('定时维护：' + (r.enabled ? '已开启，最近一轮 ' + r.lastRun + (r.lastOk ? ' 成功' : ' 失败：' + (r.lastErr || '')) : '未开启（不会自动续建）'));
+      L.push('建议：到“分区维护”预览并执行续建' + (r.maxv ? '（该表含 MAXVALUE 分区，需 REORGANIZE）' : ''));
+    }
+    return L.join('\n');
+  }
+
+  // ===================== 渲染：概览与列表 =====================
+  function stats() {
+    var rows = S.rows, al = 0, zero = 0, pend = 0, bad = 0, quiet = 0;
+    rows.forEach(function (r) {
+      var L = lv(r);
+      if (L.k === 'alert') { al++; if (r.avail === 0) zero++; }
+      if (L.k === 'off' || L.k === 'silent') quiet++;
+      if (r.state === 'pending') pend++;
+      if (r.state === 'error' || r.state === 'unknown') bad++;
+    });
+    var c = function (k, v, d, cls) { return '<div class="stat ' + (cls || '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>'; };
+    $('#stats').innerHTML = c('配置数', rows.length, '其中定时维护开启 ' + rows.filter(function (r) { return r.enabled; }).length + ' 条') +
+      c('可用分区不足', S.g.enabled ? al : '—', S.g.enabled ? (zero ? '其中 ' + zero + ' 条已用尽' : '阈值：全局默认 ' + S.g.min + ' 个') : '告警未启用', al && S.g.enabled ? (zero ? 'crit' : 'warn') : 'ok') +
+      c('待续建', pend, '预创建数不足的配置', pend ? 'warn' : '') +
+      c('异常 / 未知', bad, '计划失败或读不到目标表', bad ? 'crit' : '') +
+      c('告警已关闭 / 静默', quiet, '单表阈值 0 或正在静默');
+    $('#n-hist').textContent = S.hist.length;
+    $('#nowtxt').textContent = fmtT(S.now);
+  }
+
+  function bar(r) {
+    var e = eff(r), L = lv(r), total = Math.min(12, Math.max(r.avail, r.pre + 1, e > 0 ? e : 0)), h = '';
+    for (var i = 0; i < total; i++) h += '<i class="' + (i < r.avail ? 'on' : (i < e ? 'need' : '')) + '"></i>';
+    return '<span class="slots ' + (L.k === 'alert' || L.k === 'silent' ? L.cls || '' : '') + '">' + h + '</span>';
+  }
+
+  function stCell(r) {
+    if (r.state === 'ok') return '<span class="st passed">正常</span>';
+    if (r.state === 'pending') return '<span class="st waiting">待续建 ' + adds(r) + '</span>';
+    if (r.state === 'error') return '<span class="st rejected" title="' + esc(r.lastErr || '') + '">异常</span>';
+    return '<span class="st aborted" title="' + esc(r.lastErr || '') + '">未知</span>';
+  }
+
+  function renderList() {
+    var q = S.q.trim().toLowerCase();
+    var rows = S.rows.filter(function (r) {
+      if (S.only && lv(r).k !== 'alert') return false;
+      return !q || (r.inst + ' ' + r.db + '.' + r.tb + ' ' + r.id).toLowerCase().indexOf(q) >= 0;
+    });
+    var h = '<div class="panel"><div class="toolbar">' +
+      '<input class="ipt grow" id="q" type="search" placeholder="搜索实例 / 库 / 表 / 编号" value="' + esc(S.q) + '">' +
+      '<label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="only"' + (S.only ? ' checked' : '') + '> 只看告警中</label>' +
+      '<span class="stepper" title="全局默认阈值：可用分区数小于它就告警"><span class="muted small">全局阈值</span>' +
+      '<button class="btn" type="button" data-act="step" data-d="-1" aria-label="减一">−</button><b class="num" style="min-width:22px;text-align:center">' + S.g.min + '</b>' +
+      '<button class="btn" type="button" data-act="step" data-d="1" aria-label="加一">+</button><span class="muted small">个</span></span>' +
+      '</div><div class="scroll"><table class="list"><thead><tr><th>编号</th><th>实例</th><th>库.表</th><th>可用分区</th><th>预计用尽</th><th>状态</th><th>告警</th><th>操作</th></tr></thead><tbody>';
+    if (!rows.length) h += '<tr><td colspan="8" class="empty">没有符合条件的配置</td></tr>';
+    rows.forEach(function (r) {
+      var L = lv(r), e = eff(r), rw = runway(r), hot = L.k === 'alert';
+      h += '<tr class="' + (hot ? 'hot' + (r.avail === 0 ? ' zero' : '') : '') + '"><td>' + r.id + '</td>' +
+        '<td>' + esc(r.inst) + (r.dialect ? '<span class="tag">' + r.dialect + '</span>' : '') + '</td>' +
+        '<td class="mono">' + esc(r.db) + '.' + esc(r.tb) + '<span class="sub">每' + (r.step > 1 ? ' ' + r.step + ' ' : '') + PERIOD[r.period] + ' · 预创建 ' + r.pre + (r.enabled ? '' : ' · 定时维护未开启') + '</span></td>' +
+        '<td>' + (r.state === 'unknown' ? '<span class="muted">—</span>' : bar(r) + '<span class="num ' + (hot ? (r.avail === 0 ? 'crit-t' : 'warn-t') : '') + '">' + r.avail + '</span><span class="muted small"> / 阈值 ' + (e === 0 ? '—' : e) + '</span>' + (r.thr != null ? '<span class="tag">自定义</span>' : '') + (e > r.pre + 1 ? '<span class="tag warn-t" title="阈值大于“预创建数 + 1”（' + (r.pre + 1) + '）：续建之后也达不到，会一直告警">阈值过高</span>' : '') + (r.maxv ? '<span class="tag" title="含 MAXVALUE 兜底分区：写入不会失败，但续建需要 REORGANIZE">MAXVALUE</span>' : '')) + '</td>' +
+        '<td><span class="' + (rw.cls || '') + '">' + rw.t + '</span><span class="sub">' + esc(rw.sub) + '</span></td>' +
+        '<td>' + stCell(r) + '</td>' +
+        '<td>' + (L.k === 'ok' ? '<span class="badge ok">正常</span>' : '<span class="badge ' + L.cls + '">' + L.t + '</span>') + '</td>' +
+        '<td><button class="link" type="button" data-act="open" data-id="' + r.id + '">告警设置</button></td></tr>';
+    });
+    $('#p-list').innerHTML = h + '</tbody></table></div></div>';
+  }
+
+  // ===================== 渲染：告警设置 =====================
+  function renderSet() {
+    var sample = S.rows.filter(function (r) { return lv(r).k === 'alert'; })[0] || S.rows[2];
+    var h = '<div class="cols"><div class="panel box"><h3>全局设置</h3><div class="fgrid">' +
+      '<span class="lb">启用可用分区告警</span><label class="sw"><input type="checkbox" id="g-en"' + (S.g.enabled ? ' checked' : '') + '><b></b></label>' +
+      '<label for="g-min">全局默认阈值</label><div><input class="ipt num" id="g-min" type="number" min="1" max="100" value="' + S.g.min + '"> <span class="muted">个</span> <span class="hint">可用分区数小于它就告警；单张表可以在“告警设置”里单独改。</span>' + (function () { var n = S.rows.filter(function (r) { return r.thr == null && r.pre + 1 < S.g.min; }).length; return n ? '<div class="hint warn-t" style="margin-top:4px">有 ' + n + ' 张表的“预创建数 + 1”小于这个值，续建之后也达不到，会一直告警（列表里标“阈值过高”）。</div>' : ''; })() + '</div>' +
+      '<label for="g-rep">重复提醒</label><select class="ipt" id="g-rep">' + [[0, '不重复（只在首次不足时推一次）'], [6, '每 6 小时'], [24, '每 24 小时'], [72, '每 3 天']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === S.g.repeat ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+      '<span class="lb">恢复后通知</span><label style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="g-rec"' + (S.g.recover ? ' checked' : '') + '> 可用分区数回到阈值以上时推送“已恢复”</label>' +
+      '<span class="lb">检查时机</span><div class="hint">打开 / 刷新页面时标红（始终）；定时维护每轮结束后重新检查并推送（当前定时维护：<b class="ok-t">已开启</b>，每 180 分钟）。</div>' +
+      '</div><h3 style="margin-top:6px">通知通道<span class="muted small" style="font-weight:400">　通道本身在“推送设置”里维护，这里只选用哪些来发这类告警</span></h3>' +
+      '<table class="list"><thead><tr><th>用于告警</th><th>类型</th><th>名称</th><th>@ 对象</th></tr></thead><tbody>' +
+      S.ch.map(function (c) { return '<tr><td><label class="sw"><input type="checkbox" data-ch="' + c.id + '"' + (c.alert ? ' checked' : '') + '><b></b></label></td><td>' + c.type + '</td><td>' + esc(c.name) + '</td><td class="muted">' + (esc(c.mention) || '—') + '</td></tr>'; }).join('') +
+      '</tbody></table>' + (chNames().length ? '' : '<div class="verdict crit">没有选任何通道：定时维护发现不足时只会写进“告警记录”，不会推送。</div>') +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn primary" type="button" data-act="save">保存</button></div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px"><div class="panel box"><h3>消息预览</h3><pre class="msg">' + esc(msg(sample, 'alert', eff(sample))) + '</pre><div class="hint">以“' + esc(sample.db + '.' + sample.tb) + '”为例；各通道按自己的格式渲染（钉钉 / 飞书 / 企业微信 markdown，Slack blocks），@ 规则与关键词沿用推送设置。</div></div>' +
+      '<div class="panel box"><h3>编辑配置弹窗里新增的字段（示意）</h3><div class="fake"><div class="t">新增 / 编辑分区配置</div><div class="fgrid"><label>可用分区告警阈值</label><div><input class="ipt num" type="number" min="0" max="100" placeholder="' + S.g.min + '" disabled> <span class="muted">个</span></div></div><div class="hint" style="margin-top:6px">留空 = 跟随全局默认（当前 ' + S.g.min + '）；填 0 = 这张表不告警。</div></div></div></div></div>';
+    $('#p-set').innerHTML = h;
+  }
+
+  // ===================== 渲染：告警记录 =====================
+  var KIND = { alert: ['告警', 'crit'], repeat: ['重复提醒', 'warn'], recover: ['已恢复', 'ok'] };
+  function renderHist() {
+    var byId = {}; S.rows.forEach(function (r) { byId[r.id] = r; });
+    var h = '<div class="panel"><div class="scroll"><table class="list"><thead><tr><th>时间</th><th>类型</th><th>实例</th><th>库.表</th><th>可用 / 阈值</th><th>通道</th><th>推送结果</th></tr></thead><tbody>';
+    if (!S.hist.length) h += '<tr><td colspan="7" class="empty">还没有告警记录</td></tr>';
+    S.hist.forEach(function (x) {
+      var r = byId[x.rid] || { inst: '?', db: '?', tb: '?' }, k = KIND[x.kind];
+      h += '<tr><td>' + x.t + '</td><td><span class="badge ' + k[1] + '">' + k[0] + '</span></td><td>' + esc(r.inst) + '</td><td class="mono">' + esc(r.db) + '.' + esc(r.tb) + '</td>' +
+        '<td><span class="num">' + x.avail + '</span><span class="muted"> / ' + x.thr + '</span></td><td>' + (x.ch.length ? esc(x.ch.join('、')) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + (x.ok ? '<span class="badge ok">已推送</span>' : '<span class="badge crit">失败</span><span class="sub">' + esc(x.err || '') + '</span>') + '</td></tr>';
+    });
+    $('#p-hist').innerHTML = h + '</tbody></table></div></div>';
+  }
+
+  // ===================== 抽屉：单张表的告警设置 =====================
+  function draftEff() { var d = S.draft; return d.mode === 'follow' ? S.g.min : d.mode === 'off' ? 0 : Math.max(0, Math.min(100, Math.floor(Number(d.n)) || 0)); }
+  function tl(r, e) {
+    var target = Math.max(r.pre + 1, e), h = '', i, w;
+    for (i = -2; i < 0; i++) { w = win(r, i); h += '<span class="c past" title="[' + fmtT(w.start) + ', ' + fmtT(w.end) + ') 已过去">' + pname(r.period, w.start, r.step) + '</span>'; }
+    for (i = 0; i < target; i++) {
+      w = win(r, i);
+      var cls = i >= r.avail ? 'gap' : i === 0 ? 'cur' : 'fut', tip = i >= r.avail ? '待续建' : i === 0 ? '当前分区' : '可用';
+      h += '<span class="c ' + cls + '" title="[' + fmtT(w.start) + ', ' + fmtT(w.end) + ') ' + tip + '">' + pname(r.period, w.start, r.step) + '</span>';
+    }
+    if (r.maxv) h += '<span class="c max" title="兜底分区，不计入可用">pmax</span>';
+    return '<div class="pt">' + h + '</div><div class="legend"><span><i class="past"></i>已过去</span><span><i class="cur"></i>当前（计入可用）</span><span><i class="fut"></i>可用</span><span><i class="gap"></i>待续建（还差这几个才到“预创建数 / 阈值”）</span></div>';
+  }
+  function verdict(r, e) {
+    if (!S.g.enabled) return '<div class="verdict mid">全局告警未启用，不会检查也不会推送。</div>';
+    if (r.state === 'unknown') return '<div class="verdict mid">读不到目标表，无法判断可用分区数，不会告警（异常见“状态”列）。</div>';
+    if (e === 0) return '<div class="verdict mid">这张表不告警（阈值 0）。</div>';
+    var high = e > r.pre + 1 ? '<div class="hint warn-t" style="margin-top:6px">阈值 ' + e + ' 大于“预创建数 + 1”（' + (r.pre + 1) + '）：定时维护续建之后也达不到，会一直告警。请调小阈值，或把预创建数加大。</div>' : '';
+    if (r.avail < e) return '<div class="verdict ' + (r.avail === 0 ? 'crit' : 'warn') + '">当前可用 <b>' + r.avail + '</b> 个 &lt; 阈值 <b>' + e + '</b> → <b>' + (r.silence ? '告警（静默中，不推送）' : '告警') + '</b></div>' + high;
+    return '<div class="verdict ok">当前可用 <b>' + r.avail + '</b> 个 ≥ 阈值 <b>' + e + '</b> → 正常</div>' + high;
+  }
+  function drawerDyn() {
+    var r = byId(S.dr), e = draftEff();
+    $('#dr-verdict').innerHTML = verdict(r, e);
+    $('#dr-tl').innerHTML = tl(r, e);
+    $('#dr-msg').textContent = msg(r, 'alert', e || S.g.min);
+  }
+  function byId(id) { return S.rows.filter(function (r) { return r.id === id; })[0]; }
+  function openDrawer(id) {
+    var r = byId(id); S.dr = id;
+    S.draft = { mode: r.thr == null ? 'follow' : r.thr === 0 ? 'off' : 'custom', n: r.thr > 0 ? r.thr : S.g.min };
+    var L = lv(r), rw = runway(r);
+    $('#mask').hidden = false;
+    $('#mask').innerHTML = '<aside class="drawer" role="dialog" aria-modal="true" aria-label="告警设置"><h3><span class="mono">' + esc(r.db + '.' + r.tb) + '</span><span class="muted small" style="font-weight:400">' + esc(r.inst) + ' · 每' + PERIOD[r.period] + ' · 预创建 ' + r.pre + '</span><span class="badge ' + (L.k === 'ok' ? 'ok' : L.cls) + '">' + L.t + '</span></h3><div class="bd">' +
+      '<div class="sec"><h4>① 当前可用分区</h4><div class="big"><span class="n ' + (r.avail === 0 ? 'crit-t' : '') + '">' + r.avail + '</span><span class="muted">个可用</span><span class="muted">·</span><span>预计用尽 <b class="' + (rw.cls || '') + '">' + rw.t + '</b></span><span class="muted small">' + esc(rw.sub) + '</span></div><div id="dr-tl"></div></div>' +
+      '<div class="sec"><h4>② 这张表的告警阈值</h4>' +
+      '<label class="opt"><input type="radio" name="dm" value="follow"' + (S.draft.mode === 'follow' ? ' checked' : '') + '> 跟随全局默认（当前 ' + S.g.min + ' 个）</label>' +
+      '<label class="opt"><input type="radio" name="dm" value="custom"' + (S.draft.mode === 'custom' ? ' checked' : '') + '> 自定义　<input class="ipt num" id="dn" type="number" min="1" max="100" value="' + S.draft.n + '"> 个</label>' +
+      '<label class="opt"><input type="radio" name="dm" value="off"' + (S.draft.mode === 'off' ? ' checked' : '') + '> 这张表不告警（阈值 0）</label><div id="dr-verdict"></div></div>' +
+      '<div class="sec"><h4>③ 静默</h4><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + (r.silence ? '<span class="badge info">静默至 ' + r.silence + '</span><button class="btn sm" type="button" data-act="unsilence">取消静默</button>' : '<button class="btn sm" type="button" data-act="silence" data-h="24">静默 24 小时</button><button class="btn sm" type="button" data-act="silence" data-h="168">静默 7 天</button>') + '<span class="hint">静默期间仍在列表里标记，但不推送；到期或续建恢复后自动解除。</span></div></div>' +
+      '<div class="sec"><h4>④ 将推送的消息</h4><pre class="msg" id="dr-msg"></pre><div class="hint">发送到：' + (chNames().length ? esc(chNames().join('、')) : '（未选择通道）') + '</div></div>' +
+      '</div><div class="ft"><button class="btn" type="button" data-act="test">测试发送（模拟）</button><button class="btn" type="button" data-act="fix">立即续建（模拟）</button><span style="flex:1"></span><button class="btn" type="button" data-act="close">关闭</button><button class="btn primary" type="button" data-act="savethr">保存阈值</button></div></aside>';
+    drawerDyn();
+  }
+  function closeDrawer() { $('#mask').hidden = true; $('#mask').innerHTML = ''; S.dr = 0; }
+
+  // ===================== 动作 =====================
+  var tt;
+  function toast(t) { var el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 3600); }
+  function refresh() { stats(); renderList(); renderSet(); renderHist(); }
+  function push(r, kind) {
+    var names = chNames();
+    S.hist.unshift({ t: fmtT(S.now), rid: r.id, kind: kind, avail: r.avail, thr: eff(r), ch: names, ok: names.length > 0, err: names.length ? '' : '未选择通知通道' });
+  }
+  function round() {
+    S.now = new Date(S.now.getTime() + 180 * 60000);
+    var sent = 0, held = 0, rec = 0, fixed = 0, still = 0;
+    S.rows.forEach(function (r) {
+      var was = !!r.alerting;
+      if (r.enabled && r.state !== 'unknown') {
+        r.lastRun = fmtT(S.now);
+        if (r.state === 'error') { r.lastOk = false; still++; }
+        else { r.lastOk = true; if (r.avail < r.pre + 1) { r.avail = r.pre + 1; fixed++; } r.state = 'ok'; }
+      }
+      var L = lv(r);
+      if (L.k === 'alert') {
+        r.alerting = true;
+        if (!was) { push(r, 'alert'); r.lastAlert = S.now.getTime(); sent++; }
+        else if (S.g.repeat > 0 && (S.now.getTime() - r.lastAlert) / 36e5 >= S.g.repeat) { push(r, 'repeat'); r.lastAlert = S.now.getTime(); sent++; }
+        else held++;
+      } else if (L.k === 'ok') {
+        if (was && S.g.recover) { push(r, 'recover'); rec++; }
+        r.alerting = false;
+      } else if (L.k === 'off') r.alerting = false;
+    });
+    refresh();
+    toast('一轮维护完成：续建 ' + fixed + ' 张表；推送 ' + sent + ' 条' + (rec ? '、恢复通知 ' + rec + ' 条' : '') + (held ? '；' + held + ' 条仍不足但在重复提醒间隔内，未重复推送' : '') + (still ? '；' + still + ' 张表计划失败，续建不了' : ''));
+  }
+  function fixNow(r) {
+    var was = !!r.alerting;
+    r.avail = r.pre + 1; r.state = 'ok'; r.lastOk = true; r.lastRun = fmtT(S.now);
+    if (was && S.g.recover && lv(r).k === 'ok') push(r, 'recover');
+    r.alerting = false;
+  }
+
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-act]');
+    if (!a) { if (e.target.id === 'mask') closeDrawer(); return; }
+    var act = a.dataset.act, r;
+    if (act === 'tab') { S.tab = a.dataset.t; showTab(); }
+    else if (act === 'round') round();
+    else if (act === 'step') { S.g.min = Math.max(1, Math.min(100, S.g.min + Number(a.dataset.d))); refresh(); if (S.dr) openDrawer(S.dr); }
+    else if (act === 'open') openDrawer(Number(a.dataset.id));
+    else if (act === 'close') closeDrawer();
+    else if (act === 'save') toast('已保存（原型：只在本页内存里生效）');
+    else if (act === 'savethr') {
+      r = byId(S.dr); var d = S.draft;
+      r.thr = d.mode === 'follow' ? null : d.mode === 'off' ? 0 : Math.max(1, Math.min(100, Math.floor(Number(d.n)) || S.g.min));
+      refresh(); openDrawer(r.id); toast('已保存：' + r.db + '.' + r.tb + ' 的告警阈值' + (r.thr == null ? '跟随全局（' + S.g.min + '）' : r.thr === 0 ? '为 0，不告警' : '为 ' + r.thr));
+    }
+    else if (act === 'silence') { r = byId(S.dr); r.silence = fmtT(new Date(S.now.getTime() + Number(a.dataset.h) * 3600e3)); refresh(); openDrawer(r.id); }
+    else if (act === 'unsilence') { r = byId(S.dr); r.silence = null; refresh(); openDrawer(r.id); }
+    else if (act === 'test') toast(chNames().length ? '已向 ' + chNames().join('、') + ' 发送测试消息（原型：没有真正发送）' : '没有选择任何通知通道，请先在“告警设置”里选择');
+    else if (act === 'fix') { r = byId(S.dr); fixNow(r); refresh(); openDrawer(r.id); toast('已续建（模拟）：' + r.db + '.' + r.tb + ' 的可用分区回到 ' + r.avail + ' 个'); }
+  });
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.id === 'q') { S.q = t.value; renderList(); var q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+    else if (t.id === 'dn') { S.draft.mode = 'custom'; S.draft.n = t.value; document.querySelector('input[name=dm][value=custom]').checked = true; drawerDyn(); }
+    else if (t.id === 'g-min') { var v = Math.floor(Number(t.value)); if (v >= 1 && v <= 100) { S.g.min = v; stats(); renderList(); } }
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.id === 'only') { S.only = t.checked; renderList(); }
+    else if (t.name === 'dm') { S.draft.mode = t.value; drawerDyn(); }
+    else if (t.id === 'g-en') { S.g.enabled = t.checked; refresh(); }
+    else if (t.id === 'g-rep') S.g.repeat = Number(t.value);
+    else if (t.id === 'g-rec') S.g.recover = t.checked;
+    else if (t.id === 'g-min') { t.value = S.g.min; renderSet(); }
+    else if (t.dataset.ch) { S.ch.forEach(function (c) { if (String(c.id) === t.dataset.ch) c.alert = t.checked; }); renderSet(); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.dr) closeDrawer(); });
+
+  function showTab() {
+    ['list', 'set', 'hist'].forEach(function (k) { $('#p-' + k).hidden = S.tab !== k; });
+    Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.setAttribute('aria-selected', b.dataset.t === S.tab ? 'true' : 'false'); });
+    if (S.tab === 'set') renderSet();
+  }
+  // 皮肤
+  function setSkin(s) { document.documentElement.dataset.skin = s; Array.prototype.forEach.call(document.querySelectorAll('#skins button'), function (b) { b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'); }); }
+  $('#skins').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setSkin(b.dataset.s); });
+  var Q = new URLSearchParams(location.search);
+  setSkin(['light', 'dark', 'sepia'].indexOf(Q.get('skin')) >= 0 ? Q.get('skin') : 'dark');
+  if (Q.get('tab')) S.tab = Q.get('tab');
+  refresh(); showTab();
+  if (Q.get('open')) openDrawer(Number(Q.get('open')));
+})();
+</script>
+</body>
+</html>

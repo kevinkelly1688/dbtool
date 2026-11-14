@@ -1,0 +1,14 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: error.html
+@time: 2026/10/28
+*/ -}}
+{{define "content"}}
+<main class="login-wrap">
+  <div class="login-card wide">
+    <h1>{{.Title}}</h1>
+    <div class="alert err" role="alert">{{.Error}}</div>
+  </div>
+</main>
+{{end}}

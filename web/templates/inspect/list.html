@@ -1,0 +1,133 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: list.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/inspect.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="insp">
+  <div class="page-head">
+    <h1>{{t "性能巡检"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form" id="f-filter">
+      <select id="f-instance" aria-label="{{t "实例"}}"><option value="">{{t "全部实例"}}</option></select>
+      <select id="f-level" aria-label="{{t "级别"}}">
+        <option value="">{{t "全部级别"}}</option><option value="alert">{{t "有告警"}}</option><option value="attention">{{t "仅关注"}}</option>
+        <option value="clean">{{t "全部正常"}}</option><option value="failed">{{t "巡检失败"}}</option><option value="cancelled">{{t "已取消"}}</option>
+      </select>
+      <select id="f-trigger" aria-label="{{t "触发方式"}}"><option value="">{{t "全部触发"}}</option><option value="schedule">{{t "定时"}}</option><option value="manual">{{t "手动"}}</option></select>
+      <input type="date" id="f-start" aria-label="{{t "开始日期"}}">
+      <input type="date" id="f-end" aria-label="{{t "结束日期"}}">
+    </form>
+    <button class="btn" id="btn-cancel" type="button" hidden disabled>{{t "批量取消 ({n})" "n" 0}}</button>
+    <button class="btn danger" id="btn-delete" type="button" hidden disabled>{{t "批量删除 ({n})" "n" 0}}</button>
+    <button class="btn primary" id="btn-run" type="button" hidden>{{t "立即巡检"}}</button>
+  </div>
+  <div id="msg"></div>
+
+  <div class="tabbar" role="tablist">
+    <button class="tab on" type="button" role="tab" id="tab-reports" aria-selected="true">{{t "巡检报告"}}</button>
+    <button class="tab" type="button" role="tab" id="tab-plans" aria-selected="false">{{t "定时巡检"}} <span class="badge" id="plan-count">{{t "{n} 个计划" "n" 0}}</span></button>
+  </div>
+
+  <div id="pane-reports">
+    <section class="card">
+      <table class="list">
+        <thead><tr><th><input type="checkbox" id="chk-all" aria-label="{{t "全选"}}"></th><th>{{t "报告"}}</th><th>{{t "实例"}}</th><th>{{t "类型"}}</th><th>{{t "巡检时间"}}</th><th>{{t "触发"}}</th><th>{{t "状态"}}</th><th>{{t "评分"}}</th><th>{{t "告警"}}</th><th>{{t "关注"}}</th><th>{{t "未采集|inspect"}}</th><th>{{t "耗时"}}</th><th>{{t "操作"}}</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="13" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+      <div class="pager"><span id="pager-text"></span><span class="spacer"></span><button class="btn" id="pg-prev" type="button">{{t "上一页"}}</button><button class="btn" id="pg-next" type="button">{{t "下一页"}}</button></div>
+    </section>
+  </div>
+
+  <div id="pane-plans" hidden>
+    <div class="toolbar"><span class="spacer"></span><button class="btn primary" id="btn-plan-new" type="button" hidden>{{t "+ 新建定时计划"}}</button></div>
+    <div id="plan-msg"></div>
+    <section class="card">
+      <table class="list">
+        <thead><tr><th>{{t "计划名称"}}</th><th>{{t "巡检实例"}}</th><th>{{t "执行周期"}}</th><th>{{t "错峰 / 并发"}}</th><th>{{t "通知"}}</th><th>{{t "报告保留"}}</th><th>{{t "状态"}}</th><th>{{t "上次运行"}}</th><th>{{t "下次运行"}}</th><th>{{t "操作"}}</th></tr></thead>
+        <tbody id="plan-rows"><tr><td colspan="10" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<div class="modal-mask" id="m-run" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-run-title">
+    <h2 id="m-run-title">{{t "立即巡检"}}</h2>
+    <span class="lbl">{{t "实例（可多选）"}}
+      <button class="btn ghost" type="button" id="run-all">{{t "全选"}}</button><button class="btn ghost" type="button" id="run-none">{{t "清空"}}</button></span>
+    <div class="toolbar"><input type="search" id="run-q" placeholder="{{t "搜索实例名"}}" style="flex:1" aria-label="{{t "搜索实例"}}" autocomplete="off"><span class="muted small" id="run-count"></span></div>
+    <div class="check-list tall" id="run-list"></div>
+    <label class="small" id="run-bigkey-row" hidden><input type="checkbox" id="run-bigkey"> {{t "Redis 大 key 抽样（对线上有轻微压力，建议低峰期使用）"}}</label>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="run-go">{{t "开始巡检（{n}）" "n" 0}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-plan" hidden>
+  <div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="m-plan-title">
+    <h2 id="m-plan-title">{{t "新建定时巡检计划"}}</h2>
+    <div id="plan-err"></div>
+    <div class="form-grid"><label class="full">{{t "计划名称"}}<input type="text" id="p-name" maxlength="60" placeholder="{{t "例如：生产 MySQL 夜间巡检"}}"></label></div>
+    <div class="grant-cols" style="margin-top:8px">
+      <div class="card inner">
+        <h3>{{t "巡检哪些实例"}} <small class="muted">{{t "已选"}} <b id="p-count">0</b> / <span id="p-total">0</span></small></h3>
+        <div class="toolbar"><input type="search" id="p-search" placeholder="{{t "搜索实例"}}" style="flex:1" aria-label="{{t "搜索实例"}}"><button class="btn ghost" type="button" id="p-all">{{t "全选"}}</button><button class="btn ghost" type="button" id="p-none">{{t "清空"}}</button></div>
+        <div class="toolbar small"><span class="muted">{{t "快速选择："}}</span><span id="p-quick"></span></div>
+        <div class="check-list tall" id="p-list"></div>
+        <div style="margin-top:8px"><span class="lbl muted small">{{t "按标签（动态匹配）"}}</span><div class="check-list" id="p-tags"></div></div>
+        <label class="muted small" style="display:block;margin-top:8px">{{t "SQL Server 库范围（可不填）"}}
+          <input type="text" id="p-dbs" placeholder="{{t "多个库用逗号分隔，留空为全部"}}" style="width:100%"></label>
+      </div>
+      <div class="card inner">
+        <h3>{{t "什么时候巡检"}}</h3>
+        <div class="form-grid one">
+          <label>{{t "周期"}}<select id="p-kind"><option value="daily">{{t "每天"}}</option><option value="weekly">{{t "每周"}}</option><option value="monthly">{{t "每月"}}</option><option value="cron">{{t "自定义 cron"}}</option></select></label>
+          <label id="row-time">{{t "时刻"}}<input type="time" id="p-time" value="02:00"></label>
+          <div id="row-week"><span class="lbl muted small">{{t "每周几"}}</span><div class="check-list" id="p-week"></div></div>
+          <label id="row-month">{{t "每月几日（1–28）"}}<input type="number" id="p-monthday" min="1" max="28" value="1"></label>
+          <label id="row-cron">{{t "cron 表达式"}}<input type="text" id="p-cron" class="mono" placeholder="0 2 * * *"></label>
+          <p class="muted small" id="p-next">{{t "下次运行：—"}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="grant-cols" style="margin-top:8px">
+      <div class="card inner">
+        <h3>{{t "怎么跑"}}</h3>
+        <div class="form-grid one">
+          <label>{{t "同时巡检几个实例（1–10）"}}<input type="number" id="p-conc" min="1" max="10" value="2"></label>
+          <label>{{t "实例启动间隔（秒）"}}<input type="number" id="p-stagger" min="0" max="3600" value="0"></label>
+          <label class="check"><input type="checkbox" id="p-skip" checked> {{t "实例已有进行中的巡检时跳过"}}</label>
+          <label class="check"><input type="checkbox" id="p-retry"> {{t "失败后自动重试 1 次（5 分钟后）"}}</label>
+          <label>{{t "单实例超时（分钟）"}}<input type="number" id="p-timeout" min="1" max="240" value="15"></label>
+        </div>
+      </div>
+      <div class="card inner">
+        <h3>{{t "跑完之后"}}</h3>
+        <div class="form-grid one">
+          <label>{{t "通知"}}<select id="p-notify"><option value="none">{{t "不通知"}}</option><option value="alert">{{t "仅出现告警 / 巡检失败时"}}</option><option value="always">{{t "每次计划跑完（汇总）"}}</option></select></label>
+          <div id="row-channels"><span class="lbl muted small">{{t "通知渠道"}}</span><div class="check-list" id="p-channels"></div></div>
+          <label>{{t "报告保留天数"}}<input type="number" id="p-retention" min="1" max="3650" value="90"></label>
+          <label class="check"><input type="checkbox" id="p-enabled" checked> {{t "启用"}}</label>
+        </div>
+      </div>
+    </div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="p-save">{{t "保存"}}</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="m-runs" hidden>
+  <div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="m-runs-title">
+    <h2 id="m-runs-title">{{t "运行记录"}}</h2>
+    <table class="list">
+      <thead><tr><th>{{t "计划触发时间"}}</th><th>{{t "触发"}}</th><th>{{t "实例数"}}</th><th>{{t "成功"}}</th><th>{{t "失败"}}</th><th>{{t "跳过"}}</th><th>{{t "告警 / 关注合计"}}</th><th>{{t "耗时"}}</th><th>{{t "说明"}}</th><th>{{t "报告"}}</th></tr></thead>
+      <tbody id="runs-rows"></tbody>
+    </table>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" data-close>{{t "关闭"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/inspect/list.js"></script>{{end}}

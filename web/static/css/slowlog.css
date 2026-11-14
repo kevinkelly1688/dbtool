@@ -1,0 +1,27 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: slowlog.css
+ * @time: 2026/10/28
+ */
+/* 慢日志页面（查慢日志 /slowlogs、慢查日志 /slowquery）独有的样式；公共组件见 admin.css。 */
+table.list tr.clickable { cursor: pointer; }
+table.list tr.sql-expand td { background: var(--dt-sunken); }
+table.list th.sortable { cursor: pointer; user-select: none; }
+table.list th.sortable::after { content: attr(data-arrow); color: var(--dt-cyan-text); }
+table.list th.sortable:hover { color: var(--dt-fg); }
+table.list td.wrap a { text-decoration: none; }
+table.list td.wrap a:hover { text-decoration: underline; }
+
+/* 趋势图：柱子与折线的颜色沿用 admin.css 的 svg.trend，这里补坐标轴 */
+svg.trend { max-width: 640px; }
+svg.trend .axis { stroke: var(--dt-line-hi); stroke-width: 1; }
+svg.trend .ax { fill: var(--dt-muted); font-size: 10px; }
+svg.trend .dotpt { fill: var(--dt-cyan); }
+
+/* 优化建议 */
+.advice { padding: 8px 0; border-bottom: 1px dashed var(--dt-line); }
+.advice:last-of-type { border-bottom: 0; }
+.advice-head { display: flex; align-items: baseline; gap: 6px; }
+.advice p { margin: 4px 0 0; }
+#sq-msql { margin-bottom: 10px; max-height: 160px; }

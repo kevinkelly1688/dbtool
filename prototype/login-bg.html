@@ -1,0 +1,133 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: login-bg.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录页背景（科学图版）· 原型 · dbtool</title>
+<!-- 直接引用正式页面的样式与拓扑脚本，保证与线上一致；只有下面 <style> 里的 .lb-* 和 login-bg.js 是新增的。
+     用法：login-bg.html?v=a|b|c|0&skin=dark|light|sepia[&shot]  （v=0 为现状；shot 隐藏右上角的原型控制条） -->
+<link rel="stylesheet" href="../web/static/css/app.css">
+<link rel="stylesheet" href="../web/static/css/shell.css">
+<link rel="stylesheet" href="../web/static/css/auth.css">
+<style>
+/* ===== 新增：科学图版背景（落地时并入 shell.css 的“登录页左侧视觉”一节）===== */
+.login-brand { isolation: isolate; }
+.lb { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.lb-minor { stroke: var(--dt-cyan); stroke-opacity: .07; stroke-width: 1; fill: none; shape-rendering: crispEdges; }
+.lb-major { stroke: var(--dt-cyan); stroke-opacity: .15; stroke-width: 1; fill: none; shape-rendering: crispEdges; }
+.lb-tick { stroke: var(--dt-dim); stroke-opacity: .75; stroke-width: 1; fill: none; shape-rendering: crispEdges; }
+.lb-num { font: 9px var(--dt-f-mono); fill: var(--dt-dim); }
+.lb-unit { fill: var(--dt-muted); }
+.lb-cross { stroke: var(--dt-cyan); stroke-opacity: .55; stroke-width: 1; fill: none; }
+.lb-cross-c { fill: none; stroke: var(--dt-cyan); stroke-opacity: .55; stroke-width: 1; }
+.lb-cap { font: 10px var(--dt-f-mono); fill: var(--dt-muted); letter-spacing: .04em; }
+.lb-cap2 { fill: var(--dt-dim); }
+/* a 等值线 */
+.lb-iso { fill: none; stroke: var(--dt-cyan); stroke-opacity: .26; stroke-width: 1; stroke-linecap: round; }
+.lb-iso-idx { stroke-opacity: .55; stroke-width: 1.3; }
+.lb-isolbl { font: 9.5px var(--dt-f-mono); fill: var(--dt-cyan); paint-order: stroke; stroke: var(--dt-panel); stroke-width: 3.5; stroke-linejoin: round; }
+/* b 延迟分布 */
+.lb-bar { fill: var(--dt-cyan); fill-opacity: .16; stroke: var(--dt-cyan); stroke-opacity: .42; stroke-width: 1; }
+.lb-bar-tail { fill: var(--dt-amber); fill-opacity: .2; stroke: var(--dt-amber); stroke-opacity: .6; }
+.lb-fit { fill: none; stroke: var(--dt-cyan); stroke-width: 1.6; stroke-opacity: .9; stroke-linejoin: round; }
+.lb-axis { stroke: var(--dt-dim); stroke-width: 1; shape-rendering: crispEdges; }
+.lb-mark { stroke: var(--dt-amber); stroke-width: 1; stroke-dasharray: 4 4; stroke-opacity: .8; shape-rendering: crispEdges; }
+.lb-marklbl { font: 10px var(--dt-f-mono); fill: var(--dt-amber); }
+/* c 点阵 */
+.lb-bond { fill: none; stroke: var(--dt-cyan); stroke-linecap: round; }
+.lb-bond0 { stroke-opacity: .12; stroke-width: 1; }
+.lb-bond1 { stroke-opacity: .28; stroke-width: 1.1; }
+.lb-bond2 { stroke-opacity: .5; stroke-width: 1.3; }
+.lb-dot { fill: var(--dt-cyan); }
+.lb-dot0 { fill-opacity: .22; } .lb-dot1 { fill-opacity: .4; } .lb-dot2 { fill-opacity: .65; } .lb-dot3 { fill-opacity: .95; }
+/* 拓扑自带的方格网与新的坐标纸重复，落地时从 login_visual.js 里去掉（v=0 现状时保留）*/
+.has-paper .lv-grid { display: none; }
+
+/* ===== 数据库关键字层 ===== */
+.login-pane { isolation: isolate; }
+.lb2 { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.lk-w { font-family: var(--dt-f-mono); font-weight: 600; letter-spacing: .08em; }
+.lk-c-dql { fill: var(--dt-cyan); } .lk-c-dml { fill: var(--dt-ok); } .lk-c-ddl { fill: var(--dt-amber); }
+.lk-c-dcl { fill: var(--lv-violet); } .lk-c-cc { fill: var(--dt-muted); font-weight: 500; letter-spacing: .02em; }
+/* 总可见度：.lk 整组乘 .5；贴近拓扑的元素在 JS 里再乘 .4～1（见 keywords() 的 wrap）。拓扑是主角，这一层只做氛围。 */
+.lk { opacity: .5; }
+.lk-o1 { fill-opacity: .24; } .lk-o2 { fill-opacity: .38; } .lk-o3 { fill-opacity: .55; }
+.lk-spot0 { stop-color: var(--dt-cyan); stop-opacity: .1; } .lk-spot1 { stop-color: var(--dt-cyan); stop-opacity: 0; }
+@keyframes lk-breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.lk-w { animation: lk-breathe 8s ease-in-out infinite; }
+.lk-ghost { font-family: var(--dt-f-mono); font-weight: 700; fill: none; stroke: var(--dt-cyan); stroke-opacity: .16; stroke-width: 1; letter-spacing: .06em; }
+.lk-chip { fill: none; stroke: var(--dt-line-hi); stroke-width: 1; }
+.lk-chip-t { font-family: var(--dt-f-mono); fill: var(--dt-muted); }
+.lk-card-bg { fill: var(--dt-panel); fill-opacity: .72; stroke: var(--dt-line-hi); stroke-width: 1; }
+.lk-card-hr { stroke: var(--dt-line); stroke-width: 1; shape-rendering: crispEdges; }
+.lk-card-dot { fill: var(--dt-line-hi); }
+.lk-card-title { font: 10px var(--dt-f-mono); fill: var(--dt-dim); letter-spacing: .04em; }
+.lk-code { font: 11.5px var(--dt-f-mono); white-space: pre; fill: var(--dt-code-text); }
+.lk-t-kw { fill: var(--dt-code-kw); font-weight: 600; } .lk-t-tx { fill: var(--dt-code-text); } .lk-t-id { fill: var(--dt-code-fn); }
+.lk-t-str { fill: var(--dt-code-str); } .lk-t-num { fill: var(--dt-code-num); } .lk-t-op { fill: var(--dt-code-op); }
+.lk-t-cm { fill: var(--dt-code-cm); } .lk-t-ok { fill: var(--dt-ok); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .lk-w { animation: none; } }
+
+/* 原型控制条（正式页面里没有）*/
+.proto-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 10; display: flex; gap: 4px; align-items: center; padding: 4px; border: 1px solid var(--dt-line-hi); border-radius: 10px; background: var(--dt-panel); box-shadow: var(--dt-shadow); font-size: 12px; }
+.proto-bar button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); font: inherit; cursor: pointer; }
+.proto-bar button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+.proto-bar .sep { width: 1px; height: 16px; background: var(--dt-line-hi); margin: 0 4px; }
+</style>
+</head>
+<body>
+<div class="login-split">
+  <section class="login-brand" aria-hidden="true">
+    <svg class="lb" id="login-bg" focusable="false"></svg>
+    <div class="lg"><i>DB</i><span>DBTOOL<small>数据库运维中枢</small></span></div>
+    <time class="login-clock" id="login-clock"></time>
+    <div class="visual"><svg id="login-topo" viewBox="0 0 640 640" preserveAspectRatio="xMidYMid meet" focusable="false"></svg></div>
+    <div class="kicker">SQL 审核 · 在线查询 · 慢 SQL 治理 · 巡检 · 审计</div>
+    <h2>每一条 SQL<br>上线前都<em>被看见</em></h2>
+    <p>变更有审核，查询有脱敏，慢 SQL 有人跟进。所有操作都会记录审计。</p>
+    <ul class="engines">
+      <li>MySQL</li><li>PolarDB</li><li>PolarDB-X</li><li>SelectDB</li><li>ADB</li><li>SQL Server</li><li>Redis</li><li>MongoDB</li>
+    </ul>
+  </section>
+  <main class="login-pane">
+    <svg class="lb2" id="login-bg2" focusable="false"></svg>
+    <div class="tools tb-seg" role="group" aria-label="界面主题">
+      <button type="button" data-s="light"><i aria-hidden="true">&#10059;</i><span>明亮</span></button>
+      <button type="button" data-s="dark"><i aria-hidden="true">&#9790;</i><span>深空</span></button>
+      <button type="button" data-s="sepia"><i aria-hidden="true">&#127811;</i><span>护眼</span></button>
+    </div>
+    <div class="login-card">
+      <div class="eyebrow">SIGN IN</div>
+      <h1>登录控制台</h1>
+      <form onsubmit="return false">
+        <label for="u">用户名</label>
+        <input id="u" type="text">
+        <label for="p">密码</label>
+        <input id="p" type="password">
+        <button class="btn primary" type="submit">登录审核平台</button>
+      </form>
+    </div>
+  </main>
+</div>
+<div class="proto-bar" role="group" aria-label="原型控制条">
+  <button type="button" data-v="0">现状</button>
+  <button type="button" data-v="a">A 等值线</button>
+  <button type="button" data-v="b">B 延迟分布</button>
+  <button type="button" data-v="c">C 点阵</button>
+  <span class="sep"></span>
+  <button type="button" data-k>关键字层</button>
+  <span class="sep"></span>
+  <button type="button" data-s="dark">深空</button>
+  <button type="button" data-s="light">明亮</button>
+  <button type="button" data-s="sepia">护眼</button>
+</div>
+<script src="../web/static/js/auth/login_visual.js"></script>
+<script src="login-bg.js"></script>
+</body>
+</html>

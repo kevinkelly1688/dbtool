@@ -1,0 +1,95 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: apply_detail.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/apply.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="detail" data-apply-id="{{.Data.Apply.ApplyID}}">
+  <div class="page-head">
+    <a class="btn ghost" href="/query/applies">&larr; {{t "返回列表"}}</a>
+    <h1>{{t "权限申请 #{id}" "id" .Data.Apply.ApplyID}}</h1>
+    <span class="st {{statusClass .Data.EffStatus}}">{{tp .Data.StatusLabel}}</span>
+    <span class="spacer"></span>
+    {{if .Data.ReapplyHref}}<a class="btn primary" id="act-reapply" href="{{.Data.ReapplyHref}}">{{t "重新申请"}}</a>{{end}}
+  </div>
+
+  <div id="detail-msg"></div>
+
+  <div class="dgrid">
+  <section class="card">
+    <h2>{{.Data.Apply.Title}}</h2>
+    <dl class="kv">
+      <dt>{{t "申请人"}}</dt><dd>{{t "{display}（{user}）" "display" .Data.Apply.UserDisplay "user" .Data.Apply.UserName}}</dd>
+      {{if .Data.Dept}}<dt>{{t "部门"}}</dt><dd>{{.Data.Dept}}</dd>{{end}}
+      <dt>{{t "资源组"}}</dt><dd>{{.Data.Apply.GroupName}}</dd>
+      <dt>{{t "审批流程"}}</dt><dd>{{.Data.FlowText}}</dd>
+      <dt>{{t "目标实例"}}</dt><dd>{{.Data.InstanceName}}</dd>
+      <dt>{{t "权限类型"}}</dt><dd>{{privType .Data.Apply.PrivType}}</dd>
+      <dt>{{t "数据库"}}</dt><dd class="mono">{{.Data.Apply.DBList}}</dd>
+      {{if .Data.Apply.TableList}}<dt>{{t "表"}}</dt><dd class="mono">{{.Data.Apply.TableList}}</dd>{{end}}
+      <dt>{{t "返回行数上限"}}</dt><dd>{{.Data.Apply.LimitNum}}</dd>
+      <dt>{{t "有效期至"}}</dt><dd>{{.Data.Apply.ValidDate.Format "2006-01-02"}}</dd>
+      <dt>{{t "提交时间"}}</dt><dd>{{.Data.Apply.CreateTime.Format "2006-01-02 15:04:05"}}</dd>
+      {{if .Data.Reason}}<dt>{{t "申请理由"}}</dt><dd class="ap-reason-full">{{.Data.Reason}}</dd>{{end}}
+    </dl>
+    {{if .Data.Granted}}
+    <div class="alert ok ap-granted" role="status">
+      {{t "已授予查询权限："}}
+      {{range $i, $g := .Data.Granted}}{{if $i}}{{t "、"}}{{end}}<a href="/query/privileges?state=all&user={{$.Data.Apply.UserName}}&inst={{$.Data.Apply.InstanceID}}&db={{$g.DBName}}">#{{$g.PrivilegeID}}</a> <span class="mono">{{$g.DBName}}{{if $g.Table}}.{{$g.Table}}{{end}}</span>{{if $g.Revoked}}<span class="st aborted">{{t "已回收"}}</span>{{else if eq $g.State "expired"}}<span class="st aborted">{{t "已过期"}}</span>{{end}}{{end}}
+      · <a href="/query">{{t "去在线查询"}}</a> · <a href="/query/privileges?state=all&user={{.Data.Apply.UserName}}">{{t "查看查询权限"}}</a>
+    </div>
+    {{end}}
+    {{if .Data.LastRemark}}<div class="alert err">{{.Data.LastRemark}}</div>{{end}}
+  </section>
+
+  <section class="card">
+    <h2>{{t "审批进度"}}</h2>
+    <ol class="tl" aria-label="{{t "审批时间线"}}">
+      {{range .Data.Timeline}}{{$title := ""}}{{if .Node}}{{$title = t "{name}审批" "name" .Node}}{{else}}{{$title = tp .Title}}{{end}}{{$tip := ""}}{{if .NoReviewer}}{{$tip = t "本级没有符合条件的审批人，只有超级用户能审批，请联系管理员检查审批流和权限。"}}{{else if .Reviewers}}{{$tip = t "可审批人员（{n}）：{names}" "n" (len .Reviewers) "names" (.ReviewerList (t "、"))}}{{end}}
+      <li class="{{.State}}">
+        <span class="dot" aria-hidden="true"></span>
+        <div class="tl-body">
+          {{/* 只显示审批组；这一级现在哪些人能审批，放在鼠标悬停提示里（可用键盘聚焦） */}}
+          <div class="tl-head"><b{{if $tip}} class="tl-tip" tabindex="0" title="{{$tip}}" aria-label="{{t "{title}。{tip}" "title" $title "tip" $tip}}"{{end}}>{{$title}}</b>{{if .NoReviewer}}<span class="tl-noone">{{t "无人可审"}}</span>{{end}}
+            <span class="tl-st">{{if eq .State "done"}}{{t "已完成"}}{{else if eq .State "current"}}{{t "审批中"}}{{else if eq .State "rejected"}}{{t "已驳回"}}{{else if eq .State "aborted"}}{{t "已撤回"}}{{else if eq .State "skipped"}}{{t "未执行"}}{{else}}{{t "待审批"}}{{end}}</span>
+            {{if not .Time.IsZero}}<time>{{.Time.Format "2006-01-02 15:04:05"}}</time>{{end}}
+          </div>
+          {{if or .Actor .Note}}<div class="small">{{if .Actor}}<span class="who">{{.Actor}}</span>{{end}}{{if .Note}} <span class="muted">{{tp .Note}}</span>{{end}}</div>{{end}}
+        </div>
+      </li>
+      {{else}}
+      <li><div class="tl-body">{{t "无审批节点"}}</div></li>
+      {{end}}
+    </ol>
+
+    {{if or .Data.CanReview .Data.CanAbort}}
+    <div class="review-box">
+      <label for="remark" class="lbl">{{if .Data.CanReview}}{{t "备注（驳回时必填）"}}{{else}}{{t "备注"}}{{end}}</label>
+      <textarea id="remark" rows="2" maxlength="500" aria-label="{{t "备注"}}"></textarea>
+      <div class="actions">
+        {{if .Data.CanAbort}}<button class="btn danger" id="act-abort" type="button">{{t "撤回申请"}}</button>{{end}}
+        {{if .Data.CanReview}}
+        <button class="btn danger" id="act-reject" type="button">{{t "驳回"}}</button>
+        <button class="btn primary" id="act-pass" type="button">{{t "通过"}}</button>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </section>
+  </div>
+
+  <section class="card">
+    <h2>{{t "操作日志"}}</h2>
+    <ul class="log">
+      {{range .Data.Logs}}
+      <li><time>{{.OperationTime.Format "2006-01-02 15:04:05"}}</time> <b>{{.OperatorDisplay}}</b> {{tp .OperationTypeDesc}} <span class="muted">{{.OperationInfo}}</span></li>
+      {{end}}
+    </ul>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/apply/detail.js"></script>{{end}}

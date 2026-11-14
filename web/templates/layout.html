@@ -1,0 +1,99 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: layout.html
+@time: 2026/10/28
+*/ -}}
+{{define "layout"}}<!doctype html>
+<html lang="{{.Lang}}" data-skin="{{.Skin}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{.CSRF}}">
+<title>{{.Title}} · dbtool</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/admin.css">
+<link rel="stylesheet" href="/static/css/shell.css">
+{{template "head" .}}
+</head>
+<body>
+{{if .Username}}
+<div class="app">
+<aside class="side{{if .Site.Version}} has-foot{{end}}" id="side" aria-label="{{t "主导航"}}">
+  <a class="logo" href="/"><i>DB</i><span>DBTOOL<small>{{t "变更 · 查询 · 优化 · 运维"}}</small></span></a>
+  <nav class="nav" id="nav">
+    <a class="nav-home{{if eq .Nav "home"}} on{{end}}" href="/"{{if eq .Nav "home"}} aria-current="page"{{end}}><span class="gl">⌂</span>{{t "首页"}}</a>
+    {{range .Nav2.Groups}}
+    <div class="ng{{if .On}} on{{else}} fold{{end}}" data-group="{{.Key}}">
+      <button class="ng-btn" type="button" aria-expanded="{{if .On}}true{{else}}false{{end}}"><span>{{tp .Label}}</span>{{if .Badge}}<span class="badge gb{{if .BadgeWarn}} warn{{end}}">{{.Badge}}</span>{{end}}<i class="caret"></i></button>
+      <div class="ng-items">{{range .Items}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}><span class="gl">{{.Icon}}</span>{{tp .Label}}{{if .Badge}}<span class="badge nb{{if .BadgeWarn}} warn{{end}}" title="{{tp .BadgeTitle}}">{{.Badge}}</span>{{end}}</a>{{end}}</div>
+    </div>
+    {{end}}
+  </nav>
+  {{if .Site.Version}}<div class="side-foot" title="{{t "当前版本"}}"><span>{{t "版本"}}</span> <b>{{.Site.Version}}</b></div>{{end}}
+</aside>
+<div class="side-mask" id="side-mask"></div>
+<div class="main">
+<header class="topbar">
+  <button class="menu-toggle btn ghost" id="menu-toggle" type="button" aria-label="{{t "打开菜单"}}" aria-controls="side">☰</button>
+  <div class="crumb">{{range .Nav2.Groups}}{{if .On}}<span>{{tp .Label}}</span><em>/</em>{{end}}{{end}}<b>{{.Title}}</b></div>
+  <span class="spacer"></span>
+  {{if .Duty}}<div class="tb-duty" id="tb-duty" data-duty="{{.Duty.JSON}}"{{if .Btn.Can "duty.view"}} data-manage="/settings/duty"{{end}}>
+    <button class="td-btn {{if eq .Duty.State "on"}}on{{else}}none{{end}}" id="td-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="td-pop" title="{{t "当前值班"}}"><span class="td-dot" aria-hidden="true"></span><span class="td-label">{{t "值班"}}</span> <b class="td-name">{{if eq .Duty.State "on"}}{{.Duty.Name}}{{else}}{{t "暂无|duty"}}{{end}}</b>{{if .Duty.Override}} <i class="td-tag">{{t "调班"}}</i>{{end}} <span class="td-range">{{.Duty.Range}}</span></button>
+    <div class="td-pop" id="td-pop" role="dialog" aria-label="{{t "当前值班"}}" hidden></div>
+  </div>{{end}}
+  <time class="tb-clock" id="tb-clock" title="{{t "浏览器本地时间"}}"></time>
+  <a class="help-btn tb-help" id="help-btn" href="/help#help/{{.Nav2.Help}}" title="{{t "打开当前页面对应的文档章节"}}"><b aria-hidden="true">?</b> {{t "使用文档"}}</a>
+  <div class="tb-seg" role="group" aria-label="{{t "界面主题"}}">
+    <button type="button" data-skin-set="light" title="{{t "明亮"}}" aria-label="{{t "明亮主题"}}"><i aria-hidden="true">&#10059;</i><span>{{t "明亮"}}</span></button>
+    <button type="button" data-skin-set="dark" title="{{t "深空"}}" aria-label="{{t "深空主题"}}"><i aria-hidden="true">&#9790;</i><span>{{t "深空"}}</span></button>
+    <button type="button" data-skin-set="sepia" title="{{t "护眼"}}" aria-label="{{t "护眼主题"}}"><i aria-hidden="true">&#127811;</i><span>{{t "护眼"}}</span></button>
+  </div>
+  {{template "langswitch" .}}
+  <div class="userbox umenu" id="umenu">
+    <button class="um-btn tb-user" id="um-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="um-pop" title="{{t "个人信息与账号菜单"}}">
+      <span class="avatar" aria-hidden="true">{{initial .Display .Username}}</span>
+      <span class="uname">{{if and .Display (ne .Display .Username)}}{{.Display}}（{{.Username}}）{{else}}{{.Username}}{{end}}</span>
+    </button>
+    <div class="um-pop" id="um-pop" role="menu" aria-label="{{t "个人菜单"}}" hidden>
+      <div class="um-head"><b>{{if .Display}}{{.Display}}{{else}}{{.Username}}{{end}}</b>{{if .Display}}<span>{{.Username}}</span>{{end}}</div>
+      <button class="um-item" type="button" role="menuitem" id="um-profile">{{t "个人信息与权限"}}</button>
+      <a class="um-item" role="menuitem" id="um-pwd" href="/account/password" hidden>{{t "修改密码"}}</a>
+      <a class="um-item" role="menuitem" id="um-bind" href="/account/bindings" hidden>{{t "外部账号绑定"}}</a>
+      <div class="um-item um-static" id="um-2fa" hidden>{{t "两步验证"}}<span id="um-2fa-state"></span></div>
+      <a class="um-item" role="menuitem" href="/help#help/{{.Nav2.Help}}">{{t "使用文档"}}</a>
+    </div>
+  </div>
+  <form class="tb-out" method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="tb-logout" type="submit">{{t "退出"}}</button></form>
+</header>
+{{template "content" .}}
+{{template "sitefoot" .}}
+</div>
+</div>
+{{else}}
+{{template "content" .}}
+{{template "sitefoot" .}}
+{{end}}
+<script type="module" src="/static/js/common.js"></script>
+<script type="module" src="/static/js/shell/tablealign.js"></script>
+<script type="module" src="/static/js/shell/fillscroll.js"></script>
+{{if .Username}}<script type="module" src="/static/js/shell/usermenu.js"></script>
+<script type="module" src="/static/js/shell/clock.js"></script>
+{{if .Duty}}<script type="module" src="/static/js/shell/duty.js"></script>
+{{end}}<script type="module" src="/static/js/auth/watermark.js"></script>
+{{range .Nav2.Groups}}{{if eq .Key "perf"}}<script type="module" src="/static/js/perf/todo.js"></script>{{end}}{{end}}{{end}}
+{{template "scripts" .}}
+</body>
+</html>{{end}}
+
+{{define "head"}}{{end}}
+{{define "scripts"}}{{end}}
+
+{{/* 页面底部的 ICP 备案号（配置文件 [site] icp；没配就整块不输出）。登录前后的页面共用 */}}
+{{define "sitefoot"}}{{if .Site.ICP}}<footer class="site-foot"><a href="{{.Site.ICPURL}}" target="_blank" rel="noopener noreferrer">{{.Site.ICP}}</a></footer>{{end}}{{end}}
+
+{{/* 语言切换（顶栏与登录页共用）：按钮文字是各语言自己的写法，不翻译；当前语言 aria-pressed=true */}}
+{{define "langswitch"}}<div class="tb-seg tb-lang" role="group" aria-label="{{t "界面语言"}}">
+    <button type="button" data-lang-set="zh-CN" lang="zh-CN" title="中文" aria-label="中文" aria-pressed="{{if eq .Lang "zh-CN"}}true{{else}}false{{end}}">中</button>{{/* i18n-ignore：语言名用各语言自己的写法 */}}
+    <button type="button" data-lang-set="en" lang="en" title="English" aria-label="English" aria-pressed="{{if eq .Lang "en"}}true{{else}}false{{end}}">EN</button>
+  </div>{{end}}

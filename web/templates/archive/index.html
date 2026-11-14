@@ -1,0 +1,59 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/archive.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="archive">
+  <div class="page-head">
+    <h1>{{t "数据归档"}}</h1>
+    <span class="spacer"></span>
+    <button class="btn" id="ar-refresh" type="button">{{t "刷新"}}</button>
+  </div>
+  <div id="ar-msg" aria-live="polite"></div>
+  <div class="alert warn" id="ar-notready" hidden></div>
+
+  <nav class="tabbar" id="ar-tabs" aria-label="{{t "数据归档页签"}}">
+    <a class="tab" href="#tasks" data-tab="tasks">{{t "归档任务"}}<span class="ar-tabn" id="ar-tabn-tasks" hidden></span></a>
+    <a class="tab" href="#runs" data-tab="runs">{{t "运行记录"}}</a>
+    <a class="tab" href="#stores" data-tab="stores" hidden>{{t "备份存储"}}</a>
+    <a class="tab" href="#policy" data-tab="policy" hidden>{{t "安全策略"}}</a>
+    <span class="tabnote muted small" id="ar-tabnote"></span>
+  </nav>
+
+  <section id="ar-view-tasks" class="ar-view" hidden></section>
+  <section id="ar-view-runs" class="ar-view" hidden></section>
+  <section id="ar-view-stores" class="ar-view" hidden></section>
+  <section id="ar-view-policy" class="ar-view" hidden></section>
+  <section id="ar-view-wizard" class="ar-view" hidden></section>
+</main>
+
+<div class="modal-mask ar-drawer-mask" id="ar-drawer-mask" hidden>
+  <div class="modal ar-drawer" id="ar-drawer" role="dialog" aria-modal="true" aria-labelledby="ar-drawer-title">
+    <div class="ar-drawer-head">
+      <h2 id="ar-drawer-title">{{t "详情"}}</h2>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="ar-drawer-close" type="button" aria-label="{{t "关闭详情"}}">{{t "关闭"}}</button>
+    </div>
+    <div id="ar-drawer-body" class="ar-drawer-body"></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="ar-modal-mask" hidden>
+  <div class="modal" id="ar-modal" role="dialog" aria-modal="true" aria-labelledby="ar-modal-title">
+    <h2 id="ar-modal-title">{{t "确认"}}</h2>
+    <div id="ar-modal-msg"></div>
+    <div id="ar-modal-body"></div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn" id="ar-modal-cancel" type="button">{{t "取消"}}</button>
+      <button class="btn primary" id="ar-modal-ok" type="button">{{t "确定"}}</button>
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/archive/main.js"></script>{{end}}

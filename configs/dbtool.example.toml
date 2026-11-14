@@ -1,0 +1,32 @@
+# dbtool 配置文件（TOML）。
+#
+# 复制为 dbtool.toml 后按需修改，重启服务生效。查找顺序（先找到的生效）：
+#   1. 命令行  dbtool -config /path/to/dbtool.toml
+#   2. 环境变量 DB_TOOL_CONFIG=/path/to/dbtool.toml
+#   3. 当前目录的 dbtool.toml
+#   4. 可执行文件所在目录的 dbtool.toml
+#   5. /etc/dbtool/dbtool.toml（install.sh 安装时写在这里）
+# 都没有则使用默认值。上面 1、2 指定的文件必须存在，否则启动失败。
+#
+# 这个文件只放“部署相关、不含密钥”的设置。数据库密码、SECRET_KEY 等敏感项仍然写在
+# 环境变量里（/etc/dbtool/dbtool.env，见 configs/env.example）。
+# 同一项在环境变量和配置文件里都有时，环境变量优先（启动日志会提示被覆盖）。
+
+[server]
+# 监听端口，1–65535，默认 8000。改端口后记得放行防火墙（如 firewall-cmd --permanent --add-port=9000/tcp）。
+# 低于 1024 的端口需要 root 或 CAP_NET_BIND_SERVICE，建议用 nginx 反向代理 80/443。
+port = 8866
+
+# 监听地址，省略或留空表示监听所有网卡。只允许本机访问（例如前面放了 nginx）时写 "127.0.0.1"。
+# host = "0.0.0.0"
+
+[site]
+# 页面左下角（侧栏底部）显示的版本号。省略或留空时显示程序自带的版本（make dist 打包时注入）。
+# 以数字开头的会自动补 "v"（1.05 → v1.05）。改后重启服务生效。
+# version = "1.05"
+
+# 页面底部显示的 ICP 备案号；省略或留空则不显示。公网部署的站点按规定需要在页面底部展示备案号。
+# icp = "京ICP备12345678号-1"
+
+# 备案号的链接，省略时指向工信部备案查询站 https://beian.miit.gov.cn/ 。必须以 http:// 或 https:// 开头。
+# icp_url = "https://beian.miit.gov.cn/"

@@ -1,0 +1,173 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: slowquery.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/slowlog.css"><link rel="stylesheet" href="/static/css/slowquery.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="slowquery" data-can-advise="{{if .Data.CanAdvise}}1{{end}}" data-can-open="{{if .Data.CanOpenAdvisor}}1{{end}}" data-can-redis-reset="{{if .Data.CanRedisReset}}1{{end}}">
+  <div class="page-head">
+    <h1>{{t "慢 SQL 洞察"}}</h1>
+    <span class="spacer"></span>
+    <form class="inline-form" id="sq-form">
+      <select id="sq-inst" aria-label="{{t "实例"}}"><option value="">{{t "请选择实例"}}</option></select>
+      <select id="sq-db" aria-label="{{t "数据库"}}"><option value="">{{t "全部数据库"}}</option></select>
+      <select id="sq-source" aria-label="{{t "数据源"}}" hidden>
+        <option value="">{{t "数据源：自动"}}</option>
+        <option value="digest">{{t "pt-query-digest 库"}}</option>
+        <option value="collected">{{t "平台采集 dbt_slow_logs"}}</option>
+      </select>
+      <select id="sq-range" aria-label="{{t "时间范围"}}">
+        <option value="1">{{t "今日"}}</option>
+        <option value="7" selected>{{t "最近 {n} 天" "n" 7}}</option>
+        <option value="31">{{t "最近 {n} 天" "n" 31}}</option>
+        <option value="93">{{t "最近 {n} 天" "n" 93}}</option>
+        <option value="custom">{{t "自定义"}}</option>
+      </select>
+      <input type="date" id="sq-start" aria-label="{{t "开始日期"}}" required>
+      <input type="date" id="sq-end" aria-label="{{t "结束日期"}}" required>
+      <select id="sq-min" aria-label="{{t "耗时下限"}}">
+        <option value="">{{t "耗时：不限"}}</option>
+        <option value="0.5">{{t "耗时 ≥ {n} s" "n" "0.5"}}</option>
+        <option value="1">{{t "耗时 ≥ {n} s" "n" 1}}</option>
+        <option value="2">{{t "耗时 ≥ {n} s" "n" 2}}</option>
+        <option value="5">{{t "耗时 ≥ {n} s" "n" 5}}</option>
+        <option value="10">{{t "耗时 ≥ {n} s" "n" 10}}</option>
+        <option value="30">{{t "耗时 ≥ {n} s" "n" 30}}</option>
+        <option value="60">{{t "耗时 ≥ {n} s" "n" 60}}</option>
+      </select>
+      <input type="search" id="sq-q" maxlength="200" placeholder="{{t "搜索 SQL"}}" aria-label="{{t "搜索 SQL"}}">
+      <button class="btn" type="submit">{{t "查询"}}</button>
+    </form>
+  </div>
+  <div id="sq-msg"></div>
+
+  <!-- Redis 实例：命令统计 / 慢命令明细 / 采集状态（选中 Redis 实例时显示，其余面板隐藏） -->
+  <section id="rq" hidden>
+    <div class="tabbar" role="tablist" id="rq-tabs">
+      <button class="tab on" type="button" role="tab" data-rtab="stat" aria-selected="true">{{t "命令统计"}}</button>
+      <button class="tab" type="button" role="tab" data-rtab="det" aria-selected="false">{{t "慢命令明细"}}</button>
+      <button class="tab" type="button" role="tab" data-rtab="col" aria-selected="false">{{t "采集状态"}}</button>
+      <span class="spacer"></span>
+      <select id="rq-cmd" aria-label="{{t "命令"}}"><option value="">{{t "全部命令"}}</option></select>
+      <button class="btn" type="button" id="rq-collect">{{t "立即采集"}}</button>
+      <button class="btn danger" type="button" id="rq-reset" hidden>{{t "重置慢日志"}}</button>
+    </div>
+
+    <div class="kpis sq-kpis" id="rq-kpis" aria-live="polite">
+      <div><b id="rq-k-fps">—</b><span>{{t "命令指纹数"}}</span></div>
+      <div><b id="rq-k-cnt">—</b><span>{{t "慢命令总次数"}}</span></div>
+      <div><b id="rq-k-sum">—</b><span>{{t "总耗时"}}</span><small class="muted" id="rq-k-avg"></small></div>
+      <div><b id="rq-k-max">—</b><span>{{t "最慢一次"}}</span></div>
+    </div>
+    <div class="card">
+      <div class="muted small">{{t "慢命令次数（柱）· 平均耗时（线，毫秒）"}}</div>
+      <div id="rq-trend"></div>
+    </div>
+
+    <section id="rq-pane-stat">
+      <div class="card">
+        <table class="list sq-stat">
+          <thead id="rq-shead"><tr>
+            <th></th><th data-sort="command_name">{{t "命令"}}</th><th>{{t "命令指纹"}}</th>
+            <th data-sort="exec_count">{{t "次数"}}</th><th data-sort="total_ms">{{t "总耗时(ms)"}}</th><th data-sort="avg_ms">{{t "平均(ms)"}}</th><th data-sort="max_ms">{{t "最大(ms)"}}</th>
+            <th data-sort="first_seen">{{t "首次出现"}}</th><th data-sort="last_seen">{{t "最近出现"}}</th><th>{{t "趋势"}}</th><th>{{t "操作"}}</th>
+          </tr></thead>
+          <tbody id="rq-srows"><tr><td colspan="11" class="empty">{{t "请选择 Redis 实例"}}</td></tr></tbody>
+        </table>
+        <div class="pager" id="rq-spager"></div>
+      </div>
+    </section>
+
+    <section class="card" id="rq-pane-det" hidden>
+      <div class="toolbar">
+        <span class="muted small" id="rq-filter"></span>
+        <button class="btn ghost" type="button" id="rq-clear" hidden>{{t "清除指纹过滤"}}</button>
+      </div>
+      <table class="list">
+        <thead id="rq-dhead"><tr>
+          <th data-sort="start_time">{{t "执行时间"}}</th><th data-sort="duration_ms">{{t "耗时(ms)"}}</th><th data-sort="command_name">{{t "命令"}}</th><th>{{t "客户端"}}</th><th>{{t "完整命令"}}</th>
+        </tr></thead>
+        <tbody id="rq-drows"><tr><td colspan="5" class="empty">{{t "请选择 Redis 实例"}}</td></tr></tbody>
+      </table>
+      <div class="pager" id="rq-dpager"></div>
+    </section>
+
+    <section class="card" id="rq-pane-col" hidden>
+      <p class="muted small" id="rq-col-note"></p>
+      <table class="list">
+        <thead><tr><th>{{t "实例"}}</th><th>{{t "状态"}}</th><th>{{t "最近一次采集"}}</th><th>{{t "最近成功"}}</th><th>{{t "本次新增"}}</th><th>{{t "累计入库"}}</th><th>{{t "游标（条目 id / 时间）"}}</th><th>{{t "说明"}}</th></tr></thead>
+        <tbody id="rq-crows"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+    </section>
+  </section>
+
+  <div class="modal-mask" id="rq-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rq-mtitle">
+      <h2 id="rq-mtitle">{{t "重置 Redis 慢日志"}}</h2>
+      <p>{{th "将对实例 {name} 执行 <code>SLOWLOG RESET</code>，清空实例上的慢日志（重置前先采集入库）；不可撤销。" "name" .Data.ResetNameHTML}}</p>
+      <label>{{t "请输入实例名称确认"}}<input type="text" id="rq-mconfirm" autocomplete="off"></label>
+      <div class="actions"><span class="spacer"></span><button class="btn" type="button" id="rq-mcancel">{{t "取消"}}</button><button class="btn danger" type="button" id="rq-mgo" disabled>{{t "确认重置"}}</button></div>
+    </div>
+  </div>
+
+
+  <div class="tabbar" role="tablist">
+    <button class="tab on" type="button" role="tab" data-tab="stat" aria-selected="true">{{t "慢日志统计"}}</button>
+    <button class="tab" type="button" role="tab" data-tab="det" aria-selected="false">{{t "慢日志明细"}}</button>
+    <span class="tabnote muted small" id="sq-note"></span>
+  </div>
+
+  <section id="sq-pane-stat">
+    <div class="kpis sq-kpis" id="sq-kpis" aria-live="polite" hidden>
+      <div><b id="sq-k-fps">—</b><span>{{t "慢 SQL 指纹数"}}</span></div>
+      <div><b id="sq-k-cnt">—</b><span>{{t "慢查询总次数"}}</span></div>
+      <div><b id="sq-k-sum">—</b><span>{{t "总耗时"}}</span><small class="muted" id="sq-k-avg"></small></div>
+      <div><b id="sq-k-max">—</b><span>{{t "最慢一次"}}</span></div>
+    </div>
+    <div class="card">
+      <table class="list sq-stat">
+        <thead id="sq-shead"><tr>
+          <th></th><th data-sort="db_name">{{t "实例 / 库"}}</th><th>{{t "SQL 语句（指纹）"}}</th>
+          <th data-sort="exec_count">{{t "次数"}}</th><th data-sort="exec_time_sum">{{t "总耗时(s)"}}</th><th data-sort="query_time_avg">{{t "平均(s)"}}</th><th data-sort="query_time_max">{{t "最大(s)"}}</th>
+          <th data-sort="parse_total_rows">{{t "扫描行（总 / 均）"}}</th><th data-sort="return_total_rows">{{t "返回行（总 / 均）"}}</th>
+          <th data-sort="first_seen">{{t "首次出现"}}</th><th data-sort="create_time">{{t "最近出现"}}</th><th>{{t "趋势"}}</th><th>{{t "操作"}}</th>
+        </tr></thead>
+        <tbody id="sq-srows"><tr><td colspan="13" class="empty">{{t "请选择实例"}}</td></tr></tbody>
+      </table>
+      <div class="pager" id="sq-spager"></div>
+    </div>
+  </section>
+
+  <section class="card" id="sq-pane-det" hidden>
+    <div class="toolbar">
+      <span class="muted small" id="sq-filter"></span>
+      <button class="btn ghost" type="button" id="sq-clear" hidden>{{t "清除 SQL 过滤"}}</button>
+      <span class="spacer"></span>
+      {{if .Data.CanAdvise}}<button class="btn" type="button" id="sq-advise">{{t "获取优化建议"}}</button>{{end}}
+    </div>
+    <table class="list">
+      <thead id="sq-dhead"><tr>
+        <th></th><th data-sort="exec_start">{{t "执行开始时间"}}</th><th data-sort="db_name">{{t "数据库"}}</th><th data-sort="host_address">{{t "用户"}}</th><th>{{t "SQL 语句"}}</th>
+        <th data-sort="exec_count">{{t "执行次数"}}</th><th data-sort="query_time_pct95">{{t "时长(95%)"}}</th><th data-sort="query_time_sum">{{t "总时长(s)"}}</th>
+        <th data-sort="lock_time_sum">{{t "锁定(s)"}}</th><th data-sort="parse_rows">{{t "解析行数"}}</th><th data-sort="return_rows">{{t "返回行数"}}</th>
+      </tr></thead>
+      <tbody id="sq-drows"><tr><td colspan="11" class="empty">{{t "请选择实例"}}</td></tr></tbody>
+    </table>
+    <div class="pager" id="sq-dpager"></div>
+  </section>
+
+  <div class="modal-mask" id="sq-modal" hidden>
+    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="sq-mtitle">
+      <h2 id="sq-mtitle">{{t "优化建议"}}</h2>
+      <pre class="sqlbox mono" id="sq-msql"></pre>
+      <div id="sq-mbody"></div>
+      <div class="actions"><a class="btn primary" id="sq-mopen" href="/sqladvisor" hidden>{{t "在智能调优中打开"}}</a><span class="spacer"></span><button class="btn" type="button" id="sq-mclose">{{t "关闭"}}</button></div>
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/slowlog/slowquery.js"></script>{{end}}

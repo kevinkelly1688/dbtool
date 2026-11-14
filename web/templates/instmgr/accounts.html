@@ -1,0 +1,91 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: accounts.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/instmgr.css">{{end}}
+
+{{define "content"}}
+<div class="with-side">{{template "instmgr_side" .Data}}
+<main class="page fill-list" id="ac">
+  <div class="page-head">
+    <h1>{{t "帐号维护"}}</h1><span class="spacer"></span>
+    <form class="inline-form" id="ac-filter">
+      <select id="ac-inst" aria-label="{{t "实例"}}"></select>
+      <select id="ac-saved" aria-label="{{t "范围"}}"><option value="">{{t "全部账号"}}</option><option value="saved">{{t "已录入"}}</option><option value="unsaved">{{t "未录入"}}</option><option value="risk">{{t "高危账号"}}</option><option value="locked">{{t "已锁定"}}</option></select>
+      <input type="search" id="ac-q" placeholder="{{t "搜索账号 / 主机"}}" aria-label="{{t "搜索账号或主机"}}"><button class="btn" type="submit">{{t "搜索"}}</button><span class="muted small" id="ac-count"></span>
+    </form>
+    <button class="btn primary" type="button" id="ac-create" hidden>{{t "+ 创建账号"}}</button>
+  </div>
+  <div id="ac-msg"></div>
+  <section class="card fill">
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "账号"}}</th><th>{{t "权限|privilege"}}</th><th>{{t "登记信息（使用人 / 用途 / 到期）"}}</th><th>{{t "备注"}}</th><th>{{t "操作"}}</th></tr></thead>
+      <tbody id="ac-rows"><tr><td colspan="5" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+</main></div>
+
+<div class="modal-mask" id="ac-m-create" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ac-m-create-t">
+  <h2 id="ac-m-create-t">{{t "创建账号"}}</h2>
+  <div id="ac-create-msg"></div>
+  <div class="form-grid">
+    <label class="full">{{t "账号 *"}}<input type="text" id="c-user" maxlength="32" autocomplete="off" placeholder="{{t "字母或数字开头"}}"></label>
+    <label class="full">{{t "主机 *"}}<input type="text" id="c-host" autocomplete="off" placeholder="{{t "IP 或 %，多个用 | 分隔"}}"></label>
+    <label>{{t "密码 *"}}<input type="password" id="c-pw" autocomplete="new-password" placeholder="{{t "8–32 位，含字母数字符号"}}"></label>
+    <label>{{t "确认密码 *"}}<input type="password" id="c-pw2" autocomplete="new-password"></label>
+    <label class="full">{{t "备注"}}<input type="text" id="c-remark" maxlength="255" autocomplete="off"></label>
+    <label>{{t "使用人"}}<select id="c-owner"></select></label>
+    <label>{{t "到期日"}}<input type="date" id="c-expire"></label>
+    <label class="full">{{t "用途"}}<input type="text" id="c-purpose" maxlength="255" autocomplete="off" placeholder="{{t "例如：订单服务读写"}}"></label>
+  </div>
+  <p class="muted small" id="c-reg-hint"></p>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="c-submit">{{t "创建"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="ac-m-edit" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ac-m-edit-t">
+  <h2 id="ac-m-edit-t">{{t "修改 / 录入账号信息"}}</h2>
+  <div id="ac-edit-msg"></div>
+  <div class="form-grid">
+    <label>{{t "账号"}}<input type="text" id="e-user" readonly></label><label>{{t "主机"}}<input type="text" id="e-host" readonly></label>
+    <label class="full">{{t "登记的密码"}}<input type="password" id="e-pw" autocomplete="new-password" placeholder="{{t "留空则不修改已登记的密码"}}"></label>
+    <label class="full">{{t "备注"}}<input type="text" id="e-remark" maxlength="255" autocomplete="off"></label>
+    <label>{{t "使用人"}}<select id="e-owner"></select></label>
+    <label>{{t "到期日"}}<input type="date" id="e-expire"></label>
+    <label class="full">{{t "用途"}}<input type="text" id="e-purpose" maxlength="255" autocomplete="off"></label>
+  </div>
+  <p class="muted small" id="e-reg-hint"></p>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="e-submit">{{t "保存"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="ac-m-pwd" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ac-m-pwd-t">
+  <h2 id="ac-m-pwd-t">{{t "修改密码"}} <small class="muted" id="p-title"></small></h2>
+  <p class="crit small">{{t "将修改库里账号的密码，使用旧密码的应用会连不上。"}}</p>
+  <div id="ac-pwd-msg"></div>
+  <div class="form-grid"><label>{{t "密码"}}<input type="password" id="p-pw" autocomplete="new-password"></label><label>{{t "确认密码"}}<input type="password" id="p-pw2" autocomplete="new-password"></label></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn danger" type="button" id="p-submit">{{t "修改"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="ac-m-grant" hidden><div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="ac-m-grant-t">
+  <h2 class="crit" id="ac-m-grant-t">{{t "授权变更"}} <small class="muted" id="g-title"></small></h2>
+  <div id="ac-grant-msg"></div>
+  <div class="grant-cols">
+    <div class="card inner"><h3>{{t "对象选择"}}</h3>
+      <div class="form-grid one">
+        <label>{{t "操作类型"}}<select id="g-op"><option value="grant">{{t "赋权"}}</option><option value="revoke">{{t "回收"}}</option></select></label>
+        <label>{{t "权限类型"}}<select id="g-scope"><option value="global">{{t "全局权限"}}</option><option value="db" selected>{{t "库权限"}}</option><option value="table">{{t "表权限"}}</option><option value="column">{{t "列权限"}}</option></select></label>
+        <label id="g-db-box"><span id="g-db-lbl">{{t "数据库"}}</span><select id="g-db" multiple size="6"></select></label>
+        <label id="g-tb-box">{{t "表"}}<select id="g-table" multiple size="6"></select></label>
+        <label id="g-col-box">{{t "列"}}<select id="g-column" multiple size="6"></select></label>
+      </div></div>
+    <div class="card inner"><h3>{{t "权限选择"}}</h3><div id="g-privs"></div></div>
+  </div>
+  <p class="muted small" style="margin-top:8px">{{t "语句预览"}}</p>
+  <pre class="sqlbox mono" id="g-sql">{{t "（尚未预览）"}}</pre>
+  <div id="g-warn"></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn" type="button" id="g-preview">{{t "预览语句"}}</button><button class="btn primary" type="button" id="g-submit" disabled>{{t "执行"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/instmgr/accounts.js"></script>{{end}}

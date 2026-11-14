@@ -1,0 +1,130 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: login.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/auth.css"><link rel="stylesheet" href="/static/css/login.css">{{end}}
+
+{{define "loginform"}}
+<form method="post" action="/login" autocomplete="on" id="login-form">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="next" value="{{.Next}}">
+  {{if .Data}}{{if .Data.Local}}<input type="hidden" name="local" value="1">{{end}}{{end}}
+  <div class="lgn-row">
+    <label class="lgn-l" for="u">{{t "用户名"}}</label>
+    <div class="lgn-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      <input id="u" name="username" type="text" autocomplete="username" required{{if not .Data}} autofocus{{end}}>
+    </div>
+  </div>
+  <div class="lgn-row">
+    <div class="lgn-l"><label for="p">{{t "密码"}}</label><button type="button" class="linklike" id="forgot-open" hidden>{{t "忘记密码？"}}</button></div>
+    <div class="lgn-field pw-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+      <input id="p" name="password" type="password" autocomplete="current-password" required>
+      <button type="button" class="pw-eye" id="pw-eye" aria-label="{{t "显示密码"}}" aria-pressed="false" title="{{t "显示 / 隐藏密码"}}" hidden>{{t "显示"}}</button>
+    </div>
+  </div>
+  <div class="login-opts">
+    <label class="check-inline" for="rem"><input type="checkbox" id="rem"> {{t "记住账号"}}</label>
+  </div>
+  <button class="lgn-submit" type="submit">{{t "登录"}}</button>
+</form>
+{{end}}
+
+{{define "content"}}
+<div class="lgn">
+  <section class="lgn-brand">
+    <!-- 右下角的数据库线稿（纯装饰） -->
+    <svg class="lgn-art" viewBox="0 0 460 330" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+      <g><ellipse cx="120" cy="62" rx="62" ry="22"/><path d="M58 62v110c0 12 28 22 62 22s62-10 62-22V62"/><path d="M58 117c0 12 28 22 62 22s62-10 62-22"/></g>
+      <g><ellipse cx="350" cy="205" rx="62" ry="22"/><path d="M288 205v90c0 12 28 22 62 22s62-10 62-22v-90"/><path d="M288 250c0 12 28 22 62 22s62-10 62-22"/></g>
+      <path d="M184 118c40 0 56 8 68 40s24 42 38 54" stroke-dasharray="6 7"/><path d="M276 196l16 18-22 6"/>
+    </svg>
+    <div class="lgn-top">
+      <div class="lgn-logo"><i>DB</i><div><b>DBTOOL</b><small>{{t "数据库运维中枢"}}</small></div></div>
+      <div class="lgn-status">
+        <span class="lgn-db" id="lgn-db" hidden><span class="dot" aria-hidden="true"></span>{{t "元数据库"}} <b id="lgn-db-s"></b></span>
+        <time id="login-clock"></time>
+      </div>
+    </div>
+    <div class="lgn-hero">
+      <p class="kicker">{{t "SQL 审核"}} · {{t "在线查询"}} · <b>{{t "数据脱敏"}}</b> · <b>{{t "SQL 防火墙"}}</b> · {{t "慢 SQL 治理"}} · {{t "巡检"}} · {{t "审计"}}</p>
+      <h2>{{th "每一条 SQL<br>上线前都<em>被看见</em>"}}</h2>
+      <p class="lead">{{t "变更有审核，查询有脱敏，高危 SQL 有防火墙，慢 SQL 有人跟进。所有操作都会记录审计。"}}</p>
+      <ul class="engines">
+        <li>{{t "MySQL 系列"}}</li><li>PostgreSQL</li><li>Oracle</li><li>MongoDB</li><li>Redis</li><li>Doris</li><li>…</li>
+      </ul>
+    </div>
+    <div class="lgn-foot"><span>{{t "数据库运维中枢"}}</span>{{if .Site.Version}}<span>·</span><span>{{t "版本"}} {{.Site.Version}}</span>{{end}}</div>
+  </section>
+  <main class="lgn-pane">
+    <!-- 与内页顶栏同一个分段切换（layout.html 的 .tb-seg） -->
+    <div class="lgn-tools">
+      <div class="tb-seg" role="group" aria-label="{{t "界面主题"}}">
+        <button type="button" data-skin-set="light" title="{{t "明亮"}}" aria-label="{{t "明亮主题"}}"><i aria-hidden="true">&#10059;</i><span>{{t "明亮"}}</span></button>
+        <button type="button" data-skin-set="dark" title="{{t "深空"}}" aria-label="{{t "深空主题"}}"><i aria-hidden="true">&#9790;</i><span>{{t "深空"}}</span></button>
+        <button type="button" data-skin-set="sepia" title="{{t "护眼"}}" aria-label="{{t "护眼主题"}}"><i aria-hidden="true">&#127811;</i><span>{{t "护眼"}}</span></button>
+      </div>
+      {{template "langswitch" .}}
+    </div>
+    <div class="lgn-form">
+      <h1>{{t "欢迎登录"}}</h1>
+      {{if .Error}}<div class="alert err" role="alert">{{.Error}}</div>{{end}}
+      {{if .Data}}
+        {{if .Data.Notice}}<div class="alert info" role="status">{{.Data.Notice}}</div>{{end}}
+        {{if .Data.Alert}}<div class="alert err" role="alert">{{.Data.Alert}}</div>{{end}}
+        {{range .Data.Buttons}}<a class="btn sso{{if .Primary}} primary{{end}}" href="{{.Href}}">{{.Label}}</a>{{end}}
+        {{if .Data.ShowForm}}
+          {{if .Data.Buttons}}
+            <details class="local-form"{{if .Data.FormExpanded}} open{{end}}>
+              <summary>{{if .Data.FormHint}}{{t "或使用平台账号（{hint}）" "hint" .Data.FormHint}}{{else}}{{t "或使用平台账号"}}{{end}}</summary>
+              {{template "loginform" .}}
+            </details>
+          {{else}}
+            {{template "loginform" .}}
+          {{end}}
+        {{end}}
+        {{if .Data.SignUp}}
+          <details class="signup">
+            <summary>{{t "没有账号？注册用户"}}</summary>
+            <form method="post" action="/login/signup" autocomplete="off">
+              <input type="hidden" name="csrf" value="{{.CSRF}}">
+              <label for="su-u">{{t "用户名"}}</label>
+              <input id="su-u" name="username" type="text" maxlength="150" required>
+              <label for="su-d">{{t "中文名"}}</label>
+              <input id="su-d" name="display" type="text" maxlength="10" required>
+              <label for="su-e">{{t "邮箱"}}</label>
+              <input id="su-e" name="email" type="email" maxlength="254">
+              <label for="su-p">{{t "密码"}}</label>
+              <input id="su-p" name="password" type="password" autocomplete="new-password" required>
+              <label for="su-p2">{{t "密码确认"}}</label>
+              <input id="su-p2" name="password2" type="password" autocomplete="new-password" required>
+              <button class="btn" type="submit">{{t "注册"}}</button>
+            </form>
+          </details>
+        {{end}}
+      {{else}}
+        {{template "loginform" .}}
+      {{end}}
+    </div>
+  </main>
+</div>
+
+<!-- 忘记密码说明 -->
+<div class="modal-mask" id="m-forgot" hidden role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+  <div class="modal">
+    <h2 id="forgot-title">{{t "忘记密码"}}</h2>
+    <ul class="plain forgot-list">
+      <li>{{th "<b>LDAP / AD 域账号</b>：请到公司统一身份平台找回密码。"}}</li>
+      <li>{{th "<b>本地账号</b>：请联系管理员重置密码。"}}</li>
+      <li>{{th "<b>单点登录账号</b>：无需密码，点上方对应的登录按钮。"}}</li>
+    </ul>
+    <p class="muted small">{{t "连续输错密码会被临时锁定，稍后再试或联系管理员解锁。"}}</p>
+    <div class="actions"><span class="spacer"></span><button class="btn primary" type="button" id="forgot-close">{{t "知道了"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/auth/login.js"></script>{{end}}

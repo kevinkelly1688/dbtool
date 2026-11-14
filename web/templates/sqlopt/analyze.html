@@ -1,0 +1,80 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: analyze.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sqlopt.css"><link rel="stylesheet" href="/static/css/sqlanalyze.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="sqlanalyze" data-can-analyze="{{.Data.CanAnalyze}}" data-max-mb="{{.Data.MaxMB}}">
+  <div class="page-head">
+    <h1>{{t "SQL 体检"}}</h1>
+  </div>
+  <div id="sa-msg"></div>
+
+  <section class="card">
+    <h2>{{t "分析选项"}}</h2>
+    <div class="form-grid">
+      <label>{{t "SQL / Mapper XML / 慢日志文件"}}<input type="file" id="sa-file" accept=".sql,.xml,.log,.txt" aria-label="{{t "SQL 文件"}}"></label>
+      <label>{{t "实例（仅 MySQL 系，可不选）"}}<select id="sa-inst" aria-label="{{t "实例"}}"><option value="">{{t "不选择实例（只做静态分析）"}}</option></select></label>
+      <label>{{t "数据库"}}<select id="sa-db" aria-label="{{t "数据库"}}" disabled><option value="">{{t "不指定"}}</option></select></label>
+      <div class="sa-actions">
+        <button class="btn primary" id="sa-start" type="button" disabled>{{t "开始分析"}}</button>
+        <button class="btn danger" id="sa-cancel" type="button" hidden>{{t "取消分析"}}</button>
+        <span class="muted small" id="sa-status"></span>
+      </div>
+    </div>
+    <div class="so-progress" id="sa-bar" hidden><div id="sa-bar-fill"></div></div>
+  </section>
+
+  <div id="sa-notice"></div>
+
+  <section class="card" id="sa-job-card" hidden>
+    <h2>{{t "当前任务"}} <span id="sa-job-meta"></span></h2>
+    <div class="muted small" id="sa-job-keep"></div>
+  </section>
+
+  <section class="card" id="sa-summary" hidden>
+    <h2>{{t "统计汇总"}}</h2>
+    <div class="so-sum" id="sa-sum-nums"></div>
+    <div class="sa-types" id="sa-sum-types"></div>
+    <div class="dgrid">
+      <div><div class="so-sec">{{t "按指纹"}}</div><div class="grid-wrap"><table class="list"><thead><tr><th>{{t "指纹 ID"}}</th><th>{{t "指纹"}}</th><th>{{t "类型"}}</th><th>{{t "次数"}}</th><th>{{t "最高级别"}}</th><th class="sa-th-stat" hidden>{{t "总耗时(s)"}}</th><th class="sa-th-stat" hidden>{{t "扫描行数"}}</th></tr></thead><tbody id="sa-sum-fp"></tbody></table></div></div>
+      <div><div class="so-sec">{{t "涉及的表"}}</div><div class="grid-wrap"><table class="list"><thead><tr><th>{{t "表"}}</th><th>{{t "语句数"}}</th></tr></thead><tbody id="sa-sum-tables"></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{t "SQL 列表"}}</h2>
+    <div class="grid-wrap sa-wrap">
+      <table class="list">
+        <thead><tr><th>SQLID</th><th>{{t "SQL 内容"}}</th><th>{{t "指纹 ID"}}</th><th>{{t "类型"}}</th><th>{{t "涉及表"}}</th><th>{{t "评分"}}</th><th>{{t "状态"}}</th><th>{{t "建议"}}</th><th>{{t "分析报告"}}</th></tr></thead>
+        <tbody id="sa-rows"><tr><td colspan="9" class="empty">{{t "尚未选择文件"}}</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="sa-recent-card">
+    <h2>{{t "最近报告"}} <span class="spacer"></span>
+      <button class="btn ghost" type="button" id="sa-recent-refresh">{{t "刷新"}}</button></h2>
+    <div class="grid-wrap sa-wrap">
+      <table class="list">
+        <thead><tr><th>{{t "任务"}}</th><th>{{t "文件"}}</th><th>{{t "实例 / 库"}}</th><th>{{t "创建人"}}</th><th>{{t "进度"}}</th><th>{{t "状态"}}</th><th>{{t "剩余保留"}}</th><th></th></tr></thead>
+        <tbody id="sa-recent"><tr><td colspan="8" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div class="modal-mask" id="sa-modal" hidden>
+  <div class="modal xwide" role="dialog" aria-modal="true" aria-labelledby="sa-modal-title">
+    <h2 id="sa-modal-title">{{t "分析报告"}}</h2>
+    <pre class="sqlbox mono" id="sa-modal-sql"></pre>
+    <div id="sa-modal-body"></div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" id="sa-modal-close">{{t "关闭"}}</button></div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/sqlopt/analyze.js"></script>{{end}}

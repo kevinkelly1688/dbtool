@@ -1,0 +1,33 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: board.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page" id="perf-board">
+  <div class="page-head"><h1>{{t "团队榜单"}}</h1><span class="spacer"></span>
+    <form class="inline-form" id="pb-filters">
+      <select id="pb-days" aria-label="{{t "统计区间"}}"><option value="7">{{t "近 7 天"}}</option><option value="30">{{t "近 30 天"}}</option><option value="90">{{t "近 90 天"}}</option></select>
+      <select id="pb-side" aria-label="{{t "处理方"}}"><option value="dev">{{t "研发处理的问题"}}</option><option value="dba">{{t "DBA 处理的问题"}}</option><option value="all">{{t "全部"}}</option></select>
+    </form>
+  </div>
+  <div id="pb-msg"></div>
+  <div class="kpis" id="pb-kpis"></div>
+  <section class="card"><h2>{{t "团队健康度"}}</h2>
+    <table class="list">
+      <thead><tr><th>{{t "排名"}}</th><th>{{t "团队"}}</th><th>{{t "健康分"}}</th><th>{{t "超时|overdue"}}</th><th>{{t "未受理"}}</th><th>{{t "未关闭"}}</th><th>{{t "P0/P1 未关闭"}}</th><th>{{t "期间新增"}}</th><th>{{t "期间完成"}}</th><th>{{t "按时率"}}</th><th>{{t "平均修复天数"}}</th><th>{{t "每天浪费 DB 时间"}}</th></tr></thead>
+      <tbody id="pb-rows"><tr><td colspan="12" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></section>
+  <div class="dgrid" style="grid-template-columns:1.4fr 1fr">
+    <section class="card"><h2>{{t "近 12 周：新增 vs 优化完成"}}</h2><div id="pb-trend"></div><p class="muted small"><span class="dot b1"></span> {{t "新增|new"}}　<span class="dot b2"></span> {{t "优化完成"}}</p></section>
+    <section class="card"><h2>{{t "未关闭问题类型（按浪费 DB 时间）"}}</h2><div id="pb-cat"></div></section>
+  </div>
+</main>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/board.js"></script>{{end}}

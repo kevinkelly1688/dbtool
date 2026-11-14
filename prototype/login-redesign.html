@@ -1,0 +1,327 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: login-redesign.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录页 · 新版（简洁版）· 原型 · dbtool</title>
+<style>
+/* 登录页新版原型 v2：参考图的左右分栏；左侧只讲三件事（数据脱敏 / SQL 防火墙 / 审核审计），去掉演示卡片；
+   右侧按 Ant Design / Arco Design 的常规尺寸：8px 栅格、40px 控件、6px 圆角、14px 正文、24px 标题、克制的单一主色。
+   皮肤变量取自 web/static/css/app.css 的 --dt-*；单文件原型，没有任何依赖，不会改动正式页面。 */
+:root {
+  --pane: #f5f6fa; --fg: #1d2129; --muted: #4e5969; --dim: #86909c; --line: #e5e6eb; --input: #ffffff; --input-line: #d9dce3;
+  --accent: #4452d4; --accent-hi: #3a47bd; --on-accent: #ffffff; --link: #3b4bc8; --seg-bg: #ffffff; --seg-on: #eceefb; --seg-on-fg: #3b4bc8;
+  --crit: #cb2634; --crit-soft: #fff1f0; --warn: #b7700a; --warn-soft: #fff7e8; --shadow: 0 8px 24px rgba(29, 33, 41, .12);
+  /* 左侧品牌区也跟着皮肤走：底色、文字、分隔线、装饰线稿 */
+  --b-bg: radial-gradient(760px 460px at 88% 108%, rgba(68, 82, 212, .13), transparent 62%), linear-gradient(160deg, #f4f6ff 0%, #e9edff 55%, #dde3fb 100%);
+  --b-fg: #1d2129; --b-mute: rgba(29, 33, 41, .6); --b-dim: rgba(29, 33, 41, .5); --b-line: rgba(29, 33, 41, .22); --b-ok: #1a8f5c; --b-art: #4452d4; --b-art-op: .2;
+}
+:root[data-skin="dark"] {
+  --pane: #0e1320; --fg: #e5e8ef; --muted: #a0a8b8; --dim: #6b7487; --line: #232b3d; --input: #131a2a; --input-line: #2c3650;
+  --accent: #5865f2; --accent-hi: #6b77f5; --on-accent: #ffffff; --link: #8fa0ff; --seg-bg: #131a2a; --seg-on: #1f2a4a; --seg-on-fg: #a8b6ff;
+  --crit: #ff7875; --crit-soft: rgba(255, 85, 85, .12); --warn: #ffb547; --warn-soft: rgba(255, 181, 71, .12); --shadow: 0 8px 28px rgba(0, 0, 0, .5);
+  --b-bg: radial-gradient(760px 460px at 88% 108%, rgba(88, 101, 242, .24), transparent 62%), linear-gradient(160deg, #0a0f1e 0%, #0f1730 55%, #161d40 100%);
+  --b-fg: #e8ecff; --b-mute: rgba(232, 236, 255, .6); --b-dim: rgba(232, 236, 255, .5); --b-line: rgba(232, 236, 255, .22); --b-ok: #5eeaa8; --b-art: #8fa0ff; --b-art-op: .22;
+}
+:root[data-skin="sepia"] {
+  --pane: #f1ead9; --fg: #3b3428; --muted: #6a5f4b; --dim: #9a8d72; --line: #e2d7bf; --input: #fbf7ec; --input-line: #d3c5a7;
+  --accent: #4a56b8; --accent-hi: #3f4aa2; --on-accent: #fbf7ec; --link: #3f4aa2; --seg-bg: #f8f2e3; --seg-on: #e9e1ca; --seg-on-fg: #3f4aa2;
+  --crit: #b2443a; --crit-soft: #f6e3de; --warn: #a66a12; --warn-soft: #f5e8cf; --shadow: 0 8px 24px rgba(90, 70, 30, .14);
+  --b-bg: radial-gradient(760px 460px at 88% 108%, rgba(166, 106, 18, .12), transparent 62%), linear-gradient(160deg, #f1ead9 0%, #e8dec6 55%, #ddd0b0 100%);
+  --b-fg: #3b3428; --b-mute: rgba(59, 52, 40, .62); --b-dim: rgba(59, 52, 40, .5); --b-line: rgba(59, 52, 40, .24); --b-ok: #3f7d3a; --b-art: #7a6e59; --b-art-op: .26;
+}
+/* 主色选项 */
+:root[data-accent="blue"] { --accent: #165dff; --accent-hi: #0e4fe0; --link: #165dff; --seg-on-fg: #165dff; --seg-on: #e8f0ff; }
+:root[data-skin="dark"][data-accent="blue"] { --accent: #3c7eff; --accent-hi: #5a92ff; --link: #6aa1ff; --seg-on-fg: #6aa1ff; --seg-on: #17284d; }
+:root[data-skin="sepia"][data-accent="blue"] { --accent: #2f5fc8; --accent-hi: #274fa8; --link: #2f5fc8; --seg-on-fg: #2f5fc8; --seg-on: #e1e4ee; }
+:root[data-accent="cyan"] { --accent: #1f6feb; --accent-hi: #1a5fd0; --link: #1f6feb; --seg-on-fg: #1f6feb; --seg-on: #e6effd; }
+:root[data-skin="dark"][data-accent="cyan"] { --accent: #38e1ff; --accent-hi: #62e8ff; --on-accent: #04121a; --link: #38e1ff; --seg-on-fg: #38e1ff; --seg-on: #12304a; }
+:root[data-skin="sepia"][data-accent="cyan"] { --accent: #2f7d6d; --accent-hi: #286b5d; --link: #2f7d6d; --seg-on-fg: #2f7d6d; --seg-on: #dfe6d3; }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--pane); color: var(--fg); font: 14px/22px "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); min-height: 100%; height: 100%; }
+
+/* ===== 左：品牌区 ===== */
+.brand { position: relative; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; padding: 40px 64px 32px; color: var(--b-fg); background: var(--b-bg); }
+.brand-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.lg { display: flex; align-items: center; gap: 12px; }
+.lg i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; font: 700 15px/1 system-ui, sans-serif; font-style: normal; color: var(--on-accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 65%, #fff), var(--accent)); }
+.lg b { display: block; font-size: 20px; line-height: 24px; letter-spacing: .5px; }
+.lg small { display: block; font-size: 12px; line-height: 16px; color: var(--b-mute); }
+.status { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--b-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.status .ok { color: var(--b-ok); font-weight: 600; }
+.status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--b-ok); margin: 0 6px 1px 0; }
+
+.hero { position: relative; z-index: 2; align-self: start; margin-top: clamp(48px, 13vh, 140px); max-width: 720px; }
+.kicker { margin: 0 0 20px; font-size: 14px; color: var(--b-dim); letter-spacing: 1px; }
+.kicker b { font-weight: 600; color: var(--b-fg); }
+.hero h2 { margin: 0; font-size: clamp(34px, 3.4vw, 46px); line-height: 1.32; letter-spacing: 1px; font-weight: 700; }
+.hero h2 em { font-style: normal; color: var(--link); }
+.hero .lead { margin: 20px 0 24px; max-width: 680px; font-size: 14px; line-height: 22px; color: var(--b-mute); text-wrap: balance; }
+.engines { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.engines li { padding: 0 12px; height: 28px; line-height: 26px; border-radius: 6px; border: 1px solid var(--b-line); font-size: 12px; color: var(--b-mute); }
+
+.brand-foot { position: relative; z-index: 2; display: flex; gap: 8px; font-size: 12px; color: var(--b-dim); }
+.art { position: absolute; right: -48px; bottom: -36px; width: 440px; height: 320px; color: var(--b-art); opacity: var(--b-art-op); pointer-events: none; z-index: 1; }
+
+/* ===== 右：登录区 ===== */
+.pane { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: var(--pane); border-left: 1px solid var(--line); }
+.tools { position: absolute; top: 24px; right: 32px; display: flex; align-items: center; gap: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; background: var(--seg-bg); overflow: hidden; }
+.seg button { border: 0; background: transparent; height: 28px; padding: 0 12px; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--seg-on-fg); font-weight: 500; }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.form-wrap { width: min(368px, 100%); }
+.form-wrap h1 { margin: 0 0 32px; font-size: 24px; line-height: 32px; font-weight: 600; }
+label.l { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.row + .row { margin-top: 24px; }
+.linklike { border: 0; background: none; padding: 0; color: var(--link); font-size: 14px; }
+.linklike:hover { text-decoration: underline; }
+.field { display: flex; align-items: center; height: 40px; border: 1px solid var(--input-line); border-radius: 6px; background: var(--input); transition: border-color .15s, box-shadow .15s; }
+.field:hover { border-color: var(--dim); }
+.field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.field svg { flex: none; width: 16px; height: 16px; margin: 0 8px 0 12px; color: var(--dim); }
+.field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font-size: 14px; }
+.field input::placeholder { color: var(--dim); }
+.field .eye { border: 0; background: none; padding: 0 12px; color: var(--link); font-size: 14px; height: 100%; }
+.opts { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 0; font-size: 14px; color: var(--muted); }
+.opts label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.opts input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; }
+.btn-login { display: block; width: 100%; height: 40px; margin-top: 32px; border: 0; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; letter-spacing: .4em; text-indent: .4em; transition: background .15s; }
+.btn-login:hover { background: var(--accent-hi); }
+.btn-login:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent); outline-offset: 2px; }
+.btn-sso { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 40px; border: 1px solid var(--input-line); border-radius: 6px; background: var(--input); color: var(--fg); font-size: 14px; font-weight: 500; }
+.btn-sso:hover { border-color: var(--accent); color: var(--link); }
+.or { display: flex; align-items: center; gap: 12px; margin: 20px 0 24px; font-size: 12px; color: var(--dim); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.alert { display: none; margin: 0 0 24px; padding: 8px 12px; border-radius: 6px; font-size: 14px; border: 1px solid; }
+.alert.on { display: block; }
+.alert.err { color: var(--crit); background: var(--crit-soft); border-color: color-mix(in srgb, var(--crit) 30%, transparent); }
+.alert.lock { color: var(--warn); background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.icp { position: absolute; bottom: 24px; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--dim); }
+.icp.off { display: none; }
+
+/* 忘记密码说明（与正式页同一段文案） */
+.mask { position: fixed; inset: 0; display: none; place-items: center; background: rgba(10, 14, 30, .5); z-index: 50; padding: 16px; }
+.mask.on { display: grid; }
+.modal { width: min(420px, 100%); background: var(--input); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 24px; box-shadow: var(--shadow); }
+.modal h2 { margin: 0 0 16px; font-size: 16px; line-height: 24px; font-weight: 600; }
+.modal ul { margin: 0 0 12px; padding-left: 18px; font-size: 14px; line-height: 26px; }
+.modal p { margin: 0 0 20px; font-size: 12px; color: var(--dim); }
+.modal .rowb { display: flex; justify-content: flex-end; }
+.modal .rowb button { border: 0; border-radius: 6px; height: 32px; padding: 0 16px; background: var(--accent); color: var(--on-accent); font-weight: 500; }
+
+/* ===== 原型选项条（只在原型里有）===== */
+.proto { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 40; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 16px; max-width: calc(100vw - 24px);
+  padding: 7px 14px; border-radius: 10px; background: rgba(20, 24, 50, .92); color: #dfe3ff; font-size: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+.proto b { color: #fff; }
+.proto .grp { display: inline-flex; align-items: center; gap: 6px; }
+.proto .seg { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); }
+.proto .seg button { color: #c5cbf5; height: 24px; padding: 0 9px; }
+.proto .seg button + button { border-left-color: rgba(255, 255, 255, .18); }
+.proto .seg button[aria-pressed="true"] { background: #4452d4; color: #fff; }
+.proto .x { border: 0; background: none; color: #aab; font-size: 14px; padding: 0 2px; }
+.proto.min > :not(.x):not(.t) { display: none; }
+.proto .t { display: none; }
+.proto.min .t { display: inline; }
+
+@media (max-width: 1100px) { .brand { padding: 32px 36px 24px; } }
+@media (max-width: 860px) {
+  .split { grid-template-columns: 1fr; height: auto; }
+  .brand { padding: 24px 24px 22px; grid-template-rows: auto auto auto; gap: 16px; }
+  .hero { margin-top: 0; }
+  .hero h2 { font-size: 28px; margin: 0; }
+  .hero .kicker, .hero .lead, .engines, .art, .status { display: none; }
+  .pane { padding: 72px 24px 96px; border-left: 0; }
+  .tools { right: 16px; top: 16px; }
+}
+@media (max-height: 760px) and (min-width: 861px) { .brand { padding-top: 28px; padding-bottom: 24px; } }
+</style>
+</head>
+<body>
+<div class="split">
+  <section class="brand" aria-label="产品介绍">
+    <svg class="art" viewBox="0 0 460 330" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <g><ellipse cx="120" cy="62" rx="62" ry="22"/><path d="M58 62v110c0 12 28 22 62 22s62-10 62-22V62"/><path d="M58 117c0 12 28 22 62 22s62-10 62-22"/></g>
+      <g><ellipse cx="350" cy="205" rx="62" ry="22"/><path d="M288 205v90c0 12 28 22 62 22s62-10 62-22v-90"/><path d="M288 250c0 12 28 22 62 22s62-10 62-22"/></g>
+      <path d="M184 118c40 0 56 8 68 40s24 42 38 54" stroke-dasharray="6 7"/><path d="M276 196l16 18-22 6" />
+    </svg>
+
+    <div class="brand-top">
+      <div class="lg"><i>DB</i><div><b>DBTOOL</b><small data-i18n="slogan">数据库运维中枢</small></div></div>
+      <div class="status"><span><span class="dot"></span><span data-i18n="metadb">元数据库</span> <span class="ok">OK</span></span><time id="clock"></time></div>
+    </div>
+
+    <div class="hero">
+      <p class="kicker"><span data-i18n="k1">SQL 审核</span> · <span data-i18n="k2">在线查询</span> · <b data-i18n="k3">数据脱敏</b> · <b data-i18n="k4">SQL 防火墙</b> · <span data-i18n="k5">慢 SQL 治理</span> · <span data-i18n="k6">巡检</span> · <span data-i18n="k7">审计</span></p>
+      <h2><span data-i18n="h2a">每一条 SQL</span><br><span data-i18n="h2b">上线前都<em>被看见</em></span></h2>
+      <p class="lead" data-i18n="lead">变更有审核，查询有脱敏，高危 SQL 有防火墙，慢 SQL 有人跟进。所有操作都会记录审计。</p>
+      <ul class="engines" aria-label="支持的数据库"><li data-i18n="eg1">MySQL 系列</li><li>PostgreSQL</li><li>Oracle</li><li>MongoDB</li><li>Redis</li><li>Doris</li><li aria-label="更多">…</li></ul>
+    </div>
+
+    <div class="brand-foot"><span data-i18n="foot">数据库运维中枢</span><span>·</span><span><span data-i18n="ver">版本</span> v1.83</span></div>
+  </section>
+
+  <main class="pane">
+    <div class="tools">
+      <div class="seg" role="group" aria-label="界面主题" id="skins">
+        <button type="button" data-skin-set="light" aria-pressed="true"><span aria-hidden="true">✻</span><span data-i18n="light">明亮</span></button>
+        <button type="button" data-skin-set="dark" aria-pressed="false"><span aria-hidden="true">☾</span><span data-i18n="dark">深空</span></button>
+        <button type="button" data-skin-set="sepia" aria-pressed="false"><span aria-hidden="true">🌿</span><span data-i18n="sepia">护眼</span></button>
+      </div>
+      <div class="seg" role="group" aria-label="语言" id="langs">
+        <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+        <button type="button" data-lang-set="en" aria-pressed="false">English</button>
+      </div>
+    </div>
+
+    <div class="form-wrap">
+      <h1 data-i18n="welcome">欢迎登录</h1>
+      <div class="alert err" id="a-err" role="alert" data-i18n="e1">用户名或密码错误，请重试。</div>
+      <div class="alert lock" id="a-lock" role="alert" data-i18n="e2">连续输错密码，账号已被临时锁定，请稍后再试或联系管理员解锁。</div>
+      <div id="sso" hidden>
+        <button type="button" class="btn-sso"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span data-i18n="sso">使用公司账号登录（单点登录）</span></button>
+        <div class="or" data-i18n="or">或使用平台账号</div>
+      </div>
+      <form id="f" autocomplete="on" onsubmit="return false">
+        <div class="row">
+          <label class="l" for="u"><span data-i18n="user">用户名</span></label>
+          <div class="field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+            <input id="u" name="username" type="text" autocomplete="username" value="user" required>
+          </div>
+        </div>
+        <div class="row">
+          <label class="l" for="p"><span data-i18n="pass">密码</span><button type="button" class="linklike" id="forgot" data-i18n="forgot">忘记密码？</button></label>
+          <div class="field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+            <input id="p" name="password" type="password" autocomplete="current-password" data-i18n-ph="ph" placeholder="请输入密码" required>
+            <button type="button" class="eye" id="eye" aria-pressed="false" data-i18n="show">显示</button>
+          </div>
+        </div>
+        <div class="opts"><label for="rem"><input type="checkbox" id="rem"><span data-i18n="rem">记住账号</span></label></div>
+        <button class="btn-login" type="submit" id="go" data-i18n="login">登录</button>
+      </form>
+    </div>
+    <div class="icp" id="icp"><span data-i18n="icp">备案号（示意，需在系统设置里新增一项）</span></div>
+  </main>
+</div>
+
+<div class="mask" id="m-forgot" role="dialog" aria-modal="true" aria-labelledby="mf-t">
+  <div class="modal">
+    <h2 id="mf-t" data-i18n="ft">忘记密码</h2>
+    <ul>
+      <li data-i18n="f_a"><b>LDAP / AD 域账号</b>：请到公司统一身份平台找回密码。</li>
+      <li data-i18n="f_b"><b>本地账号</b>：请联系管理员重置密码。</li>
+      <li data-i18n="f_c"><b>单点登录账号</b>：无需密码，点上方对应的登录按钮。</li>
+    </ul>
+    <p data-i18n="f_d">连续输错密码会被临时锁定，稍后再试或联系管理员解锁。</p>
+    <div class="rowb"><button type="button" id="mf-ok" data-i18n="ok">知道了</button></div>
+  </div>
+</div>
+
+<div class="proto" id="proto" role="group" aria-label="原型选项">
+  <b>原型选项</b>
+  <span class="grp">主色 <span class="seg" data-opt="accent"><button type="button" data-v="indigo" aria-pressed="true">靛蓝（参考图）</button><button type="button" data-v="blue" aria-pressed="false">标准蓝</button><button type="button" data-v="cyan" aria-pressed="false">系统青</button></span></span>
+  <span class="grp">登录方式 <span class="seg" data-opt="sso"><button type="button" data-v="off" aria-pressed="true">仅账号密码</button><button type="button" data-v="on" aria-pressed="false">含单点登录按钮</button></span></span>
+  <span class="grp">提示 <span class="seg" data-opt="alert"><button type="button" data-v="none" aria-pressed="true">无</button><button type="button" data-v="err" aria-pressed="false">密码错误</button><button type="button" data-v="lock" aria-pressed="false">账号锁定</button></span></span>
+  <span class="grp">备案号 <span class="seg" data-opt="icp"><button type="button" data-v="on" aria-pressed="true">显示</button><button type="button" data-v="off" aria-pressed="false">隐藏</button></span></span>
+  <button class="x" type="button" id="proto-x" aria-label="收起原型选项" title="收起 / 展开">✕</button><span class="t">原型选项</span>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const root = document.documentElement;
+
+// ---- 文案（中 / 英）----
+const T = {
+  zh: {},
+  en: {
+    slogan: 'Database operations hub', metadb: 'Meta DB', k1: 'SQL review', k2: 'Online query', k3: 'Data masking', k4: 'SQL firewall', k5: 'Slow SQL', k6: 'Inspection', k7: 'Audit',
+    eg1: 'MySQL family',
+    h2a: 'Every SQL', h2b: 'seen <em>before it ships</em>',
+    lead: 'Changes are reviewed, queries are masked, risky SQL meets the firewall, and slow SQL has an owner. Every action is audited.',
+    foot: 'Database operations hub', ver: 'Version', light: 'Light', dark: 'Dark', sepia: 'Eye care',
+    welcome: 'Welcome back', user: 'Username', pass: 'Password', forgot: 'Forgot password?', ph: 'Enter password', show: 'Show', hide: 'Hide',
+    rem: 'Remember username', login: 'Sign in', sso: 'Sign in with company account (SSO)', or: 'or use a platform account',
+    e1: 'Wrong username or password. Please try again.', e2: 'Too many failed attempts. The account is temporarily locked; try again later or contact an administrator.',
+    icp: 'Filing number (illustration; needs a new system setting)', ft: 'Forgot password', ok: 'Got it',
+    f_a: '<b>LDAP / AD account</b>: recover the password on the company identity platform.', f_b: '<b>Local account</b>: ask an administrator to reset it.', f_c: '<b>SSO account</b>: no password needed, use the sign-in button above.',
+    f_d: 'Repeated wrong passwords lock the account temporarily; try again later or ask an administrator to unlock it.'
+  }
+};
+$$('[data-i18n]').forEach((n) => { T.zh[n.dataset.i18n] = n.innerHTML; });
+T.zh.ph = $('#p').placeholder; T.zh.hide = '隐藏';
+let lang = 'zh';
+const tr = (k) => T[lang][k] ?? T.zh[k];
+function setLang(l) {
+  lang = l;
+  root.lang = l === 'zh' ? 'zh-CN' : 'en';
+  $$('[data-i18n]').forEach((n) => { n.innerHTML = tr(n.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach((n) => { n.placeholder = tr(n.dataset.i18nPh); });
+  $$('#langs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.langSet === l)));
+  $('#eye').textContent = tr($('#p').type === 'password' ? 'show' : 'hide');
+  tick();
+}
+$$('#langs button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.langSet)));
+
+// ---- 皮肤 ----
+$$('#skins button').forEach((b) => b.addEventListener('click', () => {
+  root.dataset.skin = b.dataset.skinSet;
+  $$('#skins button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+}));
+
+// ---- 时钟 ----
+const p2 = (n) => String(n).padStart(2, '0');
+function tick() {
+  const d = new Date();
+  const hms = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  $('#clock').textContent = lang === 'zh' ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hms}` : `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${hms}`;
+}
+tick(); setInterval(tick, 1000);
+
+// ---- 密码显示 / 忘记密码 ----
+$('#eye').addEventListener('click', () => {
+  const p = $('#p'); const show = p.type === 'password';
+  p.type = show ? 'text' : 'password';
+  $('#eye').setAttribute('aria-pressed', String(show));
+  $('#eye').textContent = tr(show ? 'hide' : 'show');
+});
+$('#forgot').addEventListener('click', () => $('#m-forgot').classList.add('on'));
+$('#mf-ok').addEventListener('click', () => $('#m-forgot').classList.remove('on'));
+$('#m-forgot').addEventListener('click', (e) => { if (e.target.id === 'm-forgot') e.target.classList.remove('on'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#m-forgot').classList.remove('on'); });
+$('#go').addEventListener('click', () => { if ($('#f').reportValidity()) { $('#a-err').classList.add('on'); $('#a-lock').classList.remove('on'); } });
+
+// ---- 原型选项 ----
+const opt = {
+  accent: (v) => { if (v === 'indigo') delete root.dataset.accent; else root.dataset.accent = v; },
+  sso: (v) => { $('#sso').hidden = v !== 'on'; },
+  alert: (v) => { $('#a-err').classList.toggle('on', v === 'err'); $('#a-lock').classList.toggle('on', v === 'lock'); },
+  icp: (v) => { $('#icp').classList.toggle('off', v === 'off'); },
+};
+$$('.proto [data-opt]').forEach((g) => g.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  $$('button', g).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  opt[g.dataset.opt](b.dataset.v);
+}));
+$('#proto-x').addEventListener('click', () => $('#proto').classList.toggle('min'));
+$('#a-err').classList.remove('on'); $('#a-lock').classList.remove('on');
+if (innerWidth < 700) $('#proto').classList.add('min'); // 手机宽度下默认收起，免得挡住表单
+</script>
+</body>
+</html>

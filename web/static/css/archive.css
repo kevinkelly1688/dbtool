@@ -1,0 +1,389 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: archive.css
+ * @time: 2026/10/28
+ */
+/* 数据归档页面专用样式（web/static/js/archive/*）：只用 app.css 里的 --dt-* 变量，深空 / 明亮 / 护眼三套皮肤通用。公共组件见 app.css / admin.css。 */
+#archive .ar-view[hidden] { display: none; }
+#archive .tabbar .tab { text-decoration: none; }
+#archive .tabbar .tab[hidden] { display: none; }
+.ar-tabn { display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 6px; border-radius: 9px; background: var(--dt-crit); color: #fff; font-size: 11px; text-align: center; line-height: 18px; }
+
+/* 表单控件外观见 app.css；这里只定宽 */
+#archive textarea, .ar-modal-form textarea { width: 100%; }
+#ar-modal input[type=text], #ar-modal input[type=password], #ar-modal input[type=number], #ar-modal textarea, #ar-modal select { width: 100%; }
+#ar-modal input[type=checkbox], #ar-modal input[type=radio] { width: auto; }
+
+/* 标签 */
+.ar-tag { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--dt-line-hi); color: var(--dt-muted); white-space: nowrap; margin: 0 4px 3px 0; }
+.ar-tag.ok { color: var(--dt-ok); border-color: var(--dt-ok-line); background: var(--dt-ok-soft); }
+.ar-tag.warn { color: var(--dt-amber); border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+.ar-tag.bad { color: var(--dt-crit); border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.ar-tag.info { color: var(--dt-info); border-color: var(--dt-info); background: var(--dt-info-soft); }
+.ar-tag.brand { color: var(--dt-cyan-text); border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); }
+
+/* 提示条 */
+.ar-notice { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--dt-line); background: var(--dt-raise); margin: 8px 0; font-size: 13px; }
+.ar-notice > i { font-style: normal; flex: none; width: 18px; text-align: center; font-weight: 700; }
+.ar-notice > div { min-width: 0; word-break: break-word; }
+.ar-notice.ok { border-color: var(--dt-ok-line); background: var(--dt-ok-soft); }
+.ar-notice.warn { border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+.ar-notice.bad { border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.ar-notice.info { border-color: var(--dt-info); background: var(--dt-info-soft); }
+
+/* KPI */
+.ar-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+.ar-kpis > div { background: var(--dt-raise); border: 1px solid var(--dt-line); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+.ar-kpis b { font-size: 21px; line-height: 1.25; }
+.ar-kpis b.warn { color: var(--dt-amber); }
+.ar-kpis b.bad { color: var(--dt-crit); }
+.ar-kpis b.ok { color: var(--dt-ok); }
+.ar-kpis span { color: var(--dt-muted); font-size: 12px; }
+.ar-kpis small { color: var(--dt-dim); font-size: 11.5px; }
+
+/* 工具条 */
+#archive .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+#archive .toolbar .spacer { flex: 1; }
+#archive label.chk, .ar-modal-form label.chk { display: inline-flex; gap: 6px; align-items: center; color: var(--dt-fg); font-size: 13px; }
+#archive label.chk input { width: auto; margin: 0; }
+
+/* 列表 */
+#ar-view-tasks table.list td, #ar-view-runs table.list td { vertical-align: top; font-size: 13px; }
+#ar-view-tasks table.list td:first-child { min-width: 170px; }
+.ar-nowrap { white-space: nowrap; }
+.ar-ops { display: flex; gap: 4px; flex-wrap: wrap; }
+.ar-ops .btn { height: 26px; padding: 0 8px; font-size: 12.5px; }
+.ar-link { color: var(--dt-cyan-text); background: none; border: 0; padding: 0; cursor: pointer; font: inherit; text-align: left; }
+.ar-link:hover { text-decoration: underline; }
+.ar-pager { display: flex; align-items: center; gap: 8px; padding-top: 10px; color: var(--dt-muted); font-size: 12.5px; }
+
+/* 进度条 / 实时面板 */
+.ar-prog { height: 8px; border-radius: 5px; background: var(--dt-sunken); border: 1px solid var(--dt-line); overflow: hidden; min-width: 120px; margin: 4px 0; }
+.ar-prog b { display: block; height: 100%; background: var(--dt-cyan); transition: width .35s linear; }
+.ar-prog.busy b { width: 60%; animation: ar-pulse 1s infinite alternate; }
+@keyframes ar-pulse { from { width: 25%; } to { width: 90%; } }
+.ar-live { min-width: 200px; margin-top: 6px; }
+.ar-live .small { line-height: 1.7; margin: 0; }
+.ar-gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin: 8px 0; }
+.ar-gauge { display: flex; align-items: center; gap: 8px; font-size: 12px; min-width: 0; flex-wrap: wrap; }
+.ar-gauge > span { color: var(--dt-muted); flex: none; min-width: 92px; }
+.ar-gauge .ar-bar { flex: 1; min-width: 80px; height: 8px; border-radius: 5px; background: var(--dt-sunken); border: 1px solid var(--dt-line); position: relative; }
+.ar-gauge .ar-bar b { display: block; height: 100%; border-radius: 5px; background: var(--dt-ok); transition: width .3s; }
+.ar-gauge .ar-bar b.warn { background: var(--dt-amber); }
+.ar-gauge .ar-bar b.bad { background: var(--dt-crit); }
+.ar-gauge .ar-bar i { position: absolute; left: 66.6%; top: -3px; bottom: -3px; width: 2px; background: var(--dt-fg); opacity: .55; }
+.ar-gauge > b { flex: none; font-weight: 600; }
+
+/* 试运行检查项 / 校验结果 */
+.ar-checks { display: flex; flex-direction: column; gap: 4px; }
+.ar-chk { display: grid; grid-template-columns: 62px minmax(130px, 230px) minmax(0, 1fr); gap: 8px; align-items: start; padding: 6px 10px; border-radius: 8px; background: var(--dt-raise); border: 1px solid var(--dt-line); font-size: 13px; }
+.ar-chk.error { background: var(--dt-crit-soft); border-color: transparent; }
+.ar-chk.warn { background: var(--dt-amber-soft); border-color: transparent; }
+.ar-chk > b { font-weight: 600; }
+.ar-chk > span:last-child { min-width: 0; word-break: break-all; }
+.ar-stale { opacity: .5; filter: grayscale(.5); }
+.ar-sample { overflow: auto; max-height: 260px; border: 1px solid var(--dt-line); border-radius: 6px; }
+.ar-sample table { border-collapse: collapse; font: 12.5px var(--dt-f-mono); }
+.ar-sample th { position: sticky; top: 0; background: var(--dt-sunken); text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--dt-line-hi); white-space: nowrap; }
+.ar-sample td { padding: 3px 10px; border-bottom: 1px solid var(--dt-line); white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+
+/* SQL / 日志 */
+pre.ar-code { margin: 4px 0 8px; max-height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-all; background: var(--dt-input); border: 1px solid var(--dt-line); border-radius: 4px; padding: 8px 10px; font: 12.5px/1.55 var(--dt-f-mono); color: var(--dt-code-text); }
+pre.ar-log { margin: 0; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all; background: var(--dt-input); border: 1px solid var(--dt-line); border-radius: 4px; padding: 8px 10px; font: 12px/1.6 var(--dt-f-mono); }
+.ar-h4 { margin: 14px 0 4px; font-size: 14px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ar-h4 small { color: var(--dt-muted); font-weight: 400; font-size: 12px; }
+
+/* 键值表 */
+dl.ar-kv { display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); gap: 6px 12px; margin: 0 0 6px; }
+dl.ar-kv dt { color: var(--dt-muted); }
+dl.ar-kv dd { margin: 0; word-break: break-all; }
+dl.ar-kv.c2 { grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) minmax(96px, 150px) minmax(0, 1fr); }
+
+/* 时间线 */
+ul.ar-tline { list-style: none; margin: 4px 0; padding: 0; }
+ul.ar-tline li { position: relative; padding: 2px 0 8px 20px; border-left: 2px solid var(--dt-line); margin-left: 6px; }
+ul.ar-tline li::before { content: ""; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--dt-line-hi); }
+ul.ar-tline li.ok::before { background: var(--dt-ok); }
+ul.ar-tline li.bad::before { background: var(--dt-crit); }
+ul.ar-tline li.cur::before { background: var(--dt-amber); }
+ul.ar-tline li .m { color: var(--dt-muted); font-size: 12px; }
+
+/* 抽屉 */
+.modal-mask.ar-drawer-mask { justify-content: flex-end; align-items: stretch; padding: 0; z-index: 55; }
+.modal.ar-drawer { width: min(820px, 100%); max-height: 100vh; height: 100vh; border-radius: 8px 0 0 8px; border-right: 0; display: flex; flex-direction: column; padding: 0; background: var(--dt-panel); }
+.ar-drawer-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--dt-line); }
+.ar-drawer-head h2 { margin: 0; font-size: 16px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-drawer-body { padding: 12px 16px 24px; overflow: auto; flex: 1; }
+.modal-mask#ar-modal-mask { z-index: 70; }
+#ar-modal.wide { width: min(760px, 100%); }
+#ar-modal.xwide { width: min(980px, 100%); }
+#ar-modal-body label.fld { display: block; margin: 8px 0; font-size: 12.5px; color: var(--dt-muted); }
+#ar-modal-body label.fld input, #ar-modal-body label.fld select, #ar-modal-body label.fld textarea { display: block; margin-top: 4px; }
+.ar-diff { font: 12.5px/1.6 var(--dt-f-mono); white-space: pre-wrap; word-break: break-all; border: 1px solid var(--dt-line); border-radius: 4px; background: var(--dt-input); padding: 8px 10px; margin: 6px 0; }
+.ar-diff .del { display: block; color: var(--dt-crit); background: var(--dt-crit-soft); }
+.ar-diff .add { display: block; color: var(--dt-ok); background: var(--dt-ok-soft); }
+.ar-confirm-name { margin-top: 10px; }
+
+/* 向导 */
+.ar-steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; padding: 0; list-style: none; }
+.ar-steps li { flex: 1 1 120px; padding: 7px 10px; border: 1px solid var(--dt-line-hi); border-radius: 6px; color: var(--dt-muted); display: flex; gap: 8px; align-items: center; min-width: 0; }
+.ar-steps li b { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; border: 1px solid currentColor; align-items: center; justify-content: center; font-size: 12px; flex: none; }
+.ar-steps li.done { color: var(--dt-ok); border-color: var(--dt-ok); }
+.ar-steps li.cur { color: var(--dt-cyan-text); border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); font-weight: 600; }
+.ar-form { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px 14px; max-width: 900px; align-items: start; }
+.ar-form > label { color: var(--dt-muted); padding-top: 6px; text-align: right; }
+.ar-form > label.req::before { content: "* "; color: var(--dt-crit); }
+.ar-form .fv { min-width: 0; }
+.ar-form select, .ar-form input[type=text] { max-width: 100%; }
+.ar-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ar-mode { display: block; border: 1px solid var(--dt-line); border-radius: 10px; padding: 10px 12px 10px 34px; cursor: pointer; position: relative; background: var(--dt-panel); }
+.ar-mode input { position: absolute; left: 12px; top: 13px; margin: 0; }
+.ar-mode b { display: block; margin-bottom: 2px; }
+.ar-mode span { font-size: 12px; color: var(--dt-muted); }
+.ar-mode.on { border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); }
+.ar-mode.dis { opacity: .55; cursor: not-allowed; }
+.ar-bk { border: 1px solid var(--dt-line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--dt-panel); }
+.ar-bk .ar-form { margin-top: 8px; grid-template-columns: 130px minmax(0, 1fr); }
+.ar-wiz-nav { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.ar-wiz-nav .spacer { flex: 1; }
+.ar-err-list { margin: 4px 0 0; padding-left: 18px; }
+
+/* 窄屏 */
+@media (max-width: 900px) {
+  .ar-modes { grid-template-columns: 1fr; }
+  .ar-gauges { grid-template-columns: 1fr; }
+  .ar-chk { grid-template-columns: 62px minmax(0, 1fr); }
+  .ar-chk > span:last-child { grid-column: 1 / -1; }
+  .ar-form, .ar-bk .ar-form { grid-template-columns: minmax(0, 1fr); max-width: none; }
+  .ar-form > label { text-align: left; padding-top: 0; }
+  dl.ar-kv.c2 { grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); }
+  #archive .toolbar select, #archive .toolbar input[type=search] { min-width: 0; flex: 1 1 140px; }
+}
+
+/* 任务列表：状态列限宽，进度文字自动换行；表头允许换行 */
+#ar-view-tasks table.list th, #ar-view-runs table.list th { white-space: normal; }
+#ar-view-tasks td:nth-child(6) { max-width: 250px; }
+#ar-view-tasks .ar-live { min-width: 0; max-width: 250px; }
+#ar-view-tasks .ar-ops { max-width: 150px; }
+
+/* 弹窗里的两列表单（安全策略） */
+.ar-modal-form.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.ar-modal-form.grid > .full { grid-column: 1 / -1; }
+@media (max-width: 700px) { .ar-modal-form.grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===================================================================
+   响应式（只作用于数据归档页，选择器都带 #archive / #ar-* 前缀）
+   - 宽屏：.page 本来就没有 max-width，内容区占满；这里只放宽操作列、状态列的上限
+   - 平板 701–1100：KPI 自适应铺满、表格减少次要列并允许容器内横向滚动、操作按钮横排换行
+   - 手机 ≤700：任务 / 运行 / 备份存储改卡片列表，抽屉和大弹窗全屏，表单单列，点击区域 ≥ 40px，输入框 16px
+   =================================================================== */
+#archive { min-width: 0; }
+#archive .ar-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#archive .ar-tbl-wrap > table.list { min-width: 100%; }
+
+/* 宽屏：操作列放宽，按钮横排而不是堆成高塔 */
+#ar-view-tasks .ar-ops { max-width: 240px; min-width: 150px; }
+@media (min-width: 1801px) {
+  #ar-view-tasks td:nth-child(6), #ar-view-tasks .ar-live { max-width: 340px; }
+}
+@media (min-width: 1801px) {
+  #ar-view-tasks .ar-ops { flex-wrap: nowrap; max-width: none; }
+}
+
+/* 中等宽度（笔记本 / 小屏桌面）：备份去向标签允许换行、收紧间距与操作列，避免任务表出现容器内横向滚动把“操作”挤出屏幕 */
+@media (min-width: 1101px) and (max-width: 1800px) {
+  #ar-view-tasks table.list th, #ar-view-tasks table.list td { padding-left: 5px; padding-right: 5px; }
+  #ar-view-tasks td:nth-child(4) { max-width: 175px; }
+  #ar-view-tasks td:nth-child(4) .ar-tag { white-space: normal; }
+  #ar-view-tasks td:nth-child(2) .ar-nowrap { white-space: normal; }
+  #ar-view-tasks td:first-child { min-width: 150px; }
+  #ar-view-tasks td:nth-child(6), #ar-view-tasks .ar-live { max-width: 210px; }
+  #ar-view-tasks .ar-ops { max-width: 150px; }
+}
+@media (min-width: 1101px) and (max-width: 1500px) {
+  #ar-view-tasks table.list th:nth-child(9), #ar-view-tasks table.list td:nth-child(9) { display: none; }
+  #ar-view-tasks td:nth-child(5) .small { white-space: normal; }
+}
+@media (min-width: 1101px) and (max-width: 1300px) {
+  #ar-view-tasks table.list th:nth-child(3), #ar-view-tasks table.list td:nth-child(3),
+  #ar-view-tasks table.list th:nth-child(8), #ar-view-tasks table.list td:nth-child(8) { display: none; }
+  #ar-view-tasks td:nth-child(4) { max-width: 160px; }
+  #ar-view-tasks td:nth-child(6), #ar-view-tasks .ar-live { max-width: 170px; }
+  #ar-view-tasks .ar-ops { max-width: 130px; }
+  #ar-view-tasks td:first-child { min-width: 110px; }
+  #ar-view-tasks td:nth-child(5) .ar-nowrap { white-space: normal; }
+}
+@media (min-width: 1301px) and (max-width: 1500px) {
+  #ar-view-tasks td:nth-child(4) { max-width: 175px; }
+}
+
+/* 页签栏：窄屏横向滑动，不换行 */
+@media (max-width: 900px) {
+  #archive .tabbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #archive .tabbar::-webkit-scrollbar { display: none; }
+  #archive .tabbar .tab { flex: none; white-space: nowrap; }
+  #archive .tabbar .tabnote { flex: none; white-space: nowrap; padding: 0 4px; }
+}
+
+/* 平板与更窄：KPI 自适应铺满（最后一张自动拉伸补满整行） */
+@media (max-width: 1100px) {
+  .ar-kpis { display: flex; flex-wrap: wrap; }
+  .ar-kpis > div { flex: 1 1 150px; }
+  #ar-view-tasks .ar-ops, #ar-view-runs .ar-ops, #ar-view-stores .ar-ops { max-width: none; min-width: 0; }
+  #ar-view-tasks td:nth-child(6), #ar-view-tasks .ar-live { max-width: 260px; }
+  .ar-drawer-body table.list, #ar-modal-body table.list { display: block; overflow-x: auto; max-width: 100%; }
+}
+/* 平板：隐藏次要列（详情抽屉里都有），其余允许表格容器内横向滚动 */
+@media (min-width: 701px) and (max-width: 1100px) {
+  #ar-view-tasks table.list th:nth-child(3), #ar-view-tasks table.list td:nth-child(3),
+  #ar-view-tasks table.list th:nth-child(4), #ar-view-tasks table.list td:nth-child(4),
+  #ar-view-tasks table.list th:nth-child(9), #ar-view-tasks table.list td:nth-child(9),
+  #ar-view-tasks table.list th:nth-child(8), #ar-view-tasks table.list td:nth-child(8),
+  #ar-view-runs table.list th:nth-child(7), #ar-view-runs table.list td:nth-child(7),
+  #ar-view-runs table.list th:nth-child(9), #ar-view-runs table.list td:nth-child(9),
+  #ar-view-runs table.list th:nth-child(10), #ar-view-runs table.list td:nth-child(10),
+  #ar-view-runs table.list th:nth-child(8), #ar-view-runs table.list td:nth-child(8),
+  #ar-view-stores table.list th:nth-child(4), #ar-view-stores table.list td:nth-child(4),
+  #ar-view-stores table.list th:nth-child(7), #ar-view-stores table.list td:nth-child(7) { display: none; }
+  #ar-view-tasks table.list td:first-child { min-width: 130px; }
+  #ar-view-tasks .ar-ops { min-width: 150px; max-width: 150px; }
+  #ar-view-tasks td:nth-child(6) { min-width: 110px; }
+  #ar-view-runs .ar-ops, #ar-view-stores .ar-ops { min-width: 112px; }
+  #ar-view-tasks table.list th, #ar-view-tasks table.list td, #ar-view-runs table.list th, #ar-view-runs table.list td, #ar-view-stores table.list th, #ar-view-stores table.list td { padding-left: 6px; padding-right: 6px; }
+  #ar-view-tasks table.list td:nth-child(2) .ar-nowrap { white-space: normal; }
+  #ar-view-tasks table.list td:nth-child(5) .small { display: none; }
+}
+
+/* 平板（701–1100）：再收紧一点，让“操作”列尽量完整显示在首屏 */
+@media (min-width: 701px) and (max-width: 1100px) {
+  #ar-view-tasks table.list th, #ar-view-tasks table.list td { padding-left: 4px; padding-right: 4px; }
+  #ar-view-tasks table.list td:first-child { min-width: 115px; }
+  #ar-view-tasks td:nth-child(6) { min-width: 90px; }
+  #ar-view-tasks .ar-ops { min-width: 130px; max-width: 130px; }
+}
+
+/* 触摸设备（手机 / 平板）：点击区域与输入框字号，避免 iOS 聚焦时自动放大 */
+@media (max-width: 700px), (pointer: coarse) and (max-width: 1100px) {
+  #archive .btn, #ar-drawer-mask .btn, #ar-modal-mask .btn { min-height: 40px; height: auto; padding-top: 0; padding-bottom: 0; justify-content: center; }
+  #archive .tabbar .tab { min-height: 44px; display: inline-flex; align-items: center; }
+  #archive select, #archive input[type=text], #archive input[type=search], #archive input[type=password], #archive input[type=number], #archive input[type=time], #archive textarea,
+  #ar-modal select, #ar-modal input[type=text], #ar-modal input[type=password], #ar-modal input[type=number], #ar-modal input[type=time], #ar-modal textarea,
+  #ar-drawer select, #ar-drawer input[type=text], #ar-drawer input[type=search], #ar-drawer input[type=number], #ar-drawer textarea { font-size: 16px; min-height: 40px; }
+  #archive textarea, #ar-modal textarea { min-height: 80px; }
+  #archive input[type=checkbox], #archive input[type=radio], #ar-modal input[type=checkbox], #ar-modal input[type=radio] { width: 20px; height: 20px; margin: 0 2px 0 0; flex: none; }
+  #archive label.chk, .ar-modal-form label.chk { min-height: 40px; }
+  #archive .ar-link { min-height: 40px; display: inline-flex; align-items: center; padding: 0; }
+  #ar-drawer .ar-link, #ar-modal .ar-link { display: inline-block; padding: 12px 0; line-height: 1.4; }
+}
+
+/* 手机 */
+@media (max-width: 700px) {
+  #archive .page-head h1 { order: 1; }
+  #archive .page-head .spacer { order: 2; }
+  #archive .page-head #ar-refresh { order: 3; }
+  #archive .tabbar { gap: 0; }
+  #archive .tabbar .tabnote { display: none; }
+  #archive .tabbar .tab { padding-left: 11px; padding-right: 11px; }
+  #archive .card { padding: 12px; }
+  #archive .card:has(> .ar-tbl-wrap > table.ar-cards) { background: none; border: 0; padding: 0; }
+  #archive .toolbar > select { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  #archive .toolbar > input[type=search] { flex: 1 1 100%; min-width: 0 !important; }
+  #archive .toolbar > .spacer { display: none; }
+  #archive .toolbar > .btn.primary { flex: 1 1 100%; }
+  #archive .ar-pager { flex-wrap: wrap; }
+  #archive .ar-pager .btn { flex: 1 1 40%; }
+  #archive .ar-pager .muted { flex: 1 1 100%; }
+  #archive .ar-pager .spacer { display: none; }
+
+  /* 卡片列表：表头隐藏，每行一张卡；单元格用 data-label 显示标签 */
+  #archive .ar-tbl-wrap { overflow: visible; }
+  #archive table.ar-cards, #archive table.ar-cards tbody, #archive table.ar-cards tr, #archive table.ar-cards td { display: block; }
+  #archive table.ar-cards { min-width: 0 !important; width: 100%; }
+  #archive table.ar-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  #archive table.ar-cards tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; align-items: start; padding: 12px; margin: 0 0 10px; border: 1px solid var(--dt-line); border-radius: 8px; background: var(--dt-raise); }
+  #archive table.ar-cards td { padding: 0; border: 0; min-width: 0 !important; max-width: none !important; font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
+  #archive table.ar-cards tr:hover td { background: none; }
+  #archive table.ar-cards td::before { content: attr(data-label); display: block; font-size: 11.5px; color: var(--dt-dim); margin-bottom: 2px; }
+  #archive table.ar-cards td.empty { grid-column: 1 / -1; padding: 24px 0; text-align: center; }
+  #archive table.ar-cards td.empty::before { display: none; }
+  #archive table.ar-cards .ar-tag { white-space: normal; overflow-wrap: anywhere; }
+  #archive table.ar-cards .ar-live { min-width: 0; max-width: none; }
+  #archive table.ar-cards .ar-prog { min-width: 0; }
+  #archive table.ar-cards .ar-ops { max-width: none; min-width: 0; gap: 8px; }
+  #archive table.ar-cards .ar-ops .btn { flex: 1 1 auto; min-width: 72px; font-size: 14px; }
+  #archive table.ar-cards td:last-child { grid-column: 1 / -1; order: 99; padding-top: 10px; border-top: 1px solid var(--dt-line); }
+  #archive table.ar-cards td:last-child::before { display: none; }
+  #archive table.ar-cards td:first-child { grid-column: 1 / -1; font-size: 15px; }
+  #archive table.ar-cards td:first-child::before { display: none; }
+
+  /* 任务：名称 / 来源表 / 状态（含进度、限流）→ 调度 · 下次 → 上次 · 累计 → 模式 · 备份去向 → 操作 */
+  #ar-view-tasks table.ar-cards td:nth-child(1) { order: 1; }
+  #ar-view-tasks table.ar-cards td:nth-child(2) { order: 2; grid-column: 1 / -1; }
+  #ar-view-tasks table.ar-cards td:nth-child(6) { order: 3; grid-column: 1 / -1; }
+  #ar-view-tasks table.ar-cards td:nth-child(5) { order: 4; }
+  #ar-view-tasks table.ar-cards td:nth-child(8) { order: 5; }
+  #ar-view-tasks table.ar-cards td:nth-child(7) { order: 6; }
+  #ar-view-tasks table.ar-cards td:nth-child(9) { order: 7; }
+  #ar-view-tasks table.ar-cards td:nth-child(3) { order: 8; }
+  #ar-view-tasks table.ar-cards td:nth-child(4) { order: 9; grid-column: 1 / -1; }
+  /* 运行记录：# 与结果并排 → 任务 → 时间 · 触发 → 行数 → 批数 · 耗时 · Threads · 限流 */
+  #ar-view-runs table.ar-cards td:nth-child(1) { order: 1; grid-column: span 1; }
+  #ar-view-runs table.ar-cards td:nth-child(5) { order: 2; justify-self: end; }
+  #ar-view-runs table.ar-cards td:nth-child(5)::before { display: none; }
+  #ar-view-runs table.ar-cards td:nth-child(2) { order: 3; grid-column: 1 / -1; }
+  #ar-view-runs table.ar-cards td:nth-child(3) { order: 4; }
+  #ar-view-runs table.ar-cards td:nth-child(4) { order: 5; }
+  #ar-view-runs table.ar-cards td:nth-child(6) { order: 6; grid-column: 1 / -1; }
+  #ar-view-runs table.ar-cards td:nth-child(7) { order: 7; }
+  #ar-view-runs table.ar-cards td:nth-child(8) { order: 8; }
+  #ar-view-runs table.ar-cards td:nth-child(9) { order: 9; }
+  #ar-view-runs table.ar-cards td:nth-child(10) { order: 10; }
+  /* 备份存储：名称与状态并排 → 类型 · 保留 → 地址 → AK/SK → 最近测试 → 被引用 */
+  #ar-view-stores table.ar-cards td:nth-child(1) { order: 1; grid-column: span 1; }
+  #ar-view-stores table.ar-cards td:nth-child(6) { order: 2; justify-self: end; }
+  #ar-view-stores table.ar-cards td:nth-child(6)::before { display: none; }
+  #ar-view-stores table.ar-cards td:nth-child(2) { order: 3; }
+  #ar-view-stores table.ar-cards td:nth-child(5) { order: 4; }
+  #ar-view-stores table.ar-cards td:nth-child(3) { order: 5; grid-column: 1 / -1; }
+  #ar-view-stores table.ar-cards td:nth-child(4) { order: 6; grid-column: 1 / -1; }
+  #ar-view-stores table.ar-cards td:nth-child(7) { order: 7; grid-column: 1 / -1; }
+  #ar-view-stores table.ar-cards td:nth-child(8) { order: 8; }
+
+  /* 向导：步骤条可横向滑动，只有当前步显示名称 */
+  .ar-steps { flex-wrap: nowrap; overflow-x: auto; gap: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .ar-steps::-webkit-scrollbar { display: none; }
+  .ar-steps li { flex: none; padding: 6px 8px; min-height: 36px; }
+  .ar-steps li:not(.cur) span { display: none; }
+  .ar-form .fv { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .ar-form .fv > input[type=text], .ar-form .fv > select, .ar-form .fv > textarea { flex: 1 1 100%; width: 100%; }
+  .ar-form .fv > input[type=number], .ar-form .fv > input[type=time] { flex: 1 1 120px; width: auto; }
+  .ar-form label.chk { margin: 0; }
+  .ar-bk { padding: 10px; }
+  .ar-wiz-nav { position: sticky; bottom: 0; z-index: 3; margin: 14px -12px -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--dt-panel); border-top: 1px solid var(--dt-line); border-radius: 0 0 6px 6px; }
+  .ar-wiz-nav .spacer { display: none; }
+  .ar-wiz-nav .btn { flex: 1 1 auto; }
+  .ar-wiz-nav > .small { flex: 1 1 100%; order: -1; }
+
+  /* 详情键值表：标签在上、值在下 */
+  dl.ar-kv, dl.ar-kv.c2 { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  dl.ar-kv dt { font-size: 12px; margin-top: 8px; }
+
+  /* 弹窗：表单类（wide / xwide）全屏，确认类整宽；按钮并排铺满 */
+  #ar-modal-mask { padding: 12px; }
+  #ar-modal-mask:has(#ar-modal.wide, #ar-modal.xwide) { padding: 0; }
+  #ar-modal.wide, #ar-modal.xwide { width: 100%; height: 100%; max-height: 100%; border-radius: 0; border: 0; display: flex; flex-direction: column; }
+  #ar-modal.wide .actions, #ar-modal.xwide .actions { margin-top: auto; }
+  #ar-modal .actions { position: sticky; bottom: -18px; z-index: 2; margin: 12px -18px -16px; padding: 10px 18px calc(10px + env(safe-area-inset-bottom)); background: var(--dt-raise); border-top: 1px solid var(--dt-line); }
+  #ar-modal .actions .spacer { display: none; }
+  #ar-modal .actions .btn { flex: 1 1 0; }
+  .ar-diff, #ar-modal pre { max-width: 100%; overflow-x: auto; }
+  .ar-drawer-body { padding-left: 12px; padding-right: 12px; }
+}
+
+/* 抽屉：≤900px 占满整个屏幕（用 100% 而不是 100vh，避开手机浏览器地址栏造成的底部被遮） */
+@media (max-width: 900px) {
+  .modal.ar-drawer { width: 100%; height: 100%; max-height: 100%; border-radius: 0; border-left: 0; }
+  .ar-drawer-body { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .ar-drawer-head { padding: 8px 12px; }
+}

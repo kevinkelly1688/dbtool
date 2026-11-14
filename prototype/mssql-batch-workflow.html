@@ -1,0 +1,1927 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: mssql-batch-workflow.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL Server 批量工单 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*，与 masking-admin.html 一致；--dt-violet 仅用于“新增建议”徽章 ===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-amber-soft: rgba(255, 181, 71, .13);
+  --dt-ok: #37d99a; --dt-ok-soft: rgba(55, 217, 154, .12);
+  --dt-crit: #ff5577; --dt-crit-soft: rgba(255, 85, 119, .14);
+  --dt-violet: #b79bff; --dt-violet-soft: rgba(183, 155, 255, .16);
+  --dt-input: #0a111c; --dt-sunken: rgba(0, 0, 0, .2); --dt-on-accent: #04121a;
+  --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  --dt-mono: "JetBrains Mono", "Cascadia Code", Consolas, "Microsoft YaHei", monospace;
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-amber-soft: rgba(219, 140, 20, .12);
+  --dt-ok: #1a8f5c; --dt-ok-soft: rgba(26, 143, 92, .1);
+  --dt-crit: #cf2c46; --dt-crit-soft: rgba(207, 44, 70, .09);
+  --dt-violet: #6d3fd1; --dt-violet-soft: rgba(109, 63, 209, .1);
+  --dt-input: #f8fafc; --dt-sunken: #f5f7fa; --dt-on-accent: #ffffff; --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3f7d3a; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #b2443a; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-violet: #7a4fa0; --dt-violet-soft: rgba(122, 79, 160, .12);
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-on-accent: #fbf7ec; --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 13.5px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; min-height: 100vh; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+.mono { font-family: var(--dt-mono); }
+.muted { color: var(--dt-muted); } .dim { color: var(--dt-dim); } .small { font-size: 12px; }
+.sp { flex: 1; }
+.wrap { overflow-wrap: anywhere; word-break: break-word; }
+
+/* ---- 控件 ---- */
+.btn { height: 30px; padding: 0 12px; border: 1px solid var(--dt-line-hi); border-radius: 5px; background: var(--dt-panel); white-space: nowrap; }
+.btn:hover { border-color: var(--dt-cyan); }
+.btn.primary { background: var(--dt-cyan); border-color: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+.btn.ghost { background: none; }
+.btn.danger { color: var(--dt-crit); }
+.btn.sm { height: 26px; padding: 0 8px; font-size: 12.5px; }
+.btn.link { border: 0; background: none; color: var(--dt-cyan); padding: 0 4px; height: auto; }
+.btn.link:hover { text-decoration: underline; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.btn:disabled:hover, .btn[aria-disabled="true"]:hover { border-color: var(--dt-line-hi); }
+.ipt { height: 30px; padding: 0 8px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); min-width: 0; width: 100%; }
+textarea.ipt { height: auto; padding: 6px 8px; resize: vertical; }
+.ipt:focus, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+input[type=checkbox], input[type=radio] { width: 15px; height: 15px; accent-color: var(--dt-cyan); }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); }
+.seg button { height: 26px; padding: 0 11px; border: 0; border-radius: 6px; background: none; color: var(--dt-muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+.seg button[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.chip { height: 26px; padding: 0 10px; border: 1px solid var(--dt-line-hi); border-radius: 13px; background: none; color: var(--dt-muted); font-size: 12.5px; white-space: nowrap; }
+.chip[aria-pressed="true"] { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.badge { display: inline-block; padding: 0 7px; font-size: 11.5px; line-height: 18px; border: 1px solid var(--dt-line-hi); border-radius: 9px; color: var(--dt-muted); white-space: nowrap; vertical-align: middle; }
+.badge.ok { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.badge.warn { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.badge.info { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.badge.crit { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+/* “新增建议”徽章：全页只有它用紫色，必须一眼能认出来 */
+.badge.sug { color: var(--dt-violet); border-color: var(--dt-violet); background: var(--dt-violet-soft); font-weight: 700; letter-spacing: .02em; }
+.badge.sug::before { content: "✦ "; }
+.st { display: inline-block; padding: 0 9px; line-height: 20px; border-radius: 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--dt-line-hi); color: var(--dt-muted); white-space: nowrap; }
+.st.waiting { color: var(--dt-amber); border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.st.passed { color: var(--dt-ok); border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.st.running { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.st.rejected { color: var(--dt-crit); border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.hint { color: var(--dt-muted); font-size: 12px; }
+.hint.bad { color: var(--dt-crit); }
+
+/* ---- 演示控制条（固定在顶部，可折叠） ---- */
+.demo { position: sticky; top: 0; z-index: 40; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); box-shadow: 0 4px 14px rgba(0, 0, 0, .12); }
+.demo-top { display: flex; align-items: center; gap: 8px 10px; padding: 7px 20px; flex-wrap: wrap; }
+.brand { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.steps { display: flex; gap: 4px; flex-wrap: wrap; }
+.steps button { height: 30px; padding: 0 11px; border: 1px solid transparent; border-radius: 15px; background: none; color: var(--dt-muted); display: inline-flex; gap: 6px; align-items: center; }
+.steps button .n { width: 19px; height: 19px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--dt-raise); font-size: 11.5px; font-weight: 700; }
+.steps button[aria-selected="true"] { color: var(--dt-cyan); border-color: var(--dt-cyan); background: var(--dt-cyan-soft); font-weight: 600; }
+.steps button[aria-selected="true"] .n { background: var(--dt-cyan); color: var(--dt-on-accent); }
+.demo-body { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 20px 10px; border-top: 1px dashed var(--dt-line-hi); background: var(--dt-sunken); }
+.demo-body .f { display: inline-flex; align-items: center; gap: 6px; }
+.demo-body .f label { color: var(--dt-muted); font-size: 12.5px; white-space: nowrap; }
+.demo-body select.ipt { width: auto; height: 28px; }
+.changes { position: absolute; top: 100%; right: 12px; width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 110px); overflow: auto; background: var(--dt-panel); border: 1px solid var(--dt-line-hi); border-radius: 10px; box-shadow: var(--dt-shadow); padding: 12px 16px 14px; margin-top: 6px; }
+.changes h3 { margin: 4px 0 6px; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.changes ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.changes li { border: 1px solid var(--dt-line); border-radius: 8px; padding: 8px 10px; background: var(--dt-sunken); }
+.changes li.sugitem { border-color: var(--dt-violet); background: var(--dt-violet-soft); }
+.changes li b { display: block; margin-bottom: 2px; }
+.changes li .sw { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 12.5px; }
+
+/* ---- 页面骨架 ---- */
+.page { max-width: 1480px; margin: 0 auto; padding: 14px 20px 70px; display: flex; flex-direction: column; gap: 12px; }
+.view { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 19px; }
+.proto-note { padding: 6px 12px; border: 1px dashed var(--dt-amber); border-radius: 6px; color: var(--dt-amber); background: var(--dt-amber-soft); font-size: 12px; }
+.card { background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 8px; min-width: 0; }
+.card > h2 { margin: 0; padding: 10px 14px; font-size: 14px; border-bottom: 1px solid var(--dt-line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card > .bd { padding: 12px 14px; }
+.card.sugcard { border-color: var(--dt-violet); }
+.step { width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--dt-cyan-soft); color: var(--dt-cyan); font-size: 12px; font-weight: 700; flex: none; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 16px; }
+.fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fld > .l { color: var(--dt-muted); font-size: 12.5px; }
+.fld.wide { grid-column: 1 / -1; }
+.empty { padding: 28px 16px; text-align: center; color: var(--dt-muted); }
+
+/* 表格 */
+.tw { width: 100%; }
+table.list { width: 100%; border-collapse: collapse; }
+table.list th, table.list td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+table.list th { background: var(--dt-raise); color: var(--dt-muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+table.list tbody tr:hover > td { background: var(--dt-cyan-soft); }
+table.list td.num, table.list th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.list tr.row-fail > td { background: var(--dt-crit-soft); }
+table.list tr.row-warn > td { background: var(--dt-amber-soft); }
+table.list tr.row-stale > td { opacity: .55; }
+table.list tr.lv-err > td:first-child { box-shadow: inset 3px 0 0 var(--dt-crit); }
+table.list tr.lv-warn > td:first-child { box-shadow: inset 3px 0 0 var(--dt-amber); }
+table.list tr.sum td { font-weight: 700; background: var(--dt-raise); border-top: 2px solid var(--dt-line-hi); }
+table.list tr.detail > td { background: var(--dt-sunken); padding: 8px 10px 10px 42px; }
+table.list tr.detail:hover > td { background: var(--dt-sunken); }
+table.sub { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.sub th, table.sub td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+table.sub th { color: var(--dt-muted); font-weight: 500; white-space: nowrap; }
+table.sub td:nth-child(2), table.sub td:nth-child(3) { white-space: nowrap; }
+table.sub tr.fail td { color: var(--dt-crit); }
+table.sub tr.skip td { color: var(--dt-dim); }
+.caret { width: 22px; height: 22px; border: 0; background: none; color: var(--dt-muted); transition: transform .12s; padding: 0; }
+.caret[aria-expanded="true"] { transform: rotate(90deg); }
+.pc { white-space: nowrap; }
+.pc.ok { color: var(--dt-ok); } .pc.fail { color: var(--dt-crit); font-weight: 600; } .pc.na { color: var(--dt-dim); } .pc.off { color: var(--dt-dim); font-style: italic; }
+
+/* 实例选择器 */
+.picker { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px; }
+.pane { border: 1px solid var(--dt-line); border-radius: 8px; min-width: 0; display: flex; flex-direction: column; background: var(--dt-panel); }
+.pane-h { padding: 8px 10px; display: flex; gap: 6px 8px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--dt-line); background: var(--dt-raise); border-radius: 8px 8px 0 0; }
+.pane-h .ipt { flex: 1 1 160px; }
+.plist { max-height: 330px; overflow: auto; }
+.prow { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-bottom: 1px solid var(--dt-line); min-width: 0; }
+.prow:hover { background: var(--dt-cyan-soft); }
+.prow.sel { background: var(--dt-cyan-soft); }
+.prow .nm { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.prow .ad { color: var(--dt-dim); font-size: 12px; white-space: nowrap; }
+.prow.dragging { opacity: .4; }
+.prow.over { box-shadow: inset 0 2px 0 var(--dt-cyan); }
+.prow .ord { width: 26px; text-align: right; color: var(--dt-muted); font-variant-numeric: tabular-nums; flex: none; }
+.prow .grab { cursor: grab; color: var(--dt-dim); flex: none; user-select: none; }
+.prow .acts { display: inline-flex; gap: 2px; flex: none; }
+.prow .acts .btn { width: 26px; padding: 0; }
+.prow .acts .btn.wide { width: auto; padding: 0 6px; }
+details.unl { margin-top: 8px; font-size: 12.5px; color: var(--dt-muted); }
+details.unl summary { cursor: pointer; }
+details.unl ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* 编辑器 */
+.editor { display: flex; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-input); overflow: hidden; }
+.editor .gutter { margin: 0; padding: 8px 8px 8px 10px; text-align: right; color: var(--dt-dim); background: var(--dt-sunken); border-right: 1px solid var(--dt-line); user-select: none; overflow: hidden; min-width: 42px; font: 13px/1.55 var(--dt-mono); white-space: pre; }
+.editor textarea { flex: 1; min-width: 0; border: 0; outline: 0; resize: vertical; padding: 8px 10px; background: transparent; font: 13px/1.55 var(--dt-mono); min-height: 190px; white-space: pre; overflow: auto; tab-size: 4; }
+.editor:focus-within { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+pre.sqlbox { margin: 0; padding: 10px 12px; border: 1px solid var(--dt-line); border-radius: 6px; background: var(--dt-input); font: 12.5px/1.55 var(--dt-mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+
+/* 底部操作条 */
+.subbar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--dt-panel); border: 1px solid var(--dt-line-hi); border-radius: 8px; box-shadow: 0 -6px 18px rgba(0, 0, 0, .14); }
+
+/* 横幅 / 进度 / 计数 */
+.banner { display: flex; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--dt-line-hi); border-left-width: 4px; background: var(--dt-sunken); }
+.banner .ic { font-size: 16px; line-height: 1.3; flex: none; }
+.banner b.t { display: block; }
+.banner.ok { border-color: var(--dt-ok); background: var(--dt-ok-soft); }
+.banner.warn { border-color: var(--dt-amber); background: var(--dt-amber-soft); }
+.banner.crit { border-color: var(--dt-crit); background: var(--dt-crit-soft); }
+.banner.info { border-color: var(--dt-cyan); background: var(--dt-cyan-soft); }
+.banner.sug { border-color: var(--dt-violet); background: var(--dt-violet-soft); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.kpi { padding: 6px 10px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-left-width: 3px; border-radius: 6px; }
+.kpi .l { display: block; color: var(--dt-muted); font-size: 12px; }
+.kpi b { font-size: 19px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.kpi.ok { border-left-color: var(--dt-ok); } .kpi.fail { border-left-color: var(--dt-crit); } .kpi.closed { border-left-color: var(--dt-dim); }
+.kpi.run { border-left-color: var(--dt-cyan); } .kpi.queued { border-left-color: var(--dt-line-hi); } .kpi.held { border-left-color: var(--dt-amber); }
+.pbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--dt-raise); border: 1px solid var(--dt-line); }
+.pbar i { display: block; height: 100%; transition: width .25s; }
+.pbar i.ok { background: var(--dt-ok); } .pbar i.fail { background: var(--dt-crit); } .pbar i.closed { background: var(--dt-dim); }
+.pbar i.held { background: var(--dt-amber); }
+.pbar i.run { background: repeating-linear-gradient(45deg, var(--dt-cyan) 0 6px, transparent 6px 12px); animation: stripe 1s linear infinite; }
+@keyframes stripe { to { background-position: 17px 0; } }
+.kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 12px; margin: 0; }
+.kv dt { color: var(--dt-muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.flow { list-style: none; margin: 0; padding: 0 0 0 4px; }
+.flow li { position: relative; display: flex; gap: 10px; padding: 0 0 12px; }
+.flow li::before { content: ""; position: absolute; left: 6px; top: 16px; bottom: -2px; width: 2px; background: var(--dt-line-hi); }
+.flow li:last-child::before { display: none; }
+.flow .dot { flex: none; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; border: 2px solid var(--dt-line-hi); background: var(--dt-panel); z-index: 1; }
+.flow li.done .dot { border-color: var(--dt-ok); background: var(--dt-ok); }
+.flow li.current .dot { border-color: var(--dt-amber); background: var(--dt-amber-soft); box-shadow: 0 0 0 3px var(--dt-amber-soft); }
+.flow li.bad .dot { border-color: var(--dt-crit); background: var(--dt-crit); }
+.flow li.pending { color: var(--dt-muted); }
+ul.log { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; }
+ul.log li { padding: 5px 0 5px 12px; border-left: 2px solid var(--dt-line-hi); margin-left: 4px; position: relative; }
+ul.log li::before { content: ""; position: absolute; left: -6px; top: 11px; width: 8px; height: 8px; border-radius: 50%; background: var(--dt-cyan); }
+ul.log time { font: 12px var(--dt-mono); color: var(--dt-dim); margin-right: 6px; }
+.tool { display: flex; gap: 8px 10px; align-items: center; flex-wrap: wrap; }
+.tool .ipt { width: 190px; }
+
+/* 弹窗 / toast */
+.mask { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .5); display: grid; place-items: center; padding: 20px; }
+.dlg { width: min(640px, 100%); max-height: 88vh; display: flex; flex-direction: column; background: var(--dt-panel); border: 1px solid var(--dt-line-hi); border-radius: 10px; box-shadow: var(--dt-shadow); }
+.dlg h3 { margin: 0; padding: 14px 18px; font-size: 16px; border-bottom: 1px solid var(--dt-line); }
+.dlg .bd { padding: 14px 18px; overflow: auto; display: grid; gap: 10px; }
+.dlg .bd p { margin: 0; }
+.dlg .bd p.warnline { color: var(--dt-amber); }
+.dlg .ft { padding: 12px 18px; display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--dt-line); }
+.toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 70; padding: 10px 16px; border-radius: 8px; background: var(--dt-panel); border: 1px solid var(--dt-ok); color: var(--dt-ok); box-shadow: var(--dt-shadow); max-width: min(680px, calc(100vw - 24px)); }
+.toast.warn { border-color: var(--dt-amber); color: var(--dt-amber); }
+.toast.crit { border-color: var(--dt-crit); color: var(--dt-crit); }
+
+@media (max-width: 1100px) {
+  .grid2, .picker { grid-template-columns: 1fr; }
+  .page { padding: 12px 12px 70px; }
+  .demo-top, .demo-body { padding-left: 12px; padding-right: 12px; }
+  .kv { grid-template-columns: 84px minmax(0, 1fr); }
+  table.list th, table.list td { padding: 6px 6px; }
+  table.list tr.detail > td { padding-left: 10px; }
+  .hide-narrow { display: none; }
+}
+@media (max-width: 700px) {
+  table.list th { white-space: normal; }
+  table.list th, table.list td { padding: 5px 4px; font-size: 12.5px; }
+  .pc { white-space: normal; }
+  .demo-top { gap: 6px; }
+  .changes { right: 6px; }
+  .subbar .btn { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="demo" id="demo">
+  <div class="demo-top">
+    <span class="brand"><span class="badge info">原型</span><b>SQL Server 批量工单</b></span>
+    <nav class="steps" role="tablist" aria-label="页面">
+      <button type="button" role="tab" id="tab-submit" aria-selected="true" aria-controls="v-submit"><span class="n">1</span>提交工单</button>
+      <button type="button" role="tab" id="tab-detail" aria-selected="false" aria-controls="v-detail"><span class="n">2</span>工单详情<span id="tab-detail-id" class="muted"></span></button>
+      <button type="button" role="tab" id="tab-list" aria-selected="false" aria-controls="v-list"><span class="n">3</span>工单列表</button>
+    </nav>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="皮肤">
+      <button type="button" data-skin="light" aria-pressed="false">明亮</button>
+      <button type="button" data-skin="dark" aria-pressed="true">深空</button>
+      <button type="button" data-skin="sepia" aria-pressed="false">护眼</button>
+    </div>
+    <button type="button" class="btn" id="btn-collapse" aria-expanded="true" aria-controls="demo-body">演示控制条 ▴</button>
+    <button type="button" class="btn" id="btn-changes" aria-expanded="false" aria-controls="changes">新增建议开关 <span class="badge sug" id="chg-badge">0 / 3</span></button>
+  </div>
+  <div class="demo-body" id="demo-body">
+    <span class="f"><label for="d-outcome">模拟结局</label>
+      <select id="d-outcome" class="ipt">
+        <option value="success">全部成功</option>
+        <option value="partial" selected>部分失败</option>
+        <option value="allfail">全部失败</option>
+        <option value="deleted">含已删除实例</option>
+      </select></span>
+    <span class="f"><label for="d-retry">重试后</label>
+      <select id="d-retry" class="ipt">
+        <option value="ok" selected>成功（原因已处理）</option>
+        <option value="fail">仍然失败</option>
+      </select></span>
+    <span class="f"><label for="d-workers">并发度</label>
+      <select id="d-workers" class="ipt">
+        <option>1</option><option>2</option><option selected>4</option><option>8</option><option>12</option><option>16</option>
+      </select></span>
+    <span class="f"><label for="d-speed">速度</label>
+      <select id="d-speed" class="ipt">
+        <option value="fast">快</option><option value="normal" selected>正常</option><option value="slow">慢</option>
+      </select></span>
+    <span class="f"><label for="d-perm">身份</label>
+      <select id="d-perm" class="ipt"></select></span>
+    <span class="sp"></span>
+    <button type="button" class="btn sm" id="d-load">载入示例（8 个实例 + SQL）</button>
+    <button type="button" class="btn sm danger" id="d-reset">重置演示数据</button>
+  </div>
+  <section class="changes" id="changes" hidden aria-label="新增建议开关"></section>
+</header>
+
+<main class="page">
+
+<!-- ================= 1 提交页 ================= -->
+<section id="v-submit" class="view" role="tabpanel" aria-labelledby="tab-submit">
+  <div class="head">
+    <h1>提交 SQL 工单</h1><span class="badge info">SQL Server</span>
+    <span class="sp"></span><span class="muted small" id="perm-line"></span>
+  </div>
+  <div class="proto-note">原型 · 模拟数据：检查 / 预检 / 执行均为脚本模拟，操作只改页面内存，刷新即还原</div>
+
+  <div class="card">
+    <h2><span class="step">1</span>基本信息</h2>
+    <div class="bd">
+      <div class="fgrid">
+        <label class="fld wide"><span class="l">工单名称</span><input id="f-name" class="ipt" type="text" maxlength="50" placeholder="如：订单表增加 remark 列"></label>
+        <label class="fld"><span class="l">资源组</span><select id="f-group" class="ipt"></select></label>
+        <div class="fld"><span class="l" id="l-mode">提交方式</span>
+          <div class="seg" role="group" aria-labelledby="l-mode">
+            <button type="button" id="m-single" aria-pressed="false">单实例</button>
+            <button type="button" id="m-batch" aria-pressed="true">批量上线</button>
+          </div>
+          <span class="hint" id="mode-hint"></span>
+        </div>
+        <label class="fld" id="w-single"><span class="l">目标实例</span><select id="f-inst" class="ipt"></select></label>
+        <label class="fld"><span class="l">目标数据库 <small class="muted" id="db-src"></small></span><select id="f-db" class="ipt"></select></label>
+        <label class="fld"><span class="l">需求链接（可不填）</span><input id="f-url" class="ipt" type="url" placeholder="https://"></label>
+        <label class="fld"><span class="l">可执行开始时间（可不填）</span><input id="f-start" class="ipt" type="datetime-local"></label>
+        <label class="fld"><span class="l">可执行结束时间（可不填）</span><input id="f-end" class="ipt" type="datetime-local"></label>
+        <label class="fld"><span class="l">定时执行（可不填）</span><input id="f-sched" class="ipt" type="datetime-local"></label>
+        <label class="fld wide"><span class="l">备注（可不填）</span><textarea id="f-remark" class="ipt" rows="2" maxlength="500" placeholder="如：变更窗口 22:00-23:00"></textarea></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="c-picker">
+    <h2><span class="step">2</span>选择要上线的实例</h2>
+    <div class="bd"><div class="picker">
+      <div class="pane" aria-label="可选实例">
+        <div class="pane-h">
+          <input id="p-q" class="ipt" type="search" placeholder="筛选名称 / 地址 / 环境" aria-label="筛选实例">
+          <div class="chips" role="group" aria-label="环境筛选" id="p-env"></div>
+          <div class="chips" role="group" aria-label="角色筛选" id="p-role"></div>
+        </div>
+        <div class="pane-h">
+          <button type="button" class="btn sm" id="p-all">全选当前结果</button>
+          <button type="button" class="btn sm" id="p-inv">反选</button>
+          <button type="button" class="btn sm ghost" id="p-none">清空</button>
+          <span class="sp"></span><span class="muted small" id="p-count"></span>
+        </div>
+        <div class="plist" id="p-list" role="group" aria-label="实例清单"></div>
+      </div>
+      <div class="pane" aria-label="已选实例">
+        <div class="pane-h"><b>已选清单</b><span class="muted small" id="s-count"></span></div>
+        <div class="plist" id="s-list" role="list" aria-label="已选实例（按执行顺序）"></div>
+      </div>
+    </div>
+    <details class="unl" id="p-unl"><summary id="p-unl-sum"></summary><ul id="p-unl-list"></ul></details>
+    </div>
+  </div>
+
+  <div class="card" id="c-flow">
+    <h2><span class="step">3</span>审批流程预览</h2>
+    <div class="bd"><ol class="flow" id="flow-list"></ol></div>
+  </div>
+
+  <div class="card sugcard" id="c-canary">
+    <h2><span class="step">4</span>批量选项 <span class="badge sug">新增建议</span></h2>
+    <div class="bd">
+      <label style="display:flex;gap:8px;align-items:flex-start">
+        <input type="checkbox" id="sg-canary" style="margin-top:3px">
+        <span><b>灰度先行</b> <span class="badge sug">新增建议</span></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card" id="c-sql">
+    <h2><span class="step">5</span><span>SQL 内容</span>
+      <span class="sp"></span>
+      <label class="muted small"><input type="checkbox" id="e-lineno" checked> 行号</label>
+      <span class="muted small">示例：</span>
+      <button type="button" class="btn sm" id="ex-ok">规范</button>
+      <button type="button" class="btn sm" id="ex-warn">含警告</button>
+      <button type="button" class="btn sm" id="ex-err">含错误</button>
+      <button type="button" class="btn sm" id="ex-print">含 PRINT</button>
+    </h2>
+    <div class="bd">
+      <div class="editor"><pre class="gutter" id="e-gutter" aria-hidden="true"></pre>
+        <textarea id="f-sql" wrap="off" spellcheck="false" aria-label="SQL 内容"></textarea></div>
+      <div class="hint" id="e-meta" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="card" id="c-check" hidden>
+    <h2><span class="step">✓</span><span id="chk-title">语法与规则检查</span><span class="sp"></span><span class="muted small" id="chk-sum"></span></h2>
+    <div class="bd" style="padding:0">
+      <div id="chk-notice" style="padding:10px 14px 0"></div>
+      <div class="tw"><table class="list" id="chk-table">
+        <thead><tr><th class="num">#</th><th class="num">行号</th><th>级别</th><th>规则 ID</th><th>信息</th><th>SQL</th></tr></thead>
+        <tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="card" id="c-pre" hidden>
+    <h2><span class="step">✓</span><span>每个实例的预检</span>
+      <span class="sp"></span><span class="muted small" id="pre-sum"></span></h2>
+    <div class="bd">
+      <div class="tool" style="margin-bottom:8px">
+        <label><input type="checkbox" id="sg-pre"> 同时预检「库只读 / 账号权限」</label> <span class="badge sug">新增建议</span>
+        <span class="sp"></span>
+        <label class="small muted"><input type="checkbox" id="pre-onlyfail"> 只看失败</label>
+      </div>
+      <div id="pre-banner"></div>
+    </div>
+    <div class="tw" style="border-top:1px solid var(--dt-line)"><table class="list" id="pre-table">
+      <thead><tr>
+        <th class="num">#</th><th>实例</th><th class="hide-narrow">环境 / 角色</th><th>连接</th><th>库存在</th>
+        <th>库只读 <span class="badge sug">新增建议</span></th><th>账号权限 <span class="badge sug">新增建议</span></th><th>说明</th><th>操作</th>
+      </tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="subbar" id="subbar">
+    <span id="sub-hint" class="hint" style="flex:1 1 280px" role="status"></span>
+    <button type="button" class="btn" id="b-check">检查 SQL</button>
+    <button type="button" class="btn primary" id="b-submit" disabled>提交工单</button>
+  </div>
+</section>
+
+<!-- ================= 2 详情页 ================= -->
+<section id="v-detail" class="view" role="tabpanel" aria-labelledby="tab-detail" hidden></section>
+
+<!-- ================= 3 列表页 ================= -->
+<section id="v-list" class="view" role="tabpanel" aria-labelledby="tab-list" hidden>
+  <div class="head"><h1>SQL 工单</h1><span class="sp"></span>
+    <button type="button" class="btn primary" id="l-new">提交工单</button></div>
+  <div class="kpis" id="l-kpis" role="group" aria-label="按状态统计，点击筛选"></div>
+  <div class="card">
+    <h2>筛选</h2>
+    <div class="bd">
+      <div class="tool">
+        <select id="l-status" class="ipt" aria-label="状态" style="width:150px"></select>
+        <select id="l-inst" class="ipt" aria-label="实例" style="width:260px"></select>
+        <select id="l-batch" class="ipt" aria-label="工单范围" style="width:150px">
+          <option value="">单实例 + 批量</option><option value="0">仅单实例工单</option><option value="1">仅批量上线工单</option>
+        </select>
+        <input id="l-q" class="ipt" type="search" placeholder="搜索工单号 / 名称 / 提交人 / 库" aria-label="搜索" style="width:240px">
+        <button type="button" class="btn ghost" id="l-clear">清除筛选</button>
+      </div>
+    </div>
+    <div class="tw" style="border-top:1px solid var(--dt-line)"><table class="list" id="l-table">
+      <thead><tr><th>编号</th><th>工单名称</th><th>实例 / 库</th><th class="hide-narrow">提交人</th><th class="hide-narrow">资源组</th><th>状态</th><th>提交时间</th><th>操作</th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="bd"><span class="muted small" id="l-total"></span></div>
+  </div>
+</section>
+
+</main>
+
+<div class="mask" id="m-confirm" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+    <h3 id="dlg-title"></h3>
+    <div class="bd" id="dlg-body"></div>
+    <div class="ft"><span class="muted small mono" id="dlg-code"></span><span class="sp"></span>
+      <button class="btn" id="dlg-cancel" type="button">取消</button><button class="btn primary" id="dlg-ok" type="button">确认</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+'use strict';
+
+/* ====================================================================== 工具 */
+const $ = (id) => document.getElementById(id);
+const PROP = new Set(['value', 'checked', 'disabled', 'hidden', 'type', 'title', 'placeholder', 'colSpan', 'draggable', 'tabIndex', 'id', 'name', 'min', 'max', 'rows', 'selected', 'readOnly', 'maxLength', 'htmlFor']);
+// 所有文字都走 textContent / 文本节点；整页不使用 innerHTML。
+function h(tag, a, ...kids) {
+  const el = document.createElement(tag);
+  if (a) {
+    Object.keys(a).forEach((k) => {
+      const v = a[k];
+      if (v === undefined || v === null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else if (PROP.has(k)) el[k] = v;
+      else el.setAttribute(k, v === true ? '' : String(v));
+    });
+  }
+  kids.flat(Infinity).forEach((c) => {
+    if (c === null || c === undefined || c === false) return;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  });
+  return el;
+}
+function mount(el, ...kids) { el.replaceChildren(...kids.flat(Infinity).filter((x) => x !== null && x !== undefined && x !== false).map((x) => (x instanceof Node ? x : document.createTextNode(String(x))))); }
+const pad = (n, w) => String(n).padStart(w, '0');
+function hash(a, b) { let x = (Math.imul(a, 2654435761) + Math.imul(b, 40503)) >>> 0; x = (x ^ (x >>> 15)) >>> 0; x = Math.imul(x, 2246822519) >>> 0; x = (x ^ (x >>> 13)) >>> 0; return (x % 1000) / 1000; }
+function nowStr() { const d = new Date(); return pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2) + ' ' + pad(d.getHours(), 2) + ':' + pad(d.getMinutes(), 2) + ':' + pad(d.getSeconds(), 2); }
+const sugBadge = (t) => h('span', { class: 'badge sug', title: t || null }, '新增建议');
+
+/* ====================================================================== 演示数据 */
+const MAX_BATCH = 100;
+const ACCOUNT = 'svc_dbtool';
+const ENV_LABEL = { prod: '生产', pre: '预发', test: '测试' };
+const BIZ = {
+  ord: { label: '订单', dbs: ['OrderDB', 'OrderArchive', 'ReportDB'] },
+  pay: { label: '支付', dbs: ['PayDB', 'PayLedger'] },
+  crm: { label: '客户', dbs: ['CrmDB', 'CrmReport'] },
+  shop: { label: '商城', dbs: ['shop', 'crm', 'report'] },
+};
+const VERS = ['SQL Server 2019 (15.0.4153)', 'SQL Server 2017 (14.0.3456)', 'SQL Server 2022 (16.0.4105)'];
+const INST = [];
+const BY_ID = {};
+function addInst(id, biz, env, role, tail, flags, extra) {
+  const o = Object.assign({
+    id, biz, env, role, flags: flags || {}, type: 'mssql', writable: true,
+    name: 'mssql-' + biz + '-' + env + '-' + tail,
+    addr: '10.20.' + (1 + Math.floor(id / 60)) + '.' + (10 + (id % 60)) + ':1433',
+    ver: VERS[id % 3],
+  }, extra || {});
+  INST.push(o);
+  BY_ID[id] = o;
+}
+// 手工编排的前 24 个：带各种预检 / 执行故障，保证演示一上来就能看到失败态
+[
+  [1, 'ord', 'prod', '主库', '01', {}],
+  [2, 'ord', 'prod', '主库', '02', {}],
+  [3, 'ord', 'prod', '主库', '03', { dbCase: true }],
+  [4, 'ord', 'prod', '主库', '04', { noConn: true }],
+  [5, 'ord', 'prod', '主库', '05', { readonly: true }],
+  [6, 'ord', 'prod', '单机', '06', { noDdl: true }],
+  [7, 'ord', 'pre', '主库', '01', {}],
+  [8, 'ord', 'pre', '主库', '02', { noDb: true }],
+  [9, 'ord', 'test', '单机', '01', {}],
+  [10, 'ord', 'test', '单机', '02', {}],
+  [11, 'pay', 'prod', '主库', '01', {}],
+  [12, 'pay', 'prod', '主库', '02', {}],
+  [13, 'pay', 'prod', '主库', '03', {}],
+  [14, 'pay', 'prod', '主库', '04', {}],
+  [15, 'pay', 'pre', '主库', '01', {}],
+  [16, 'pay', 'test', '单机', '01', {}],
+  [17, 'crm', 'prod', '主库', '01', {}],
+  [18, 'crm', 'prod', '主库', '02', {}],
+  [19, 'crm', 'prod', '主库', '03', {}],
+  [20, 'crm', 'pre', '主库', '01', {}],
+  [21, 'crm', 'test', '单机', '01', {}],
+  [22, 'crm', 'test', '单机', '02', {}],
+  [23, 'ord', 'prod', '主库', '07', {}],
+  [24, 'ord', 'prod', '主库', '08', {}],
+].forEach((r) => addInst(r[0], r[1], r[2], r[3], r[4], r[5]));
+for (let id = 25; id <= 150; id++) {
+  const biz = ['ord', 'ord', 'pay', 'crm'][id % 4];
+  const m = id % 10;
+  addInst(id, biz, m < 6 ? 'prod' : m < 8 ? 'pre' : 'test', id % 9 === 0 ? '单机' : '主库', pad(id, 3));
+}
+[201, 202].forEach((id, k) => addInst(id, 'shop', 'prod', '主库', pad(k + 1, 2), {}, { type: 'mysql', name: 'mysql-shop-prod-' + pad(k + 1, 2), addr: '10.30.1.' + (20 + k) + ':3306', ver: 'MySQL 8.0.36' }));
+[211, 212, 213, 214, 215].forEach((id, k) => addInst(id, 'shop', k < 3 ? 'prod' : 'test', '主库', pad(k + 1, 2), {}, { type: 'mysql', name: 'mysql-biz-' + (k < 3 ? 'prod' : 'test') + '-' + pad(k + 1, 2), addr: '10.30.2.' + (10 + k) + ':3306', ver: 'MySQL 8.0.36' }));
+const GROUPS = [
+  { id: 'g1', name: 'SQLServer-上线组', ids: INST.filter((i) => i.id <= 150 || i.id === 201 || i.id === 202).map((i) => i.id),
+    flow: [['一级 · 组长审批', '陈刚、赵敏（任一人通过）'], ['二级 · DBA 审批', '李娜、王强（任一人通过）']],
+    unlisted: [['mssql-ord-prod-ro-01', '没有 can_write 标签（只读副本）'], ['mssql-ord-prod-ro-02', '没有 can_write 标签（只读副本）'], ['mssql-rpt-prod-01', '没有 can_write 标签（报表库）']] },
+  { id: 'g2', name: 'MySQL-业务组', ids: [211, 212, 213, 214, 215],
+    flow: [['一级 · 组长审批', '陈刚'], ['二级 · DBA 审批', null]], unlisted: [] },
+];
+const PERMS = {
+  full: { label: '张伟：可批量提交 + 可执行', user: '张伟', batchSubmit: true, execute: true },
+  nobatch: { label: '李娜：缺 sqlbatch_submit', user: '李娜', batchSubmit: false, execute: true },
+  noexec: { label: '王强：无执行权限', user: '王强', batchSubmit: true, execute: false },
+};
+const SQL_OK = `-- 订单表增加备注列与索引，并回填历史数据
+ALTER TABLE dbo.Orders ADD remark nvarchar(200) NULL;
+CREATE INDEX IX_Orders_created ON dbo.Orders (created_at);
+UPDATE dbo.Orders SET remark = N'' WHERE remark IS NULL AND created_at < '2026-01-01';`;
+const SQL_WARN = `-- 含警告：USE 切库、SELECT *、前导通配 LIKE
+USE OrderDB;
+SELECT * FROM dbo.Orders WHERE remark LIKE N'%退款%';
+ALTER TABLE dbo.Orders ADD refund_flag bit NOT NULL DEFAULT 0;`;
+const SQL_ERR = `-- 含错误：缺 WHERE 的 UPDATE / DELETE、危险语句
+UPDATE dbo.Orders SET status = 9;
+DELETE FROM dbo.OrderItems;
+EXEC xp_cmdshell 'dir c:\\';`;
+const SQL_PRINT = `-- 含 PRINT：服务端回传 PRINT 消息会按失败处理（该单元回滚，其后语句不再执行）
+IF COL_LENGTH('dbo.Orders', 'remark') IS NOT NULL PRINT N'remark 列已存在，请勿重复执行';
+ALTER TABLE dbo.Orders ADD remark2 nvarchar(200) NOT NULL DEFAULT N'';`;
+const ST = {
+  review: ['等待审批', 'waiting'], pass: ['审核通过', 'passed'], timing: ['定时执行', 'running'], queuing: ['排队中', 'running'],
+  executing: ['执行中', 'running'], finish: ['已正常结束', 'passed'], exception: ['执行有异常', 'rejected'], abort: ['人工终止流程', ''], autowrong: ['自动审批不通过', ''],
+};
+const stBadge = (s) => h('span', { class: 'st ' + ST[s][1] }, ST[s][0]);
+const SPEED = { fast: 0.35, normal: 1, slow: 2.2 };
+
+/* ====================================================================== 状态 */
+function freshForm() {
+  return { name: '', group: 'g1', mode: 'batch', single: 1, db: '', sql: SQL_OK, url: '', start: '', end: '', sched: '', remark: '',
+    sel: [], q: '', env: '', role: '', lineno: true, preOnlyFail: false };
+}
+const S = {
+  tab: 'submit', gen: 0, timers: new Set(),
+  sug: { precheck: false, canary: false, retryAll: false },
+  demo: { outcome: 'partial', retry: 'ok', workers: 4, speed: 'normal', perm: 'full' },
+  form: freshForm(), check: null, checkRun: 0, drag: -1,
+  orders: [], cur: null, nextId: 1050,
+  expanded: new Set(), dstate: 'all', dq: '', dFocus: false,
+  list: { status: '', inst: '', batch: '', q: '' },
+  dbOwner: null,
+};
+const curGroup = () => GROUPS.find((g) => g.id === S.form.group);
+const isBatchable = (i) => i && i.type === 'mssql' && i.writable;
+const curOrder = () => S.orders.find((o) => o.id === S.cur) || null;
+const perm = () => PERMS[S.demo.perm];
+function dbsOf(inst) {
+  if (inst.type !== 'mssql') return BIZ.shop.dbs.slice();
+  const base = BIZ[inst.biz].dbs.slice();
+  if (inst.flags.noDb) base[0] += '_bak';
+  if (inst.flags.dbCase) base[0] = base[0].toLowerCase();
+  return base;
+}
+function later(fn, ms) {
+  const gen = S.gen;
+  const t = setTimeout(() => { S.timers.delete(t); if (gen === S.gen) fn(); }, Math.max(15, ms * SPEED[S.demo.speed]));
+  S.timers.add(t);
+}
+
+/* ====================================================================== 简化版 T-SQL 切分与规则检查（仅用于演示） */
+function strip(sql, keepStr) {
+  let out = '', i = 0;
+  const n = sql.length;
+  while (i < n) {
+    const c = sql[i], d = sql[i + 1];
+    if (c === '-' && d === '-') { while (i < n && sql[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') {
+      i += 2;
+      while (i < n && !(sql[i] === '*' && sql[i + 1] === '/')) { if (sql[i] === '\n') out += '\n'; i++; }
+      i += 2; continue;
+    }
+    if (c === "'") {
+      let j = i + 1;
+      while (j < n) { if (sql[j] === "'") { if (sql[j + 1] === "'") { j += 2; continue; } j++; break; } j++; }
+      const lit = sql.slice(i, j);
+      out += keepStr ? lit : "''" + lit.replace(/[^\n]/g, '');
+      i = j; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+function firstLine(raw, startLine) {
+  let ln = startLine, k = 0;
+  while (k < raw.length) {
+    const c = raw[k], d = raw[k + 1];
+    if (c === '\n') { ln++; k++; } else if (/\s/.test(c)) k++;
+    else if (c === '-' && d === '-') { while (k < raw.length && raw[k] !== '\n') k++; }
+    else if (c === '/' && d === '*') { k += 2; while (k < raw.length && !(raw[k] === '*' && raw[k + 1] === '/')) { if (raw[k] === '\n') ln++; k++; } k += 2; }
+    else break;
+  }
+  return ln;
+}
+function mkUnit(raw, startLine) {
+  const code = strip(raw, true).trim();
+  if (!code) return null;
+  return { sql: raw.trim(), code, bare: strip(raw, false).trim(), disp: code.replace(/\s+/g, ' '), line: firstLine(raw, startLine) };
+}
+function splitBatch(text, baseLine) {
+  const bare = strip(text, false);
+  if (!bare.trim()) return [];
+  if (/\bDECLARE\s+@|\bBEGIN\s+(TRY|TRAN|TRANSACTION)\b|\bGOTO\b|\bCURSOR\b/i.test(bare)) { const u = mkUnit(text, baseLine); return u ? [u] : []; }
+  const out = [];
+  let start = 0, i = 0, line = baseLine, startLine = baseLine, depth = 0;
+  const n = text.length;
+  const push = (end) => { const u = mkUnit(text.slice(start, end), startLine); if (u) out.push(u); };
+  while (i < n) {
+    const c = text[i], d = text[i + 1];
+    if (c === '\n') { line++; i++; continue; }
+    if (c === '-' && d === '-') { while (i < n && text[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') { i += 2; while (i < n && !(text[i] === '*' && text[i + 1] === '/')) { if (text[i] === '\n') line++; i++; } i += 2; continue; }
+    if (c === "'") { i++; while (i < n) { if (text[i] === "'") { if (text[i + 1] === "'") { i += 2; continue; } i++; break; } if (text[i] === '\n') line++; i++; } continue; }
+    if (c === '[') { while (i < n && text[i] !== ']') i++; i++; continue; }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < n && /[\w@#$]/.test(text[j])) j++;
+      const w = text.slice(i, j).toUpperCase();
+      if (w === 'BEGIN' || w === 'CASE') depth++;
+      else if (w === 'END') depth = Math.max(0, depth - 1);
+      i = j; continue;
+    }
+    if (c === ';' && depth === 0) { push(i); i++; start = i; startLine = line; continue; }
+    i++;
+  }
+  push(n);
+  return out;
+}
+function splitUnits(sql) {
+  const batches = [];
+  let cur = [], curStart = 1;
+  sql.split('\n').forEach((ln, idx) => {
+    if (/^\s*GO(\s+\d+)?\s*(--.*)?\r?$/i.test(ln)) { batches.push({ text: cur.join('\n'), line: curStart }); cur = []; curStart = idx + 2; } else cur.push(ln);
+  });
+  batches.push({ text: cur.join('\n'), line: curStart });
+  const out = [];
+  batches.forEach((b) => splitBatch(b.text, b.line).forEach((u) => out.push(u)));
+  return out;
+}
+const firstWord = (bare) => { const m = /^\s*([A-Za-z_@#][\w@#$]*)/.exec(bare); return m ? m[1].toUpperCase() : ''; };
+function kindOf(bare) {
+  const w = firstWord(bare);
+  if (w === 'SELECT' || w === 'WITH') return 'query';
+  if (/^(INSERT|UPDATE|DELETE|MERGE)$/.test(w)) return 'dml';
+  if (/^(CREATE|ALTER|DROP|TRUNCATE|EXEC|EXECUTE|GRANT|REVOKE|DENY|SP_RENAME)$/.test(w)) return 'ddl';
+  return 'other';
+}
+const STARTERS = new Set('SELECT INSERT UPDATE DELETE MERGE CREATE ALTER DROP TRUNCATE EXEC EXECUTE DECLARE SET IF BEGIN WITH USE PRINT RAISERROR WHILE GRANT REVOKE DENY COMMIT ROLLBACK SAVE RETURN THROW BACKUP RESTORE DBCC KILL SHUTDOWN RECONFIGURE ENABLE DISABLE BULK OPEN CLOSE FETCH DEALLOCATE GOTO WAITFOR SP_RENAME'.split(' '));
+const DANGEROUS = /\b(DROP\s+DATABASE|ALTER\s+DATABASE|CREATE\s+DATABASE|BACKUP|RESTORE|DBCC|SHUTDOWN|RECONFIGURE|KILL|XP_CMDSHELL|SP_CONFIGURE|SP_ADDLINKEDSERVER|SP_OACREATE|OPENROWSET|OPENDATASOURCE|OPENQUERY|BULK\s+INSERT|CREATE\s+LOGIN|ALTER\s+LOGIN|DROP\s+LOGIN)\b/i;
+function analyze(sql) {
+  const units = splitUnits(sql);
+  const rows = [];
+  let err = 0, warn = 0;
+  const kinds = { ddl: false, dml: false, query: 0 };
+  units.forEach((u) => {
+    const b = u.bare, k = kindOf(b), w = firstWord(b), found = [];
+    u.kind = k;
+    if (k === 'ddl') kinds.ddl = true; else if (k === 'dml') kinds.dml = true; else if (k === 'query') kinds.query++;
+    const opens = (b.match(/\(/g) || []).length, closes = (b.match(/\)/g) || []).length;
+    if (w && !STARTERS.has(w) && w[0] !== '@' && w[0] !== '#') found.push([2, '', "语法检测失败: '" + w.toLowerCase() + "' 附近有语法错误。"]);
+    else if (opens !== closes) found.push([2, '', '语法检测失败: 括号不匹配，' + (opens > closes ? '缺少 )' : '多出 )') + '。']);
+    else {
+      const d = DANGEROUS.exec(b);
+      if (d) found.push([2, 'statement.dangerous', '危险语句：' + d[1].toUpperCase().replace(/\s+/g, ' ') + '（默认直接判错，不允许通过工单执行）']);
+      if ((w === 'UPDATE' || w === 'DELETE') && !/\bWHERE\b/i.test(b)) found.push([2, 'statement.where.require.update-delete', w + ' 没有 WHERE 条件，会改动整张表']);
+      if (/^\s*CREATE\s+TABLE\s+[^#@\s]/i.test(b) && !/PRIMARY\s+KEY/i.test(b)) found.push([2, 'table.require-pk', 'CREATE TABLE 没有主键']);
+      const noCount = b.replace(/COUNT\s*\(\s*\*\s*\)/ig, 'COUNT(1)');
+      if (/\bSELECT\s+(?:DISTINCT\s+|TOP\s*\(?\s*\d+\s*\)?\s+)*(?:\[?\w+\]?\.)?\*/i.test(noCount)) found.push([1, 'statement.select.no-select-all', '避免 SELECT *，请只列出需要的列']);
+      if (w === 'SELECT' && /\bFROM\b/i.test(b) && !/\bWHERE\b/i.test(b)) found.push([1, 'statement.where.require.select', 'SELECT 有 FROM 但没有 WHERE']);
+      if (/\bLIKE\s+N?'%/i.test(u.code)) found.push([1, 'statement.where.no-leading-wildcard-like', "LIKE 以通配符 '%' 开头，无法使用索引"]);
+      if (/^\s*INSERT\s+(?:INTO\s+)?[\w.\[\]#]+\s+(?:VALUES|SELECT)\b/i.test(b)) found.push([1, 'statement.insert.must-specify-column', 'INSERT 没有指定列名']);
+      if (w === 'USE') found.push([1, 'statement.disallow-use', '脚本里 USE 切库：目标库已在提交页选定，切库会让后续语句落到别的库']);
+      if (/\bDROP\s+TABLE\b|\bDROP\s+COLUMN\b|\bALTER\s+COLUMN\b|\bSP_RENAME\b/i.test(b)) found.push([1, 'schema.backward-compatibility', 'DROP TABLE / DROP COLUMN / ALTER COLUMN / sp_rename 破坏向后兼容，请确认没有应用还在使用']);
+      if (/\bALTER\s+COLUMN\b/i.test(b)) found.push([1, 'column.disallow-change-type', 'ALTER COLUMN 会修改列类型 / 长度 / 可空性']);
+      const add = /\bADD\s+(?:COLUMN\s+)?\[?(\w+)\]?\s+[\w]+(?:\s*\([^)]*\))?(\s+NOT\s+NULL|\s+NULL)?/i.exec(b);
+      if (/\bALTER\s+TABLE\b/i.test(b) && add && !/NOT\s+NULL/i.test(add[2] || '')) found.push([1, 'column.no-null', "列 '" + add[1] + "' 允许 NULL，建议显式 NOT NULL 并给默认值"]);
+      if (/\bADD\b[^;]*\bNOT\s+NULL\b/i.test(b) && !/\bDEFAULT\b/i.test(b) && /\bALTER\s+TABLE\b/i.test(b)) found.push([1, 'schema.backward-compatibility', '给已有表加 NOT NULL 列却没有 DEFAULT，旧代码插入会失败']);
+    }
+    if (!found.length) rows.push({ line: u.line, lv: 0, rule: '', msg: '', sql: u.disp });
+    found.forEach((f) => { rows.push({ line: u.line, lv: f[0], rule: f[1], msg: f[2], sql: u.disp }); if (f[0] === 2) err++; else warn++; });
+  });
+  if (units.length && kinds.query === units.length) {
+    rows.unshift({ line: units[0].line, lv: 2, rule: '', msg: '站点规则：所有语句都是只读查询，不能提交上线工单（请改用在线查询）', sql: units[0].disp });
+    err++;
+  }
+  rows.forEach((r, i) => { r.no = i + 1; });
+  return { units, rows, err, warn, kinds };
+}
+
+/* ====================================================================== 预检（每个实例） */
+const sameDb = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+function precheckOne(inst, db, kinds, withExt) {
+  const r = { conn: { s: 'ok', t: '通过' }, db: { s: 'na', t: '' }, ro: { s: 'off', t: '' }, perm: { s: 'off', t: '' }, ok: true, notes: [], fails: [] };
+  if (inst.flags.noConn) {
+    r.conn = { s: 'fail', t: '无法连接' };
+    r.fails.push('无法连接：dial tcp ' + inst.addr + ': i/o timeout（超时 10 秒）');
+    r.ok = false;
+    if (withExt) { r.ro = { s: 'na', t: '' }; r.perm = { s: 'na', t: '' }; }
+    return r;
+  }
+  const dbs = dbsOf(inst);
+  const hit = dbs.find((d) => sameDb(d, db));
+  if (!hit) {
+    r.db = { s: 'fail', t: '不存在' };
+    r.fails.push('没有找到数据库 ' + db + '（该实例的库：' + dbs.join('、') + '）');
+    r.ok = false;
+  } else {
+    r.db = { s: 'ok', t: '存在' };
+    if (hit !== db) r.notes.push('库名大小写不同：实例上是 ' + hit + '，预检不区分大小写');
+  }
+  if (withExt) {
+    if (!hit) { r.ro = { s: 'na', t: '' }; r.perm = { s: 'na', t: '' }; return r; }
+    if (inst.flags.readonly && sameDb(hit, dbsOf(inst)[0])) {
+      r.ro = { s: 'fail', t: '只读' };
+      r.fails.push('库 ' + hit + ' 当前是只读（READ_ONLY）：执行时会被拒绝「库 ' + hit + ' 是只读的，禁止执行变更语句」');
+      r.ok = false;
+    } else r.ro = { s: 'ok', t: '可写' };
+    const needDdl = kinds.ddl, needDml = kinds.dml;
+    if (needDdl && inst.flags.noDdl) {
+      r.perm = { s: 'fail', t: '缺 DDL' };
+      r.fails.push('账号 ' + ACCOUNT + ' 在库 ' + hit + ' 缺少 ALTER / CREATE 权限（本单含 DDL 语句）');
+      r.ok = false;
+    } else r.perm = { s: 'ok', t: needDdl || needDml ? '足够' : '无需写权限' };
+  }
+  return r;
+}
+
+/* ====================================================================== 提交页 */
+function targetIds() { return S.form.mode === 'batch' ? S.form.sel.slice() : (S.form.single ? [S.form.single] : []); }
+function formKey() { return JSON.stringify([targetIds(), S.form.db, S.form.sql, S.form.mode, S.form.group, S.sug.precheck]); }
+function isStale() { return !!(S.check && S.check.key !== formKey()); }
+function checkValid() {
+  const c = S.check;
+  if (!c || c.running || isStale() || c.an.err > 0) return false;
+  if (c.pre && c.pre.some((p) => !p.r.ok)) return false;
+  return true;
+}
+function visibleInsts() {
+  const ts = (S.form.q || '').toLowerCase().split(/[\s,，]+/).filter(Boolean);
+  return curGroup().ids.map((id) => BY_ID[id]).filter(isBatchable).filter((i) => {
+    if (S.form.env && i.env !== S.form.env) return false;
+    if (S.form.role && i.role !== S.form.role) return false;
+    if (!ts.length) return true;
+    const hay = (i.name + ' ' + i.addr + ' ' + ENV_LABEL[i.env] + ' ' + i.role + ' ' + BIZ[i.biz].label).toLowerCase();
+    return ts.every((t) => hay.includes(t));
+  });
+}
+function batchReason() {
+  if (!perm().batchSubmit) return '缺少权限 sqlbatch_submit，不能提交批量上线工单。';
+  if (!curGroup().ids.some((id) => isBatchable(BY_ID[id]))) return '该资源组下没有可批量上线的 SQL Server 实例（批量上线只支持 SQL Server，且实例要带 can_write 标签）。';
+  return '';
+}
+function renderMode() {
+  const why = batchReason();
+  if (why && S.form.mode === 'batch') S.form.mode = 'single';
+  const b = S.form.mode === 'batch';
+  $('m-batch').setAttribute('aria-pressed', String(b));
+  $('m-single').setAttribute('aria-pressed', String(!b));
+  $('m-batch').setAttribute('aria-disabled', why ? 'true' : 'false');
+  $('m-batch').title = why;
+  $('mode-hint').textContent = why;
+  $('mode-hint').className = 'hint' + (why ? ' bad' : '');
+  $('w-single').hidden = b;
+  $('c-picker').hidden = !b;
+  $('c-canary').hidden = !b;
+  $('c-pre').hidden = !b || !S.check;
+  $('perm-line').textContent = '当前身份：' + perm().user + '（' + (perm().batchSubmit ? 'sql_submit + sqlbatch_submit' : '只有 sql_submit，没有 sqlbatch_submit') + '；' + (perm().execute ? '有执行权限' : '没有执行权限') + '）';
+  const g = curGroup();
+  const single = g.ids.map((id) => BY_ID[id]);
+  mount($('f-inst'), single.map((i) => h('option', { value: String(i.id), text: i.name + '（' + (i.type === 'mssql' ? 'mssql' : 'mysql') + '）' })));
+  if (!single.some((i) => i.id === S.form.single)) S.form.single = single[0] ? single[0].id : 0;
+  $('f-inst').value = String(S.form.single);
+  $('b-submit').textContent = b ? '提交批量工单' : '提交工单';
+}
+function refreshDb(announce) {
+  const first = S.form.mode === 'batch' ? S.form.sel[0] : S.form.single;
+  const inst = BY_ID[first];
+  const dbs = inst ? dbsOf(inst) : [];
+  S.dbOwner = first || null;
+  const keep = S.form.db;
+  const found = dbs.find((d) => d === keep) || dbs.find((d) => sameDb(d, keep));
+  const prev = S.form.db;
+  S.form.db = found || (dbs.length ? dbs[0] : '');
+  if (S.form.mode === 'batch' && inst && announce && prev && prev !== S.form.db) toast('主实例变为 ' + inst.name + '，目标库清单已按它刷新，库改为 ' + S.form.db, 'warn');
+  mount($('f-db'), dbs.length ? dbs.map((d) => h('option', { value: d, text: d })) : h('option', { value: '', text: S.form.mode === 'batch' ? '先在下方选择实例' : '' }));
+  $('f-db').value = S.form.db;
+  $('db-src').textContent = S.form.mode === 'batch' ? '（取自主实例）' : '';
+}
+function chipGroup(box, items, cur, onPick) {
+  mount(box, items.map((it) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(cur === it[0]), onclick: () => onPick(it[0]) }, it[1])));
+}
+function renderPicker() {
+  if (S.form.mode !== 'batch') return;
+  const vis = visibleInsts();
+  const selSet = new Set(S.form.sel);
+  chipGroup($('p-env'), [['', '全部环境'], ['prod', '生产'], ['pre', '预发'], ['test', '测试']], S.form.env, (v) => { S.form.env = v; renderPicker(); });
+  chipGroup($('p-role'), [['', '全部角色'], ['主库', '主库'], ['单机', '单机']], S.form.role, (v) => { S.form.role = v; renderPicker(); });
+  const lst = $('p-list');
+  const sc = lst.scrollTop;
+  mount(lst, vis.length ? vis.map((i) => h('label', { class: 'prow' + (selSet.has(i.id) ? ' sel' : '') },
+    h('input', { type: 'checkbox', checked: selSet.has(i.id), 'aria-label': '选择 ' + i.name, onchange: (e) => toggleSel(i.id, e.target) }),
+    h('span', { class: 'nm mono' }, i.name),
+    h('span', { class: 'badge ' + (i.env === 'prod' ? 'crit' : i.env === 'pre' ? 'warn' : '') }, ENV_LABEL[i.env]),
+    h('span', { class: 'badge' }, i.role),
+    h('span', { class: 'ad mono hide-narrow' }, i.addr))) : h('div', { class: 'empty' }, '没有符合筛选条件的实例'));
+  lst.scrollTop = sc;
+  $('p-count').textContent = '当前结果 ' + vis.length + ' 个 · 已选 ' + S.form.sel.length + ' / ' + MAX_BATCH;
+  $('s-count').textContent = '已选 ' + S.form.sel.length + ' / ' + MAX_BATCH;
+  const sl = $('s-list');
+  mount(sl, S.form.sel.length ? S.form.sel.map((id, idx) => {
+    const i = BY_ID[id];
+    const row = h('div', { class: 'prow', role: 'listitem', draggable: true, 'data-sel': String(id) },
+      h('span', { class: 'grab', 'aria-hidden': 'true' }, '⠿'),
+      h('span', { class: 'ord' }, String(idx + 1)),
+      h('span', { class: 'nm mono' }, i.name, idx === 0 ? [' ', h('span', { class: 'badge info' }, '主实例')] : null),
+      h('span', { class: 'acts' },
+        idx > 0 ? h('button', { type: 'button', class: 'btn sm wide', title: '设为主实例（移到第一位）', 'aria-label': '把 ' + i.name + ' 设为主实例', onclick: () => moveSel(idx, 0, id, 'top') }, '置顶') : null,
+        h('button', { type: 'button', class: 'btn sm', title: '上移', 'aria-label': '上移 ' + i.name, disabled: idx === 0, onclick: () => moveSel(idx, idx - 1, id, 'up') }, '▲'),
+        h('button', { type: 'button', class: 'btn sm', title: '下移', 'aria-label': '下移 ' + i.name, disabled: idx === S.form.sel.length - 1, onclick: () => moveSel(idx, idx + 1, id, 'down') }, '▼'),
+        h('button', { type: 'button', class: 'btn sm danger', title: '移出', 'aria-label': '移出 ' + i.name, onclick: () => { removeSel(id); } }, '✕')));
+    row.addEventListener('dragstart', (e) => { S.drag = idx; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(idx)); });
+    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('over'));
+    row.addEventListener('drop', (e) => { e.preventDefault(); row.classList.remove('over'); if (S.drag >= 0 && S.drag !== idx) moveSel(S.drag, idx, S.form.sel[S.drag], null); S.drag = -1; });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); S.drag = -1; });
+    return row;
+  }) : h('div', { class: 'empty' }, '还没有选择实例'));
+  const g = curGroup();
+  const nonBatch = g.ids.map((id) => BY_ID[id]).filter((i) => !isBatchable(i));
+  const items = g.unlisted.concat(nonBatch.map((i) => [i.name, i.type === 'mysql' ? 'MySQL：批量上线只支持 SQL Server' : '不可批量']));
+  $('p-unl').hidden = !items.length;
+  $('p-unl-sum').textContent = '另有 ' + items.length + ' 个实例不能批量上线';
+  mount($('p-unl-list'), items.map((x) => h('li', null, h('span', { class: 'mono' }, x[0]), '：' + x[1])));
+}
+function afterSel(announce) {
+  const first = S.form.sel[0] || null;
+  if (first !== S.dbOwner) refreshDb(announce);
+  renderPicker();
+  renderFlow();
+  renderCheck();
+  renderSubbar();
+}
+function toggleSel(id, cb) {
+  const k = S.form.sel.indexOf(id);
+  if (k >= 0) S.form.sel.splice(k, 1);
+  else if (S.form.sel.length >= MAX_BATCH) { cb.checked = false; toast('已达上限 ' + MAX_BATCH + ' 个实例，请先移出一些再选', 'warn'); return; } else S.form.sel.push(id);
+  afterSel(true);
+}
+function removeSel(id) { const k = S.form.sel.indexOf(id); if (k >= 0) S.form.sel.splice(k, 1); afterSel(true); }
+function moveSel(from, to, id, dir) {
+  if (to < 0 || to >= S.form.sel.length) return;
+  const [x] = S.form.sel.splice(from, 1);
+  S.form.sel.splice(to, 0, x);
+  afterSel(true);
+  if (dir) {
+    const sel = '#s-list [data-sel="' + id + '"] .acts button[title="' + (dir === 'top' ? '设为主实例（移到第一位）' : dir === 'up' ? '上移' : '下移') + '"]';
+    const b = document.querySelector(sel) || document.querySelector('#s-list [data-sel="' + id + '"] .acts button:not(:disabled)');
+    if (b) b.focus();
+  }
+}
+function addMany(ids) {
+  let added = 0, capped = 0;
+  ids.forEach((id) => {
+    if (S.form.sel.includes(id)) return;
+    if (S.form.sel.length >= MAX_BATCH) { capped++; return; }
+    S.form.sel.push(id); added++;
+  });
+  return { added, capped };
+}
+function renderFlow() {
+  const g = curGroup();
+  mount($('flow-list'),
+    h('li', { class: 'done' }, h('span', { class: 'dot' }), h('div', null, h('b', null, '提交'), h('div', { class: 'muted' }, perm().user + '（提交人）'))),
+    g.flow.map((st) => h('li', { class: st[1] === null ? 'bad' : 'pending' }, h('span', { class: 'dot' }),
+      h('div', null, h('b', null, st[0]), h('div', { class: st[1] === null ? '' : 'muted', style: st[1] === null ? 'color:var(--dt-crit)' : null },
+        st[1] === null ? '本级没有符合条件的审批人，只有超级用户能审批。' : st[1])))),
+    h('li', { class: 'pending' }, h('span', { class: 'dot' }), h('div', null, h('b', null, '执行'), h('div', { class: 'muted' }, '资源组执行人，或提交人本人（需 sql_execute）'))));
+}
+function renderEditorMeta() {
+  const lines = S.form.sql.split('\n').length;
+  $('e-gutter').hidden = !S.form.lineno;
+  $('e-gutter').textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+  $('e-gutter').scrollTop = $('f-sql').scrollTop;
+  const u = splitUnits(S.form.sql).length;
+  $('e-meta').textContent = lines + ' 行 · ' + u + ' 个执行单元';
+}
+function renderCheck() {
+  const c = S.check;
+  const batch = S.form.mode === 'batch';
+  $('c-check').hidden = !c;
+  $('c-pre').hidden = !c || !batch;
+  $('sg-pre').checked = S.sug.precheck;
+  $('sg-canary').checked = S.sug.canary;
+  $('pre-onlyfail').checked = S.form.preOnlyFail;
+  if (!c) return;
+  const stale = isStale();
+  const first = BY_ID[c.ids[0]];
+  $('chk-title').textContent = batch ? '① 语法与规则检查（只在第一个实例 ' + (first ? first.name : '') + ' 上做）' : '语法与规则检查';
+  $('chk-sum').textContent = '类型：' + (first && first.type === 'mysql' ? 'MySQL（goInception，原型示意）' : 'SQL Server') + '　警告 ' + c.an.warn + '　错误 ' + c.an.err;
+  mount($('chk-notice'),
+    stale ? h('div', { class: 'banner warn', role: 'alert', style: 'margin-bottom:10px' }, h('span', { class: 'ic' }, '⚠'), h('div', null, h('b', { class: 't' }, '以下结果已过期'), '实例、目标库或 SQL 在检查之后变更过，需要重新检查才能提交。')) : null,
+    first && first.flags.noConn ? h('div', { class: 'banner warn', style: 'margin-bottom:10px' }, h('span', { class: 'ic' }, '⚠'), h('div', null, '未能连接首个实例，服务端 PARSEONLY 语法检查没有执行，只做了本地解析（语法错误降为“待确认”）。')) : null);
+  const tb = $('chk-table').tBodies[0];
+  mount(tb, c.an.rows.length ? c.an.rows.map((r) => h('tr', { class: r.lv === 2 ? 'lv-err' : r.lv === 1 ? 'lv-warn' : '' },
+    h('td', { class: 'num' }, r.no), h('td', { class: 'num' }, r.line),
+    h('td', null, r.lv === 2 ? h('span', { class: 'badge crit' }, '错误') : r.lv === 1 ? h('span', { class: 'badge warn' }, '警告') : h('span', { class: 'badge ok' }, '通过')),
+    h('td', { class: 'mono wrap' }, r.rule), h('td', { class: 'wrap' }, r.msg), h('td', { class: 'mono wrap' }, r.sql.length > 110 ? r.sql.slice(0, 110) + '…' : r.sql))) : h('tr', null, h('td', { colSpan: 6, class: 'empty' }, '没有语句')));
+  if (!batch) return;
+  // ---- 预检矩阵 ----
+  const ext = S.sug.precheck;
+  const sel = new Set(S.form.sel);
+  const pre = c.pre;
+  const bad = pre ? pre.filter((p) => !p.r.ok) : [];
+  $('pre-sum').textContent = c.running ? '预检中 ' + c.done + ' / ' + c.ids.length + '…' : pre ? '共 ' + pre.length + ' 个实例：通过 ' + (pre.length - bad.length) + '，失败 ' + bad.length : '';
+  mount($('pre-banner'),
+    c.running ? h('div', { class: 'banner info' }, h('span', { class: 'ic' }, '⏳'), h('div', null, h('b', { class: 't' }, '正在预检每个实例'), '已完成 ' + c.done + ' / ' + c.ids.length + '。')) : null,
+    pre && bad.length ? h('div', { class: 'banner crit', role: 'alert' }, h('span', { class: 'ic' }, '✕'), h('div', null,
+      h('b', { class: 't' }, bad.length + ' 个实例预检失败，整张工单不能提交'),
+      '失败实例：' + bad.slice(0, 6).map((p) => BY_ID[p.id].name).join('、') + (bad.length > 6 ? ' 等 ' + bad.length + ' 个' : '') + '。')) : null,
+    pre && !bad.length && !c.running ? h('div', { class: 'banner ok' }, h('span', { class: 'ic' }, '✓'), h('div', null, '全部 ' + pre.length + ' 个实例预检通过' + (ext ? '（含库只读 / 账号权限）' : '（连接 / 库存在）') + '。')) : null);
+  const cell = (x) => h('td', null, h('span', { class: 'pc ' + x.s }, x.s === 'ok' ? '✓ ' + x.t : x.s === 'fail' ? '✕ ' + x.t : x.s === 'na' ? '— 未检查' : '未启用'));
+  const rows = (pre || []).filter((p) => !S.form.preOnlyFail || !p.r.ok);
+  mount($('pre-table').tBodies[0], rows.length ? rows.map((p) => {
+    const i = BY_ID[p.id];
+    const r = p.r;
+    const gone = !sel.has(p.id);
+    return h('tr', { class: (r.ok ? '' : 'row-fail') + (gone ? ' row-stale' : '') },
+      h('td', { class: 'num' }, p.idx + 1),
+      h('td', null, h('span', { class: 'mono wrap' }, i.name), p.idx === 0 ? [' ', h('span', { class: 'badge info' }, '主实例')] : null, gone ? [' ', h('span', { class: 'badge' }, '已移出选择')] : null),
+      h('td', { class: 'hide-narrow' }, h('span', { class: 'badge ' + (i.env === 'prod' ? 'crit' : i.env === 'pre' ? 'warn' : '') }, ENV_LABEL[i.env]), ' ', h('span', { class: 'badge' }, i.role)),
+      cell(r.conn), cell(r.db),
+      ext ? cell(r.ro) : cell({ s: 'off' }), ext ? cell(r.perm) : cell({ s: 'off' }),
+      h('td', { class: 'wrap' }, r.fails.length ? h('span', { style: 'color:var(--dt-crit)' }, r.fails.join('；')) : null, r.notes.length ? h('span', { class: 'muted' }, (r.fails.length ? '；' : '') + r.notes.join('；')) : null),
+      h('td', null, !gone ? h('button', { type: 'button', class: 'btn sm', 'aria-label': '把 ' + i.name + ' 移出选择', onclick: () => { removeSel(p.id); toast('已移出 ' + i.name + '，需要重新检查', 'warn'); } }, '移出') : null));
+  }) : h('tr', null, h('td', { colSpan: 9, class: 'empty' }, c.running ? '预检进行中…' : S.form.preOnlyFail ? '没有失败的实例' : '没有结果')));
+}
+function renderSubbar() {
+  const c = S.check;
+  const ids = targetIds();
+  let t = '', bad = false;
+  if (!ids.length) t = S.form.mode === 'batch' ? '请先勾选要上线的实例，然后检查 SQL。' : '请先选择目标实例。';
+  else if (!c) t = '尚未检查，检查通过后才能提交。';
+  else if (c.running) t = '正在预检各实例，请稍候…';
+  else if (isStale()) t = '实例 / 目标库 / SQL / 预检选项已变更，之前的检查结果作废，请重新检查。';
+  else if (c.an.err > 0) { t = '提交已禁用：语法 / 规则检查有 ' + c.an.err + ' 个错误，请修改 SQL 后重新检查。'; bad = true; }
+  else if (c.pre && c.pre.some((p) => !p.r.ok)) { const n = c.pre.filter((p) => !p.r.ok).length; t = '提交已禁用：有 ' + n + ' 个实例预检失败，整张工单不能提交（见上表）。'; bad = true; }
+  else t = '检查通过' + (c.an.warn ? '（' + c.an.warn + ' 条警告，不影响提交）' : '') + '，可以提交。';
+  const el = $('sub-hint');
+  el.textContent = t;
+  el.className = 'hint' + (bad ? ' bad' : '');
+  $('b-submit').disabled = !checkValid();
+  $('b-check').disabled = !!(c && c.running);
+}
+function runCheck() {
+  const ids = targetIds();
+  if (!ids.length) { toast(S.form.mode === 'batch' ? '请先勾选要上线的实例' : '请先选择目标实例', 'warn'); return; }
+  if (!S.form.db) { toast('请先选择数据库', 'warn'); return; }
+  if (!S.form.sql.trim()) { toast('请先填写 SQL', 'warn'); return; }
+  const an = analyze(S.form.sql);
+  const run = ++S.checkRun;
+  const c = { key: formKey(), ids, an, pre: null, running: S.form.mode === 'batch', done: 0 };
+  S.check = c;
+  renderCheck(); renderSubbar();
+  if (S.form.mode !== 'batch') { c.running = false; renderCheck(); renderSubbar(); return; }
+  const res = [];
+  const step = () => {
+    if (run !== S.checkRun || S.check !== c) return;
+    const from = c.done;
+    for (let k = from; k < Math.min(from + 8, ids.length); k++) res.push({ id: ids[k], idx: k, r: precheckOne(BY_ID[ids[k]], S.form.db, an.kinds, S.sug.precheck) });
+    c.done = Math.min(from + 8, ids.length);
+    if (c.done >= ids.length) { c.pre = res; c.running = false; renderCheck(); renderSubbar(); $('c-pre').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+    renderCheck(); renderSubbar();
+    later(step, 110);
+  };
+  later(step, 120);
+}
+function invalidate() { if (S.check && S.check.running && S.check.key !== formKey()) { S.checkRun++; S.check.running = false; S.check.pre = null; } renderCheck(); renderSubbar(); }
+function loadExample() {
+  S.form = freshForm();
+  S.form.name = 'OrderDB 订单表增加 remark 列与索引';
+  S.form.sel = [1, 2, 3, 4, 5, 6, 7, 8];
+  S.check = null; S.checkRun++;
+  syncForm();
+  toast('已载入示例：8 个订单库实例和一段规范 SQL');
+}
+function syncForm() {
+  $('f-name').value = S.form.name; $('f-group').value = S.form.group; $('f-url').value = S.form.url;
+  $('f-start').value = S.form.start; $('f-end').value = S.form.end; $('f-sched').value = S.form.sched; $('f-remark').value = S.form.remark;
+  $('f-sql').value = S.form.sql; $('e-lineno').checked = S.form.lineno; $('p-q').value = S.form.q;
+  renderMode(); refreshDb(false); renderPicker(); renderFlow(); renderEditorMeta(); renderCheck(); renderSubbar();
+}
+function submitOrder() {
+  if (!checkValid()) { toast('请先检查并通过后再提交', 'warn'); return; }
+  const name = S.form.name.trim();
+  if (!name) { toast('请填写工单名称', 'warn'); $('f-name').focus(); return; }
+  const ids = targetIds();
+  const o = makeOrder({
+    id: S.nextId++, name, user: perm().user, group: curGroup().name, db: S.form.db, sql: S.form.sql, instIds: ids, batch: S.form.mode === 'batch',
+    status: 'review', canary: S.form.mode === 'batch' && S.sug.canary, sched: S.form.sched, start: S.form.start, end: S.form.end, remark: S.form.remark, url: S.form.url,
+  });
+  addLog(o, o.user, '提交工单', o.batch ? '批量上线，共 ' + ids.length + ' 个实例，主实例 ' + BY_ID[ids[0]].name + '，库 ' + o.db + (o.canary ? '；灰度先行（新增建议）' : '') : '实例 ' + BY_ID[ids[0]].name + '，库 ' + o.db);
+  S.orders.unshift(o);
+  S.cur = o.id;
+  S.check = null; S.checkRun++;
+  go('detail');
+  toast('工单 #' + o.id + ' 已提交，进入审批流程');
+}
+
+/* ====================================================================== 工单模型与模拟执行 */
+function makeOrder(p) {
+  const o = Object.assign({ canary: false, sched: '', start: '', end: '', remark: '', url: '', logs: [], apr: 0, workers: 0, retrying: null, finish: '', created: nowStr(), plan: null }, p);
+  o.units = analyze(o.sql).units;
+  o.insts = o.instIds.map((id, k) => ({ id, name: BY_ID[id] ? BY_ID[id].name : '(未知 id:' + id + ')', primary: k === 0, st: 'idle', rows: [], elapsed: 0, note: '', committed: 0, deleted: false, reason: '', retry: false, waitCanary: false }));
+  return o;
+}
+function addLog(o, who, type, info) { o.logs.push({ t: nowStr(), who, type, info }); }
+function counts(o) {
+  const c = { ok: 0, fail: 0, closed: 0, running: 0, queued: 0, held: 0, idle: 0, total: o.insts.length };
+  o.insts.forEach((i) => { c[i.st]++; });
+  c.done = c.ok + c.fail + c.closed;
+  return c;
+}
+// 与 internal/sqlflow/batch.go refreshBatch 一致：没有待处理的失败实例、且至少有一个实例真的成功，才算正常结束；全部关闭时不置为成功。
+function deriveStatus(o) {
+  const c = counts(o);
+  if (c.held > 0) return 'exception';
+  return c.fail === 0 && c.ok > 0 ? 'finish' : 'exception';
+}
+// 与 batch.go summaryRow 一致的汇总文案
+function summaryText(o) {
+  const ok = [], fail = [], closed = [];
+  o.insts.forEach((i) => { if (i.st === 'closed') closed.push(i.name); else if (i.st === 'fail') fail.push(i.name); else if (i.st === 'ok') ok.push(i.name); });
+  const total = ok.length + fail.length + closed.length;
+  let m = '批量执行汇总：共 ' + total + ' 个实例，成功 ' + ok.length + ' 个，失败 ' + fail.length + ' 个，已关闭 ' + closed.length + ' 个。';
+  if (fail.length) m += '失败实例（' + fail.join('、') + '）待重试或关闭。';
+  if (closed.length) m += '已关闭实例（' + closed.join('、') + '）不计入工单成败，需人工确认处理。';
+  if (!fail.length && ok.length) m += '剩余实例均已执行成功。';
+  else if (fail.length && ok.length) m += '注意：已有 ' + ok.length + ' 个实例的变更已生效，失败实例与其余实例状态不一致，请人工核对。';
+  return m;
+}
+const hasPrint = (o) => /\bPRINT\b/i.test(strip(o.sql, false));
+function tableOf(u) {
+  if (!u) return '';
+  const b = u.bare;
+  const m = /\bALTER\s+TABLE\s+([\w.\[\]#]+)/i.exec(b) || /\bON\s+([\w.\[\]#]+)/i.exec(b) || /\bUPDATE\s+([\w.\[\]#]+)/i.exec(b) || /\bDELETE\s+(?:FROM\s+)?([\w.\[\]#]+)/i.exec(b) || /\bINSERT\s+(?:INTO\s+)?([\w.\[\]#]+)/i.exec(b);
+  return m ? m[1].replace(/[\[\]]/g, '') : '';
+}
+const INSTANCE_LEVEL = { readonly: 1, conn: 1, deleted: 1 };
+function reasonMsg(key, o, inst, u) {
+  const tbl = tableOf(u) || 'dbo.Orders';
+  const short = tbl.split('.').pop();
+  switch (key) {
+    case 'readonly': return '执行失败：库 ' + o.db + ' 是只读的，禁止执行变更语句';
+    case 'conn': return '连接实例失败：dial tcp ' + (BY_ID[inst.id] ? BY_ID[inst.id].addr : '') + ': i/o timeout';
+    case 'deleted': return '实例(id:' + inst.id + ')已不存在，跳过执行。';
+    case 'timeout': return '超过了锁请求超时时段。(Error 1222)';
+    case 'deadlock': return '事务(进程 ID ' + (50 + Math.floor(hash(inst.id, 9) * 80)) + ')与另一个进程被死锁在 锁 资源上，并且已被选作死锁牺牲品。请重新运行该事务。(Error 1205)';
+    case 'perm': return "拒绝了对对象 '" + short + "'(数据库 '" + o.db + "'，架构 'dbo')的 ALTER 权限。(Error 262)";
+    case 'dup': case 'dupfirst': {
+      const idx = u && /\bCREATE\s+(?:UNIQUE\s+)?(?:(?:NON)?CLUSTERED\s+)?INDEX\s+\[?(\w+)\]?/i.exec(u.bare);
+      const add = u && /\bADD\s+(?:COLUMN\s+)?\[?(\w+)\]?/i.exec(u.bare);
+      if (idx) return "已存在名为 '" + idx[1] + "' 的索引或统计信息（表 '" + tbl + "'）。(Error 1913)";
+      if (add) return '每个表中的列名必须唯一。表 \'' + tbl + "' 中的列名 '" + add[1] + "' 被多次指定。(Error 2705)";
+      return "数据库中已存在名为 '" + short + "' 的对象。(Error 2714)";
+    }
+    case 'print': { const m = u && /PRINT\s+N?'([^']*)'/i.exec(u.code); return (m ? m[1] : 'PRINT 输出') + '（收到 PRINT 消息，按失败处理，本单元已回滚）'; }
+    default: return '执行失败';
+  }
+}
+function pickFailUnit(o, key) {
+  const k = o.units.map((u) => kindOf(u.bare));
+  const first = (x) => k.indexOf(x);
+  switch (key) {
+    case 'dup': { const ddl = k.filter((x) => x === 'ddl').length; return ddl >= 2 ? k.lastIndexOf('ddl') : Math.max(0, first('ddl')); }
+    case 'dupfirst': return Math.max(0, first('ddl'));
+    case 'perm': return first('ddl') >= 0 ? first('ddl') : Math.max(0, first('dml'));
+    case 'timeout': case 'deadlock': return first('dml') >= 0 ? first('dml') : o.units.length - 1;
+    case 'print': { const p = o.units.findIndex((u) => /\bPRINT\b/i.test(u.bare)); return Math.max(0, p); }
+    default: return 0;
+  }
+}
+function unitTime(id, i, kind) {
+  const r = hash(id, i + 11);
+  return kind === 'ddl' ? 0.2 + r * 1.6 : kind === 'dml' ? 0.05 + r * 2.8 : 0.01 + r * 0.3;
+}
+// 每个实例的逐条语句结果：第一行 USE [库]；失败即停，其后记“前序语句失败, 未执行”；实例级失败（只读 / 连不上 / 已删除）只有一行。
+function buildRows(o, inst, res) {
+  const rows = [];
+  let elapsed = 0, aff = 0, committed = 0;
+  const push = (r) => { r.n = rows.length + 1; rows.push(r); };
+  if (res.fail && INSTANCE_LEVEL[res.fail]) {
+    const msg = reasonMsg(res.fail, o, inst, null);
+    push({ stage: 'Execute failed', status: '异常终止', lv: 2, msg, sql: strip(o.sql, true).replace(/\s+/g, ' ').trim(), aff: 0, time: '0.000' });
+    return { rows, elapsed: 0, committed: 0, note: msg };
+  }
+  push({ stage: 'EXECUTED', status: 'Execute Successfully', lv: 0, msg: '', sql: 'USE [' + o.db + ']', aff: 0, time: '0.000' });
+  const failAt = res.fail ? pickFailUnit(o, res.fail) : -1;
+  let firstErr = '';
+  o.units.forEach((u, i) => {
+    if (failAt >= 0 && i > failAt) { push({ stage: 'CHECKED', status: 'Audit completed', lv: 'skip', msg: '前序语句失败, 未执行', sql: u.disp, aff: 0, time: '0' }); return; }
+    if (i === failAt) {
+      const t = res.fail === 'timeout' ? 15.002 : 0.012 + hash(inst.id, i) * 0.05;
+      elapsed += t;
+      firstErr = reasonMsg(res.fail, o, inst, u);
+      push({ stage: 'EXECUTED', status: 'Execute failed', lv: 2, msg: firstErr, sql: u.disp, aff: 0, time: t.toFixed(3) });
+      return;
+    }
+    const k = kindOf(u.bare);
+    const t = unitTime(inst.id, i, k);
+    const a = k === 'dml' || k === 'query' ? 20 + Math.floor(hash(inst.id, i + 3) * 4800) : 0;
+    elapsed += t; aff += a; committed++;
+    push({ stage: 'EXECUTED', status: 'Execute Successfully', lv: 0, msg: k === 'query' ? '查询返回 ' + a + ' 行' : '', sql: u.disp, aff: a, time: t.toFixed(3) });
+  });
+  return { rows, elapsed, committed, note: res.fail ? firstErr : o.units.length + ' 条语句，影响 ' + aff + ' 行' };
+}
+function applyResult(o, inst, res) {
+  const b = buildRows(o, inst, res);
+  inst.rows = b.rows; inst.elapsed = b.elapsed; inst.note = b.note; inst.committed = b.committed;
+  inst.reason = res.ok ? '' : res.fail; inst.st = res.ok ? 'ok' : 'fail'; inst.retry = false; inst.waitCanary = false;
+}
+function flaggedReason(o, i) {
+  const f = BY_ID[i.id] && BY_ID[i.id].flags;
+  if (!f) return '';
+  if (f.readonly) return 'readonly';
+  if (f.noDdl && o.units.some((u) => kindOf(u.bare) === 'ddl')) return 'perm';
+  return '';
+}
+// 本次执行的剧本：由“模拟结局”决定哪些实例失败、为什么失败。带故障标记的实例（只读库、缺 DDL 权限）优先失败。
+function makePlan(o) {
+  const out = {};
+  const L = o.insts, n = L.length;
+  L.forEach((i) => { out[i.id] = { ok: true }; });
+  const mode = S.demo.outcome;
+  if (mode === 'success') return out;
+  const cyc = ['dup', 'timeout', 'deadlock', 'perm'];
+  if (hasPrint(o)) cyc.unshift('print');
+  let ci = 0;
+  if (mode === 'deleted') {
+    const idx = n > 1 ? [1] : [0];
+    if (n >= 5) idx.push(n - 2);
+    idx.forEach((k) => { out[L[k].id] = { ok: false, fail: 'deleted' }; });
+    return out;
+  }
+  if (mode === 'allfail') { L.forEach((i) => { out[i.id] = { ok: false, fail: flaggedReason(o, i) || cyc[ci++ % cyc.length] }; }); return out; }
+  const fails = [];
+  L.forEach((i, k) => { const f = flaggedReason(o, i); if (f) { out[i.id] = { ok: false, fail: f }; fails.push(k); } });
+  const want = Math.min(n - 1, Math.max(n >= 5 ? 3 : 2, Math.round(n * 0.2))); // 至少留一个成功；5 个以上时保证有一个“中途失败”的实例
+  for (let k = 2; k < n && fails.length < want; k += 3) {
+    if (!fails.includes(k)) { out[L[k].id] = { ok: false, fail: cyc[ci++ % cyc.length] }; fails.push(k); }
+  }
+  if (!fails.length) out[L[n - 1].id] = { ok: false, fail: 'timeout' };
+  return out;
+}
+// 重试的结果：选“成功”表示原因已被处理；选“仍然失败”时，原因没变就报同一个错；
+// 前序语句已经提交的实例，重试会先在第一条 DDL 上撞“对象已存在”（重试 = 重新执行整段 SQL）。
+function retryResult(inst) {
+  if (S.demo.retry === 'ok') return { ok: true };
+  if (inst.reason === 'readonly' || inst.reason === 'conn') return { ok: false, fail: inst.reason };
+  if (inst.committed > 0) return { ok: false, fail: 'dupfirst' };
+  return { ok: false, fail: inst.reason || 'timeout' };
+}
+function markDeleted(o, i) {
+  i.deleted = true; i.name = '(已删除 id:' + i.id + ')';
+  applyResult(o, i, { ok: false, fail: 'deleted' });
+}
+function runPool(o, list, mode, done) {
+  const W = Math.max(1, Math.min(S.demo.workers, 16, list.length));
+  let next = 0, active = 0, fin = 0;
+  const total = list.length;
+  if (!total) { done(); return; }
+  list.forEach((i) => { i.st = 'queued'; i.retry = mode === 'retry'; });
+  const pump = () => {
+    while (active < W && next < total) {
+      const inst = list[next++];
+      active++;
+      inst.st = 'running';
+      refresh();
+      later(() => {
+        if (mode === 'exec') applyResult(o, inst, o.plan[inst.id]);
+        else applyResult(o, inst, retryResult(inst));
+        active--; fin++;
+        refresh();
+        if (fin === total) done(); else pump();
+      }, 520 + hash(inst.id, 5) * 900);
+    }
+  };
+  pump();
+}
+function startExec(o, how) {
+  o.status = 'queuing';
+  o.plan = makePlan(o);
+  o.workers = Math.max(1, Math.min(S.demo.workers, 16, o.insts.length));
+  o.insts.forEach((i) => { i.st = 'queued'; i.rows = []; i.elapsed = 0; i.note = ''; i.committed = 0; i.deleted = false; i.waitCanary = false; });
+  addLog(o, perm().user, '执行工单', (how === 'timing' ? '到点自动执行' : '立即执行') + '（原生执行' + (o.batch ? '，批量 ' + o.insts.length + ' 个实例，并发 ' + o.workers + ' 路' + (o.canary ? '，灰度先行' : '') : '') + '）');
+  refresh();
+  later(() => {
+    o.status = 'executing';
+    o.insts.forEach((i) => { if (o.plan[i.id].fail === 'deleted') markDeleted(o, i); });
+    o.insts.sort((a, b) => (b.deleted ? 1 : 0) - (a.deleted ? 1 : 0)); // 已删除实例的结果行在最前（与 batch.go 一致）
+    const rest = o.insts.filter((i) => i.st === 'queued');
+    const primary = o.insts.find((i) => i.primary);
+    if (o.canary && o.insts.length > 1) {
+      if (primary.st === 'queued') {
+        rest.filter((i) => i !== primary).forEach((i) => { i.waitCanary = true; });
+        runPool(o, [primary], 'exec', () => afterCanary(o));
+      } else afterCanary(o);
+    } else runPool(o, rest, 'exec', () => finishExec(o));
+    refresh();
+  }, 450);
+}
+function afterCanary(o) {
+  const primary = o.insts.find((i) => i.primary);
+  const waiting = o.insts.filter((i) => i.st === 'queued' && i.id !== primary.id);
+  if (primary.st === 'ok') {
+    addLog(o, '系统', '灰度', '主实例 ' + primary.name + ' 执行成功，继续并发执行其余 ' + waiting.length + ' 个实例');
+    runPool(o, waiting, 'exec', () => finishExec(o));
+  } else {
+    waiting.forEach((i) => { i.st = 'held'; i.waitCanary = false; i.note = '灰度实例未成功，本实例未执行'; });
+    finishExec(o);
+  }
+}
+function finishExec(o) {
+  o.status = deriveStatus(o);
+  o.finish = nowStr();
+  const c = counts(o);
+  addLog(o, '系统', '执行结束', '执行结果：成功 ' + c.ok + '、失败 ' + c.fail + (c.held ? '、未执行 ' + c.held : '') + '。工单状态：' + ST[o.status][0]);
+  refresh();
+  toast(o.status === 'finish' ? '工单 #' + o.id + ' 已正常结束' : '工单 #' + o.id + ' 执行有异常：' + c.fail + ' 个实例失败', o.status === 'finish' ? '' : 'crit');
+}
+function retryOne(o, inst) {
+  o.status = 'executing';
+  o.retrying = [inst.id];
+  inst.st = 'running'; inst.retry = true;
+  addLog(o, perm().user, '执行工单', '重试实例：' + inst.name);
+  refresh();
+  later(() => {
+    applyResult(o, inst, retryResult(inst));
+    o.retrying = null;
+    o.status = deriveStatus(o);
+    o.finish = nowStr();
+    const msg = inst.st === 'ok' ? '实例 ' + inst.name + ' 重试成功。' : '实例 ' + inst.name + ' 重试失败，可再次重试或关闭。';
+    addLog(o, '系统', '执行结束', '重试结果：' + msg + ' 工单状态：' + ST[o.status][0]);
+    refresh();
+    toast(msg, inst.st === 'ok' ? '' : 'crit');
+  }, 900 + hash(inst.id, 2) * 600);
+}
+function closeOne(o, inst) {
+  inst.st = 'closed';
+  o.status = deriveStatus(o);
+  o.finish = nowStr();
+  addLog(o, perm().user, '执行工单', '关闭实例：实例 ' + inst.name + ' 已关闭。');
+  refresh();
+  toast('实例 ' + inst.name + ' 已关闭', 'warn');
+}
+function retryAll(o) {
+  const targets = o.insts.filter((i) => i.st === 'fail' && !i.deleted);
+  if (!targets.length) return;
+  o.status = 'executing';
+  o.retrying = targets.map((i) => i.id);
+  addLog(o, perm().user, '执行工单', '一键重试 ' + targets.length + ' 个失败实例（新增建议）：' + targets.map((i) => i.name).join('、') + '；并发 ' + Math.min(S.demo.workers, targets.length) + ' 路');
+  runPool(o, targets, 'retry', () => {
+    o.retrying = null;
+    o.status = deriveStatus(o);
+    o.finish = nowStr();
+    const okN = targets.filter((i) => i.st === 'ok').length;
+    addLog(o, '系统', '执行结束', '重试结果：' + okN + ' 个成功、' + (targets.length - okN) + ' 个仍失败。工单状态：' + ST[o.status][0]);
+    refresh();
+    toast('一键重试完成：' + okN + ' 个成功，' + (targets.length - okN) + ' 个仍失败', okN === targets.length ? '' : 'crit');
+  });
+  refresh();
+}
+function continueRest(o) {
+  const rest = o.insts.filter((i) => i.st === 'held');
+  o.status = 'executing';
+  addLog(o, perm().user, '执行工单', '继续执行其余 ' + rest.length + ' 个实例（灰度先行，新增建议）');
+  o.plan = o.plan || {};
+  rest.forEach((i) => { if (!o.plan[i.id]) o.plan[i.id] = { ok: true }; });
+  runPool(o, rest, 'exec', () => finishExec(o));
+  refresh();
+}
+
+/* ====================================================================== 对话框 / toast */
+let toastTimer = 0;
+function toast(msg, kind) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (kind ? ' ' + kind : '');
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+}
+function confirmDlg(o) {
+  return new Promise((resolve) => {
+    const prev = document.activeElement;
+    const mask = $('m-confirm');
+    const ok = $('dlg-ok'), cancel = $('dlg-cancel');
+    const done = (v) => {
+      mask.hidden = true;
+      document.removeEventListener('keydown', onKey, true);
+      ok.onclick = null; cancel.onclick = null; mask.onclick = null;
+      if (prev && prev.focus && document.contains(prev)) prev.focus();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); done(false); } else if (e.key === 'Tab') {
+        e.preventDefault();
+        (document.activeElement === ok ? cancel : ok).focus();
+      }
+    };
+    $('dlg-title').textContent = o.title;
+    mount($('dlg-body'),
+      (o.lines || []).map((l) => h('p', { class: l[0] === '!' ? 'warnline' : '' }, l[0] === '!' ? l.slice(1) : l)),
+      o.details ? h('dl', { class: 'kv' }, o.details.map((d) => [h('dt', null, d[0]), h('dd', null, d[1])])) : null,
+      o.sql ? h('pre', { class: 'sqlbox' }, o.sql) : null);
+    $('dlg-code').textContent = o.code ? '权限码 ' + o.code : '';
+    ok.textContent = o.okText || '确认';
+    ok.className = 'btn ' + (o.danger ? 'danger' : 'primary');
+    ok.onclick = () => done(true); cancel.onclick = () => done(false);
+    mask.onclick = (e) => { if (e.target === mask) done(false); };
+    document.addEventListener('keydown', onKey, true);
+    mask.hidden = false;
+    ok.focus();
+  });
+}
+
+/* ====================================================================== 详情页 */
+const INST_ST = { idle: ['待执行', ''], queued: ['排队中', ''], running: ['执行中', 'info'], ok: ['成功', 'ok'], fail: ['失败', 'crit'], closed: ['已关闭', ''], held: ['未执行 · 待灰度通过', 'warn'] };
+function instBadge(o, i) {
+  let t = INST_ST[i.st][0];
+  if (i.st === 'running' && i.retry) t = '重试中';
+  if (i.st === 'queued' && i.retry) t = '排队重试';
+  if (i.st === 'queued' && i.waitCanary) t = '排队 · 等灰度';
+  return h('span', { class: 'badge ' + INST_ST[i.st][1] }, t);
+}
+function banner(o) {
+  const c = counts(o);
+  const names = (arr) => arr.map((i) => i.name).join('、');
+  const failed = o.insts.filter((i) => i.st === 'fail');
+  const closed = o.insts.filter((i) => i.st === 'closed');
+  const B = (kind, ic, title, body) => ({ kind, ic, title, body });
+  if (o.status === 'review') return B('info', 'ℹ', '等待审批', '审批通过后才能执行。');
+  if (o.status === 'pass') return B('info', 'ℹ', '审核通过，尚未执行', '共 ' + c.total + ' 个实例，并发 ' + Math.max(1, Math.min(S.demo.workers, 16, c.total)) + ' 路。' + (o.canary ? '已选择灰度先行：先在主实例上执行。' : ''));
+  if (o.status === 'timing') return B('info', '⏱', '已设定定时执行', '到 ' + o.sched.replace('T', ' ') + ' 自动执行。');
+  if (o.status === 'queuing') return B('info', '⏳', '排队中', '等待执行进程领取工单…');
+  if (o.status === 'executing') {
+    if (o.retrying) return B('info', '⏳', '重试中：工单暂时置为「执行中」', '正在重新执行 ' + o.retrying.length + ' 个失败实例的整段 SQL，期间不能对其它实例重试或关闭。');
+    return B('info', '⏳', '执行中：已处理 ' + c.done + ' / ' + c.total + ' 个实例', '并发 ' + (o.workers || 1) + ' 路。' + (o.canary && c.queued && o.insts.some((i) => i.waitCanary) ? '灰度先行：正在主实例上执行，成功后再执行其余实例。' : ''));
+  }
+  if (o.status === 'abort') return B('crit', '■', '工单已人工终止', '终止后不能恢复，需要重新提交。');
+  if (o.status === 'finish') {
+    if (closed.length) return B('warn', '⚠', '已正常结束，但有 ' + closed.length + ' 个实例已关闭', '已关闭的实例（' + names(closed) + '）不再计入成败，变更没有在这些实例上生效，需人工确认处理。其余 ' + c.ok + ' 个实例均已执行成功。');
+    return B('ok', '✓', '全部 ' + c.ok + ' 个实例执行成功，工单已正常结束', '');
+  }
+  if (c.held > 0) {
+    const p = o.insts.find((i) => i.primary);
+    if (p && p.st !== 'fail') return B('warn', '⚠', '主实例已处理，其余 ' + c.held + ' 个实例尚未执行', '灰度先行：主实例' + (p.st === 'ok' ? '已执行成功' : '已关闭') + '，点「继续执行其余实例」继续。');
+    return B('crit', '✕', '灰度未通过：主实例未执行成功，其余 ' + c.held + ' 个实例未执行', '没有变更扩散到其余实例。主实例重试成功（或关闭）后，点「继续执行其余实例」。');
+  }
+  if (c.ok === 0 && c.fail === 0 && c.closed > 0) {
+    return B('crit', '✕', '全部 ' + c.closed + ' 个实例都已被关闭 —— 不算成功', '没有任何实例执行成功，工单保持「执行有异常」；已关闭的实例需要人工确认。');
+  }
+  if (c.ok === 0) {
+    return B('crit', '✕', '所有实例均执行失败', '没有任何实例的变更生效（失败 ' + c.fail + ' 个' + (c.closed ? '，已关闭 ' + c.closed + ' 个' : '') + '）。');
+  }
+  return B('crit', '✕', '执行有异常', '已有 ' + c.ok + ' 个实例的变更已生效，失败实例（' + names(failed) + '）与其余实例状态不一致，请人工核对。' + (closed.length ? '另有 ' + closed.length + ' 个实例已关闭，不计入成败。' : ''));
+}
+function canOp(o) { return perm().execute && (o.status === 'exception' || o.status === 'finish'); }
+function instActions(o, i) {
+  if (!perm().execute) return null;
+  if (i.st === 'fail') {
+    const lock = !(o.status === 'exception' || o.status === 'finish');
+    const lockTip = '工单执行中，暂不能重试 / 关闭';
+    return h('span', { style: 'display:inline-flex;gap:6px;flex-wrap:wrap' },
+      h('button', {
+        type: 'button', class: 'btn sm', 'aria-disabled': (i.deleted || lock) ? 'true' : null,
+        title: i.deleted ? '该实例已不存在，无法重试（可以关闭）' : lock ? lockTip : null,
+        onclick: () => { if (i.deleted) { toast('该实例已不存在，无法重试，只能关闭', 'warn'); return; } if (lock) { toast(lockTip, 'warn'); return; } askRetry(o, i); },
+      }, '重试'),
+      h('button', {
+        type: 'button', class: 'btn sm danger', 'aria-disabled': lock ? 'true' : null, title: lock ? lockTip : null,
+        onclick: () => { if (lock) { toast(lockTip, 'warn'); return; } askClose(o, i); },
+      }, '关闭'));
+  }
+  if (i.st === 'held') return h('span', { class: 'muted small' }, '待灰度通过');
+  return null;
+}
+async function askRetry(o, i) {
+  const lines = ['将在 ' + i.name + ' 上重新执行整段 SQL（共 ' + o.units.length + ' 条语句），用新结果替换原结果行。'];
+  if (i.committed > 0) lines.push('!该实例上前 ' + i.committed + ' 条语句已经提交，重试会把整段 SQL 再执行一遍，请确认语句可重复执行。');
+  const ok = await confirmDlg({ title: '重试实例 ' + i.name, lines, code: 'sqlworkflow.batch_op', okText: '确认重试', danger: true,
+    details: [['工单号', '#' + o.id], ['实例', i.name], ['数据库', o.db]], sql: o.sql.split('\n').slice(0, 6).join('\n') });
+  if (ok) retryOne(o, i);
+}
+async function askClose(o, i) {
+  const ok = await confirmDlg({ title: '关闭实例 ' + i.name, danger: true, okText: '确认关闭', code: 'sqlworkflow.batch_op',
+    lines: ['关闭后 ' + i.name + ' 不再计入工单成败，也不能再重试；不会对实例做任何改动，已提交的语句不会回滚。'],
+    details: [['工单号', '#' + o.id], ['实例', i.name], ['数据库', o.db]] });
+  if (ok) closeOne(o, i);
+}
+async function askRetryAll(o) {
+  const targets = o.insts.filter((i) => i.st === 'fail' && !i.deleted);
+  const skipped = o.insts.filter((i) => i.st === 'fail' && i.deleted);
+  const withCommitted = targets.filter((i) => i.committed > 0);
+  const lines = ['将对 ' + targets.length + ' 个失败实例各重新执行一遍整段 SQL，并发 ' + Math.max(1, Math.min(S.demo.workers, 16, targets.length)) + ' 路。'];
+  if (skipped.length) lines.push('已不存在的实例（' + skipped.map((i) => i.name).join('、') + '）不会被重试，仍需单独关闭。');
+  if (withCommitted.length) lines.push('!其中 ' + withCommitted.length + ' 个实例有已提交的前序语句，重试会把它们再执行一遍，请确认整段 SQL 可重复执行。');
+  const ok = await confirmDlg({ title: '一键重试全部失败实例（新增建议）', lines, danger: true, okText: '确认重试 ' + targets.length + ' 个', code: 'sqlworkflow.batch_op',
+    details: [['工单号', '#' + o.id], ['实例数', String(targets.length)], ['数据库', o.db]] });
+  if (ok) retryAll(o);
+}
+async function askExecute(o, mode) {
+  const timing = mode === 'sched';
+  const n = o.insts.length;
+  const W = Math.max(1, Math.min(S.demo.workers, 16, n));
+  const lines = o.batch
+    ? ['将在 ' + n + ' 个实例上各执行一遍整段 SQL，并发 ' + W + ' 路；单个实例失败不影响其余。',
+      '已成功的语句不会自动回滚，不备份、没有回滚语句。']
+    : ['将在目标实例的该库上按顺序执行本工单的 SQL；已成功的语句不会自动回滚，执行开始后无法撤回。'];
+  if (o.canary) lines.push('灰度先行：先只在主实例 ' + o.insts.find((i) => i.primary).name + ' 上执行，成功后再并发其余。');
+  const ok = await confirmDlg({ title: (mode === 'sched' ? '定时执行' : mode === 'fire' ? '到点触发执行（演示）' : '立即执行') + '工单 #' + o.id, lines, danger: true, okText: timing ? '确认设定' : '确认执行', code: timing ? 'sqlworkflow.schedule' : 'sqlworkflow.execute_group',
+    details: [['工单号', '#' + o.id], ['目标实例', o.batch ? '批量 ' + n + ' 个' : o.insts[0].name], ['数据库', o.db]], sql: o.sql.split('\n').slice(0, 6).join('\n') });
+  return ok;
+}
+function approvalCard(o) {
+  const steps = [['一级 · 组长审批', '陈刚'], ['二级 · DBA 审批', '李娜']];
+  const done = o.status === 'review' ? o.apr : 2;
+  const items = [h('li', { class: 'done' }, h('span', { class: 'dot' }), h('div', null, h('b', null, '提交'), h('div', { class: 'muted' }, o.user + ' · ' + o.created)))];
+  steps.forEach((s, k) => {
+    const aborted = o.status === 'abort' && k === 1;
+    const st = aborted ? 'bad' : k < done ? 'done' : (k === done && o.status === 'review') ? 'current' : 'pending';
+    items.push(h('li', { class: st }, h('span', { class: 'dot' }), h('div', null, h('b', null, s[0]),
+      h('span', { class: 'muted', style: 'margin-left:6px' }, aborted ? '已终止' : st === 'done' ? '已通过' : st === 'current' ? '审批中' : '待处理'),
+      h('div', { class: 'muted' }, s[1]))));
+  });
+  return h('section', { class: 'card' },
+    h('h2', null, '审批流程'),
+    h('div', { class: 'bd' }, h('ol', { class: 'flow' }, items),
+      o.status === 'review' ? h('div', { class: 'tool' },
+        h('button', { type: 'button', class: 'btn primary', onclick: () => {
+          o.apr++;
+          addLog(o, o.apr === 1 ? '陈刚' : '李娜', '审批通过', steps[o.apr - 1][0] + ' 通过');
+          if (o.apr >= 2) { o.status = o.sched ? 'timing' : 'pass'; addLog(o, '系统', '审批流', o.sched ? '审批全部通过，转入定时执行 ' + o.sched.replace('T', ' ') : '审批全部通过，工单进入「审核通过」'); }
+          refresh();
+        } }, o.apr === 0 ? '审批通过（演示：模拟一级审批人）' : '审批通过（演示：模拟二级审批人）')) : null));
+}
+function runCard(o) {
+  if (!(o.status === 'pass' || o.status === 'timing')) return null;
+  if (!perm().execute) return h('section', { class: 'card' }, h('h2', null, '执行'), h('div', { class: 'bd' }, h('div', { class: 'banner warn' }, h('span', { class: 'ic' }, '⚠'), h('div', null, '当前身份没有执行权限（sql_execute / 资源组执行权限）。'))));
+  const at = h('input', { class: 'ipt', type: 'datetime-local', id: 'run-at', 'aria-label': '定时执行时间', style: 'width:210px' });
+  return h('section', { class: 'card' },
+    h('h2', null, '执行'),
+    h('div', { class: 'bd' },
+      h('div', { class: 'tool' },
+        o.status === 'timing' ? [h('button', { type: 'button', class: 'btn', onclick: () => { o.status = 'pass'; addLog(o, perm().user, '取消定时', '取消定时，工单回到「审核通过」'); refresh(); } }, '取消定时'),
+          h('button', { type: 'button', class: 'btn primary', onclick: async () => { if (await askExecute(o, 'fire')) startExec(o, 'timing'); } }, '到点触发（演示）')]
+          : [h('label', { class: 'muted small' }, '定时执行时间 '), at,
+            h('button', { type: 'button', class: 'btn', onclick: async () => {
+              if (!at.value) { toast('请先选择定时执行时间', 'warn'); return; }
+              if (await askExecute(o, 'sched')) { o.sched = at.value; o.status = 'timing'; addLog(o, perm().user, '定时执行', '设定定时执行 ' + at.value.replace('T', ' ')); refresh(); }
+            } }, '定时执行'),
+            h('button', { type: 'button', class: 'btn primary', id: 'act-exec', onclick: async () => { if (await askExecute(o, 'now')) startExec(o, 'now'); } }, '立即执行')])));
+}
+function summaryCard(o) {
+  const c = counts(o);
+  const bn = banner(o);
+  const total = c.total || 1;
+  const w = (n) => (n / total * 100).toFixed(2) + '%';
+  const q = (S.dq || '').toLowerCase();
+  const matchState = (i) => S.dstate === 'all' ? true : S.dstate === 'fail' ? i.st === 'fail' : S.dstate === 'ok' ? i.st === 'ok' : S.dstate === 'closed' ? i.st === 'closed' : (i.st === 'queued' || i.st === 'running' || i.st === 'held' || i.st === 'idle');
+  const list = o.insts.map((i, k) => ({ i, k })).filter((x) => matchState(x.i) && (!q || x.i.name.toLowerCase().includes(q)));
+  const chip = (k, t, n) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(S.dstate === k), onclick: () => { S.dstate = k; refresh(); } }, t + ' ' + n);
+  const failedN = c.fail;
+  const retryable = o.insts.filter((i) => i.st === 'fail' && !i.deleted).length;
+  const heads = h('tr', null, h('th', null, ''), h('th', { class: 'num' }, '序号'), h('th', null, '实例'), h('th', { class: 'hide-narrow' }, '环境 / 角色'), h('th', null, '状态'), h('th', { class: 'num' }, '耗时(s)'), h('th', null, '结果摘要'), perm().execute ? h('th', null, '操作') : null);
+  const bodyRows = [];
+  list.forEach((x) => {
+    const i = x.i;
+    const meta = BY_ID[i.id];
+    const open = S.expanded.has(i.id);
+    const prim = o.insts.find((p) => p.primary);
+    const heldNote = i.st === 'held' ? (prim && prim.st !== 'fail' ? '灰度实例已处理，等待「继续执行其余实例」' : '灰度实例未成功，本实例未执行') : '';
+    bodyRows.push(h('tr', { class: i.st === 'fail' ? 'row-fail' : i.st === 'held' ? 'row-warn' : '' },
+      h('td', null, h('button', { type: 'button', class: 'caret', 'aria-expanded': String(open), 'aria-label': (open ? '收起 ' : '展开 ') + i.name + ' 的逐条语句结果', onclick: () => { if (open) S.expanded.delete(i.id); else S.expanded.add(i.id); refresh(); } }, '▸')),
+      h('td', { class: 'num' }, x.k + 1),
+      h('td', null, h('span', { class: 'mono wrap' }, i.name), i.primary ? [' ', h('span', { class: 'badge info' }, '主实例')] : null),
+      h('td', { class: 'hide-narrow' }, meta && !i.deleted ? [h('span', { class: 'badge ' + (meta.env === 'prod' ? 'crit' : meta.env === 'pre' ? 'warn' : '') }, ENV_LABEL[meta.env]), ' ', h('span', { class: 'badge' }, meta.role)] : null),
+      h('td', null, instBadge(o, i)),
+      h('td', { class: 'num' }, i.st === 'ok' || i.st === 'fail' || i.st === 'closed' ? i.elapsed.toFixed(3) : '—'),
+      h('td', { class: 'wrap' }, i.st === 'closed' ? [h('span', { class: 'muted' }, '已关闭，不再计入工单成败'), i.note ? h('div', { class: 'muted small' }, '关闭前的结果：' + i.note) : null]
+        : i.st === 'running' ? h('span', { class: 'muted' }, i.retry ? '正在重新执行整段 SQL…' : '执行中…')
+        : i.st === 'queued' ? h('span', { class: 'muted' }, i.waitCanary ? '等待主实例（灰度）先执行成功' : '排队等待空闲并发槽')
+        : i.st === 'held' ? h('span', { class: 'muted' }, heldNote)
+        : [h('span', { style: i.st === 'fail' ? 'color:var(--dt-crit)' : '' }, i.note),
+          i.st === 'fail' && i.committed > 0 ? h('div', { class: 'muted small' }, '前 ' + i.committed + ' 条语句已提交，该实例处于“部分变更”状态') : null]),
+      perm().execute ? h('td', null, instActions(o, i)) : null));
+    if (open) {
+      bodyRows.push(h('tr', { class: 'detail' }, h('td', { colSpan: perm().execute ? 8 : 7 },
+        i.rows.length ? h('table', { class: 'sub' },
+          h('thead', null, h('tr', null, h('th', null, '#'), h('th', null, '阶段'), h('th', null, '级别'), h('th', null, '信息'), h('th', null, 'SQL'), h('th', { class: 'num' }, '影响行数'), h('th', { class: 'num' }, '耗时(s)'))),
+          h('tbody', null, i.rows.map((r) => h('tr', { class: r.lv === 2 ? 'fail' : r.lv === 'skip' ? 'skip' : '' },
+            h('td', null, r.n), h('td', { class: 'mono', title: '阶段 ' + r.stage }, r.status),
+            h('td', null, r.lv === 2 ? '错误' : r.lv === 'skip' ? '未执行' : '通过'),
+            h('td', { class: 'wrap' }, r.msg), h('td', { class: 'mono wrap' }, r.sql.length > 160 ? r.sql.slice(0, 160) + '…' : r.sql),
+            h('td', { class: 'num' }, r.aff), h('td', { class: 'num' }, r.time)))))
+          : h('span', { class: 'muted' }, i.st === 'held' ? '本实例尚未执行（灰度先行：等主实例成功）。' : '该实例还没有返回逐条语句结果。'))));
+    }
+  });
+  const sumRow = c.done > 0 && (o.status === 'finish' || o.status === 'exception')
+    ? h('tr', { class: 'sum' }, h('td', { colSpan: perm().execute ? 8 : 7 }, summaryText(o)))
+    : h('tr', null, h('td', { colSpan: perm().execute ? 8 : 7, class: 'muted' }, '执行结束后生成批量执行汇总'));
+  return h('section', { class: 'card', id: 'batch-card' },
+    h('h2', null, '各实例执行状态'),
+    h('div', { class: 'bd', style: 'display:grid;gap:12px' },
+      h('div', { class: 'banner ' + bn.kind, role: 'status', 'aria-live': 'polite' }, h('span', { class: 'ic' }, bn.ic), h('div', null, h('b', { class: 't' }, bn.title), bn.body)),
+      o.canary && o.status !== 'review' ? h('div', { class: 'banner sug' }, h('span', { class: 'ic' }, '✦'), h('div', null, sugBadge(), ' ', h('b', null, '灰度先行已开启'))) : null,
+      h('div', { class: 'kpis' },
+        [['成功', c.ok, 'ok'], ['失败', c.fail, 'fail'], ['已关闭', c.closed, 'closed'], ['执行中', c.running, 'run'], ['排队', c.queued + c.idle, 'queued']].concat(c.held ? [['未执行', c.held, 'held']] : [])
+          .map((k) => h('div', { class: 'kpi ' + k[2] }, h('span', { class: 'l' }, k[0]), h('b', null, k[1])))),
+      h('div', null,
+        h('div', { class: 'pbar', role: 'progressbar', 'aria-label': '执行进度', 'aria-valuemin': '0', 'aria-valuemax': String(c.total), 'aria-valuenow': String(c.done) },
+          h('i', { class: 'ok', style: 'width:' + w(c.ok) }), h('i', { class: 'fail', style: 'width:' + w(c.fail) }), h('i', { class: 'closed', style: 'width:' + w(c.closed) }),
+          h('i', { class: 'held', style: 'width:' + w(c.held) }), h('i', { class: 'run', style: 'width:' + w(c.running) })),
+        h('div', { class: 'hint', style: 'margin-top:4px' }, '已处理 ' + c.done + ' / ' + c.total + ' 个实例 · 并发 ' + (o.workers || Math.max(1, Math.min(S.demo.workers, 16, c.total))) + ' 路')),
+      h('div', { class: 'tool' },
+        h('div', { class: 'chips', role: 'group', 'aria-label': '按状态筛选实例' },
+          chip('all', '全部', c.total), chip('fail', '失败', c.fail), chip('ok', '成功', c.ok), chip('closed', '已关闭', c.closed), chip('wait', '排队 / 执行中', c.queued + c.running + c.idle + c.held)),
+        h('input', { class: 'ipt', type: 'search', id: 'd-search', placeholder: '按实例名筛选', 'aria-label': '按实例名筛选', value: S.dq, oninput: (e) => { S.dq = e.target.value; S.dFocus = true; refresh(); } }),
+        h('button', { type: 'button', class: 'btn sm', onclick: () => { o.insts.filter((i) => i.st === 'fail').forEach((i) => S.expanded.add(i.id)); refresh(); } }, '展开失败实例'),
+        h('button', { type: 'button', class: 'btn sm ghost', onclick: () => { S.expanded.clear(); refresh(); } }, '收起全部'),
+        h('span', { class: 'sp' }),
+        sugBadge(),
+        h('label', { class: 'small' }, h('input', { type: 'checkbox', checked: S.sug.retryAll, onchange: (e) => setSug('retryAll', e.target.checked) }), ' 启用「一键重试全部失败实例」'),
+        S.sug.retryAll ? h('button', { type: 'button', class: 'btn sm danger', 'aria-disabled': (!canOp(o) || !perm().execute || !retryable) ? 'true' : null,
+          title: !retryable ? '没有可重试的失败实例' : '', onclick: () => { if (!canOp(o) || !perm().execute) { toast('当前状态或身份不能重试', 'warn'); return; } if (!retryable) { toast('没有可重试的失败实例', 'warn'); return; } askRetryAll(o); } },
+          '重试全部失败实例（' + retryable + '）') : null,
+        S.sug.canary || o.canary ? h('button', { type: 'button', class: 'btn sm', 'aria-disabled': (c.held > 0 && o.insts.find((i) => i.primary).st !== 'fail' && canOp(o)) ? null : 'true',
+          onclick: () => { const p = o.insts.find((i) => i.primary); if (c.held > 0 && p.st !== 'fail' && canOp(o)) continueRest(o); else toast(c.held ? '主实例还没有成功，先重试主实例' : '没有未执行的实例', 'warn'); } }, '继续执行其余实例') : null),
+      h('div', { class: 'tw' }, h('table', { class: 'list' }, h('thead', null, heads),
+        h('tbody', null, bodyRows.length ? bodyRows : h('tr', null, h('td', { colSpan: 8, class: 'empty' }, '没有符合筛选条件的实例'))),
+        h('tfoot', null, sumRow)))));
+}
+function renderDetail() {
+  const root = $('v-detail');
+  const o = curOrder();
+  if (!o) { mount(root, h('div', { class: 'card' }, h('div', { class: 'empty' }, '还没有选中工单'))); return; }
+  const typeLine = o.batch ? '批量上线，共 ' + o.insts.length + ' 个：' : '';
+  const nameList = o.instIds.map((id) => (BY_ID[id] ? BY_ID[id].name : id));
+  const kv = [['提交人', o.user], ['资源组', o.group],
+    ['目标实例', o.batch ? h('span', null, typeLine, nameList.slice(0, 5).join('、'), nameList.length > 5 ? '…（共 ' + nameList.length + ' 个，详见下表）' : '') : nameList[0]],
+    ['数据库', h('span', { class: 'mono' }, o.db)],
+    ['类型', 'SQL Server'],
+    ['执行前备份', '否'],
+    o.batch ? ['并发度', Math.max(1, Math.min(S.demo.workers, 16, o.insts.length)) + ' 路'] : null,
+    o.batch ? ['灰度先行', o.canary ? h('span', null, '是 ', sugBadge()) : '否'] : null,
+    ['可执行时间', (o.start ? o.start.replace('T', ' ') : '不限') + ' ～ ' + (o.end ? o.end.replace('T', ' ') : '不限')],
+    o.sched ? ['定时执行', o.sched.replace('T', ' ')] : null,
+    o.remark ? ['备注', o.remark] : null,
+    ['提交时间', o.created], o.finish ? ['结束时间', o.finish] : null].filter(Boolean);
+  const view = h('div', { style: 'display:contents' },
+    h('div', { class: 'head' },
+      h('button', { type: 'button', class: 'btn ghost', onclick: () => go('list') }, '← 返回列表'),
+      h('h1', null, 'SQL 工单 #' + o.id), stBadge(o.status),
+      o.batch ? h('span', { class: 'badge info' }, '批量上线 · ' + o.insts.length + ' 个实例') : null,
+      h('span', { class: 'sp' }),
+      h('button', { type: 'button', class: 'btn', onclick: () => copyAsNew(o) }, '复制为新工单')),
+    h('div', { class: 'grid2' },
+      h('section', { class: 'card' }, h('h2', null, o.name), h('div', { class: 'bd' }, h('dl', { class: 'kv' }, kv.map((r) => [h('dt', null, r[0]), h('dd', null, r[1])])))),
+      approvalCard(o)),
+    runCard(o),
+    o.batch ? summaryCard(o) : singleCard(o),
+    h('div', { class: 'grid2' },
+      h('section', { class: 'card' }, h('h2', null, 'SQL 内容'), h('div', { class: 'bd' }, h('pre', { class: 'sqlbox', id: 'wf-sql' }, o.sql))),
+      h('section', { class: 'card' }, h('h2', null, '操作日志'), h('div', { class: 'bd' },
+        h('ul', { class: 'log' }, o.logs.map((l) => h('li', null, h('time', null, l.t), h('b', null, l.who), ' ' + l.type + ' ', h('span', { class: 'muted' }, l.info))))))));
+  mount(root, view);
+  if (S.dFocus) { const el = $('d-search'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } S.dFocus = false; }
+}
+function singleCard(o) {
+  const i = o.insts[0];
+  const T = {
+    review: ['info', '等待审批', '审批通过后才能执行。'], pass: ['info', '审核通过，尚未执行', '可以立即执行或设定定时执行。'],
+    timing: ['info', '已设定定时执行', '到点由调度器自动执行。'], queuing: ['info', '排队中', '等待执行进程领取工单…'],
+    executing: ['info', '执行中', ''], abort: ['crit', '工单已人工终止', '终止后不能恢复，需要重新提交。'],
+  };
+  const bn = T[o.status] || (o.status === 'finish' ? ['ok', '执行成功，工单已正常结束', i.note]
+    : ['crit', '执行有异常', i.note + '。请到目标库核对后用「复制为新工单」重新提交。']);
+  return h('section', { class: 'card' }, h('h2', null, '执行结果'),
+    h('div', { class: 'bd', style: 'display:grid;gap:12px' },
+      h('div', { class: 'banner ' + bn[0], role: 'status' }, h('span', { class: 'ic' }, bn[0] === 'ok' ? '✓' : bn[0] === 'crit' ? '✕' : 'ℹ'), h('div', null, h('b', { class: 't' }, bn[1]), bn[2])),
+      i.rows.length ? h('table', { class: 'sub' },
+        h('thead', null, h('tr', null, h('th', null, '#'), h('th', null, '阶段'), h('th', null, '级别'), h('th', null, '信息'), h('th', null, 'SQL'), h('th', { class: 'num' }, '影响行数'), h('th', { class: 'num' }, '耗时(s)'))),
+        h('tbody', null, i.rows.map((r) => h('tr', { class: r.lv === 2 ? 'fail' : r.lv === 'skip' ? 'skip' : '' },
+          h('td', null, r.n), h('td', { class: 'mono', title: '阶段 ' + r.stage }, r.status), h('td', null, r.lv === 2 ? '错误' : r.lv === 'skip' ? '未执行' : '通过'),
+          h('td', { class: 'wrap' }, r.msg), h('td', { class: 'mono wrap' }, r.sql), h('td', { class: 'num' }, r.aff), h('td', { class: 'num' }, r.time))))) : null));
+}
+function copyAsNew(o) {
+  S.form = freshForm();
+  S.form.name = o.name + '（复制）';
+  S.form.sql = o.sql; S.form.db = o.db;
+  const g = GROUPS.find((x) => x.name === o.group) || GROUPS[0];
+  S.form.group = g.id;
+  const ids = o.instIds.filter((id) => g.ids.includes(id));
+  if (o.batch && perm().batchSubmit) { S.form.mode = 'batch'; S.form.sel = ids.filter((id) => isBatchable(BY_ID[id])); } else { S.form.mode = 'single'; S.form.single = ids[0] || 0; }
+  S.check = null; S.checkRun++;
+  go('submit');
+  syncForm();
+  toast('已从工单 #' + o.id + ' 复制内容，请核对后重新检查并提交');
+}
+
+/* ====================================================================== 列表页 */
+function renderList() {
+  const L = S.list;
+  const cnt = {};
+  S.orders.forEach((o) => { cnt[o.status] = (cnt[o.status] || 0) + 1; });
+  const order = ['review', 'pass', 'timing', 'queuing', 'executing', 'finish', 'exception', 'abort', 'autowrong'];
+  mount($('l-kpis'), order.map((k) => h('button', { type: 'button', class: 'kpi ' + (k === 'finish' || k === 'pass' ? 'ok' : k === 'exception' ? 'fail' : k === 'review' ? 'held' : k === 'abort' || k === 'autowrong' ? 'closed' : 'run'),
+    style: 'text-align:left;cursor:pointer;' + (L.status === k ? 'border-color:var(--dt-cyan);background:var(--dt-cyan-soft)' : ''), 'aria-pressed': String(L.status === k),
+    onclick: () => { L.status = L.status === k ? '' : k; $('l-status').value = L.status; renderList(); } },
+    h('span', { class: 'l' }, ST[k][0]), h('b', null, cnt[k] || 0))));
+  const ids = new Set();
+  S.orders.forEach((o) => o.instIds.forEach((id) => ids.add(id)));
+  const keepInst = L.inst;
+  mount($('l-inst'), h('option', { value: '' }, '全部实例'), [...ids].sort((a, b) => a - b).map((id) => h('option', { value: String(id), text: (BY_ID[id] ? BY_ID[id].name : id) + '（id ' + id + '）' })));
+  $('l-inst').value = keepInst;
+  const q = L.q.toLowerCase();
+  const rows = S.orders.filter((o) => (!L.status || o.status === L.status) && (!L.inst || o.instIds.includes(Number(L.inst)))
+    && (L.batch === '' || (L.batch === '1') === o.batch) && (!q || ('#' + o.id + ' ' + o.name + ' ' + o.user + ' ' + o.db).toLowerCase().includes(q)));
+  mount($('l-table').tBodies[0], rows.length ? rows.map((o) => {
+    const first = BY_ID[o.instIds[0]];
+    return h('tr', { style: 'cursor:pointer', onclick: (e) => { if (e.target.closest('button')) return; openOrder(o.id); } },
+      h('td', null, h('button', { type: 'button', class: 'btn link', onclick: () => openOrder(o.id) }, '#' + o.id)),
+      h('td', { class: 'wrap' }, h('b', null, o.name), h('div', null, h('span', { class: 'muted small' }, 'SQL Server'), ' ',
+        o.batch ? h('span', { class: 'badge info' }, '批量 ' + o.instIds.length) : null, ' ',
+        o.canary ? sugBadge('灰度先行') : null)),
+      h('td', { class: 'wrap' }, h('span', { class: 'mono' }, first ? first.name : ''), o.batch ? h('span', { class: 'muted small' }, ' 等 ' + o.instIds.length + ' 个实例') : null, h('div', { class: 'muted mono small' }, o.db)),
+      h('td', { class: 'hide-narrow' }, o.user), h('td', { class: 'hide-narrow' }, o.group),
+      h('td', null, stBadge(o.status)), h('td', { class: 'mono small' }, o.created.slice(0, 11)),
+      h('td', null, h('button', { type: 'button', class: 'btn sm', onclick: () => openOrder(o.id) }, o.status === 'review' ? '审批' : o.status === 'pass' ? '执行' : '详情')));
+  }) : h('tr', null, h('td', { colSpan: 8, class: 'empty' }, '没有符合条件的工单。')));
+  $('l-total').textContent = '共 ' + rows.length + ' 条（全部 ' + S.orders.length + ' 条）';
+}
+function openOrder(id) { S.cur = id; S.expanded.clear(); S.dstate = 'all'; S.dq = ''; go('detail'); }
+
+/* ====================================================================== 种子数据（列表里的历史工单） */
+function seedOrders() {
+  const mk = (p) => makeOrder(Object.assign({ user: '张伟', group: 'SQLServer-上线组', batch: true, status: 'finish', db: 'OrderDB', sql: SQL_OK }, p));
+  const run = (o, fails, closed) => {
+    o.insts.forEach((i, k) => {
+      const f = fails[k];
+      applyResult(o, i, f ? { ok: false, fail: f } : { ok: true });
+      if (closed && closed.includes(k)) i.st = 'closed';
+    });
+    return o;
+  };
+  const log = (o, arr) => arr.forEach((a) => { o.logs.push({ t: a[0], who: a[1], type: a[2], info: a[3] }); });
+  const out = [];
+  let o = run(mk({ id: 1049, name: 'OrderDB 订单表增加 remark 列与索引（华东批次）', instIds: [28, 29, 32, 33, 36, 37], created: '10-11 22:10:03', finish: '10-11 22:18:40' }), {});
+  log(o, [['10-11 22:10:03', '张伟', '提交工单', '批量上线，共 6 个实例'], ['10-11 22:14:20', '李娜', '审批通过', '二级 · DBA 审批 通过'], ['10-11 22:18:40', '系统', '执行结束', '执行结果：成功 6、失败 0。工单状态：已正常结束']]);
+  out.push(o);
+  o = run(mk({ id: 1047, name: 'PayDB 支付流水表补齐索引', db: 'PayDB', status: 'exception', instIds: [34, 38, 42, 46, 50], created: '10-11 16:40:12', finish: '10-11 16:52:09' }), { 1: 'timeout', 3: 'perm' });
+  o.status = 'exception';
+  log(o, [['10-11 16:40:12', '张伟', '提交工单', '批量上线，共 5 个实例'], ['10-11 16:49:30', '系统', '执行结束', '执行结果：成功 3、失败 2。工单状态：执行有异常']]);
+  out.push(o);
+  o = run(mk({ id: 1046, name: 'PayDB 对账差异修数（单实例）', db: 'PayDB', batch: false, instIds: [42], created: '10-11 11:02:45', finish: '10-11 11:05:10', sql: "UPDATE dbo.Reconcile SET status = 1 WHERE batch_no = '20261010';" }), {});
+  out.push(o);
+  o = mk({ id: 1045, name: 'PayDB 对账表加字段', db: 'PayDB', status: 'review', apr: 1, instIds: [138, 142, 146], created: '10-12 09:31:00' });
+  log(o, [['10-12 09:31:00', '王强', '提交工单', '批量上线，共 3 个实例'], ['10-12 09:40:12', '陈刚', '审批通过', '一级 · 组长审批 通过']]);
+  o.user = '王强';
+  out.push(o);
+  o = mk({ id: 1043, name: 'CrmDB 客户表新增来源渠道列', db: 'CrmDB', status: 'pass', apr: 2, instIds: [27, 31, 35, 39, 43, 47, 51, 55, 59, 63, 67, 71], created: '10-12 08:20:30', user: '李娜' });
+  log(o, [['10-12 08:20:30', '李娜', '提交工单', '批量上线，共 12 个实例'], ['10-12 08:30:00', '陈刚', '审批通过', '一级 · 组长审批 通过'], ['10-12 08:41:18', '李娜', '审批通过', '二级 · DBA 审批 通过']]);
+  out.push(o);
+  o = run(mk({ id: 1041, name: 'OrderDB 历史归档存储过程更新', instIds: [52, 53, 56, 57, 60], created: '10-10 20:05:11', finish: '10-10 20:31:52' }), { 3: 'deadlock' }, [3]);
+  o.status = 'finish';
+  log(o, [['10-10 20:05:11', '张伟', '提交工单', '批量上线，共 5 个实例'], ['10-10 20:12:40', '系统', '执行结束', '执行结果：成功 4、失败 1。工单状态：执行有异常'],
+    ['10-10 20:31:52', '张伟', '执行工单', '关闭实例：实例 ' + BY_ID[57].name + ' 已关闭。']]);
+  out.push(o);
+  o = mk({ id: 1040, name: 'OrderDB 临时修数（已终止）', batch: false, status: 'abort', instIds: [29], created: '10-10 14:00:00', sql: 'UPDATE dbo.Orders SET status = 3;' });
+  log(o, [['10-10 14:00:00', '张伟', '提交工单', '实例 ' + BY_ID[29].name], ['10-10 14:09:30', '陈刚', '驳回', '缺 WHERE 条件']]);
+  out.push(o);
+  o = run(mk({ id: 1038, name: 'PayDB 账务库字段类型调整（全部关闭）', db: 'PayDB', status: 'exception', instIds: [58, 62, 66], created: '10-09 19:30:00', finish: '10-09 20:10:00' }), { 0: 'perm', 1: 'perm', 2: 'perm' }, [0, 1, 2]);
+  o.status = 'exception';
+  log(o, [['10-09 19:30:00', '张伟', '提交工单', '批量上线，共 3 个实例'], ['10-09 19:41:00', '系统', '执行结束', '执行结果：成功 0、失败 3。工单状态：执行有异常'],
+    ['10-09 20:10:00', '张伟', '执行工单', '关闭实例：3 个实例均已关闭；工单保持「执行有异常」']]);
+  out.push(o);
+  out.forEach((x) => { if (!x.logs.length) addLog(x, x.user, '提交工单', '实例 ' + BY_ID[x.instIds[0]].name); });
+  return out;
+}
+
+/* ====================================================================== 新增建议开关、演示条、视图切换 */
+const CHG_SUG = [
+  ['precheck', '预检增强：库只读 / 账号权限'],
+  ['canary', '灰度先行：先主实例，后其余实例'],
+  ['retryAll', '一键重试全部失败实例'],
+];
+function renderChanges() {
+  const on = Object.keys(S.sug).filter((k) => S.sug[k]).length;
+  $('chg-badge').textContent = on + ' / ' + CHG_SUG.length;
+  mount($('changes'),
+    h('h3', null, '新增建议'),
+    h('ol', null, CHG_SUG.map((c) => h('li', { class: 'sugitem' }, h('b', null, c[1]),
+      h('label', { class: 'sw' }, h('input', { type: 'checkbox', checked: S.sug[c[0]], onchange: (e) => setSug(c[0], e.target.checked) }), '启用')))));
+}
+function setSug(k, v) {
+  S.sug[k] = !!v;
+  renderChanges();
+  if (k === 'precheck') { invalidate(); }
+  renderCheck();
+  if (S.tab === 'detail') renderDetail();
+  toast((v ? '已启用' : '已关闭') + '「' + CHG_SUG.find((c) => c[0] === k)[1].split('：')[0] + '」（新增建议）' + (k === 'precheck' && v ? '，需要重新检查才会生效' : ''), v ? '' : 'warn');
+}
+function refresh() {
+  if (S.tab === 'detail') renderDetail(); else if (S.tab === 'list') renderList();
+  const o = curOrder();
+  $('tab-detail-id').textContent = o ? ' #' + o.id : '';
+}
+function go(tab) {
+  S.tab = tab;
+  ['submit', 'detail', 'list'].forEach((t) => {
+    $('v-' + t).hidden = t !== tab;
+    const b = $('tab-' + t);
+    b.setAttribute('aria-selected', String(t === tab));
+    b.tabIndex = t === tab ? 0 : -1;
+  });
+  if (tab === 'detail') renderDetail();
+  if (tab === 'list') renderList();
+  if (tab === 'submit') { renderMode(); renderCheck(); renderSubbar(); }
+  $('tab-detail-id').textContent = curOrder() ? ' #' + S.cur : '';
+  window.scrollTo(0, 0);
+}
+function setSkin(s) {
+  document.documentElement.setAttribute('data-skin', s);
+  document.querySelectorAll('[data-skin]').forEach((b) => { if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', String(b.dataset.skin === s)); });
+  try { localStorage.setItem('dt-proto-skin', s); } catch (e) { /* 隐私模式 / 禁用存储：忽略 */ }
+}
+function resetAll() {
+  S.gen++;
+  S.timers.forEach((t) => clearTimeout(t));
+  S.timers.clear();
+  S.sug = { precheck: false, canary: false, retryAll: false };
+  S.form = freshForm(); S.check = null; S.checkRun++;
+  S.orders = seedOrders(); S.cur = null; S.nextId = 1050;
+  S.expanded.clear(); S.dstate = 'all'; S.dq = '';
+  S.list = { status: '', inst: '', batch: '', q: '' };
+  $('l-status').value = ''; $('l-batch').value = ''; $('l-q').value = '';
+  $('toast').hidden = true;
+  renderChanges(); syncForm(); go('submit');
+  toast('已重置演示数据（新增建议恢复为关闭）');
+}
+
+/* ====================================================================== 事件与初始化 */
+function init() {
+  mount($('f-group'), GROUPS.map((g) => h('option', { value: g.id, text: g.name })));
+  mount($('d-perm'), Object.keys(PERMS).map((k) => h('option', { value: k, text: PERMS[k].label })));
+  mount($('l-status'), h('option', { value: '' }, '全部状态'), ['review', 'pass', 'timing', 'queuing', 'executing', 'finish', 'exception', 'abort', 'autowrong'].map((k) => h('option', { value: k, text: ST[k][0] })));
+
+  const bind = (id, ev, fn) => $(id).addEventListener(ev, fn);
+  bind('f-name', 'input', (e) => { S.form.name = e.target.value; });
+  bind('f-url', 'input', (e) => { S.form.url = e.target.value; });
+  bind('f-start', 'change', (e) => { S.form.start = e.target.value; });
+  bind('f-end', 'change', (e) => { S.form.end = e.target.value; });
+  bind('f-sched', 'change', (e) => { S.form.sched = e.target.value; });
+  bind('f-remark', 'input', (e) => { S.form.remark = e.target.value; });
+  bind('f-group', 'change', (e) => {
+    S.form.group = e.target.value; S.form.sel = []; S.form.q = ''; $('p-q').value = '';
+    S.form.env = ''; S.form.role = ''; S.form.single = 0; S.form.db = '';
+    renderMode(); refreshDb(false); renderPicker(); renderFlow(); invalidate();
+  });
+  bind('m-single', 'click', () => { S.form.mode = 'single'; renderMode(); refreshDb(false); renderFlow(); invalidate(); });
+  bind('m-batch', 'click', () => {
+    const why = batchReason();
+    if (why) { toast(why, 'warn'); return; }
+    S.form.mode = 'batch'; renderMode(); refreshDb(false); renderPicker(); renderFlow(); invalidate();
+  });
+  bind('f-inst', 'change', (e) => { S.form.single = Number(e.target.value); refreshDb(false); invalidate(); });
+  bind('f-db', 'change', (e) => { S.form.db = e.target.value; invalidate(); });
+  bind('f-sql', 'input', (e) => { S.form.sql = e.target.value; renderEditorMeta(); invalidate(); });
+  bind('f-sql', 'scroll', () => { $('e-gutter').scrollTop = $('f-sql').scrollTop; });
+  bind('f-sql', 'keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runCheck(); } });
+  bind('e-lineno', 'change', (e) => { S.form.lineno = e.target.checked; renderEditorMeta(); });
+  [['ex-ok', SQL_OK], ['ex-warn', SQL_WARN], ['ex-err', SQL_ERR], ['ex-print', SQL_PRINT]].forEach((x) => bind(x[0], 'click', () => { S.form.sql = x[1]; $('f-sql').value = x[1]; renderEditorMeta(); invalidate(); }));
+  bind('p-q', 'input', (e) => { S.form.q = e.target.value; renderPicker(); });
+  bind('p-all', 'click', () => {
+    const r = addMany(visibleInsts().map((i) => i.id));
+    afterSel(true);
+    toast(r.capped ? '已加入 ' + r.added + ' 个；达到上限 ' + MAX_BATCH + '，另有 ' + r.capped + ' 个没有选中' : '已加入 ' + r.added + ' 个实例', r.capped ? 'warn' : '');
+  });
+  bind('p-inv', 'click', () => {
+    const vis = visibleInsts().map((i) => i.id);
+    const cur = new Set(S.form.sel);
+    S.form.sel = S.form.sel.filter((id) => !vis.includes(id));
+    const r = addMany(vis.filter((id) => !cur.has(id)));
+    afterSel(true);
+    if (r.capped) toast('达到上限 ' + MAX_BATCH + '，有 ' + r.capped + ' 个没有选中', 'warn');
+  });
+  bind('p-none', 'click', () => { S.form.sel = []; afterSel(true); });
+  bind('sg-canary', 'change', (e) => setSug('canary', e.target.checked));
+  bind('sg-pre', 'change', (e) => setSug('precheck', e.target.checked));
+  bind('pre-onlyfail', 'change', (e) => { S.form.preOnlyFail = e.target.checked; renderCheck(); });
+  bind('b-check', 'click', runCheck);
+  bind('b-submit', 'click', submitOrder);
+
+  bind('d-outcome', 'change', (e) => { S.demo.outcome = e.target.value; });
+  bind('d-retry', 'change', (e) => { S.demo.retry = e.target.value; });
+  bind('d-workers', 'change', (e) => { S.demo.workers = Number(e.target.value); refresh(); });
+  bind('d-speed', 'change', (e) => { S.demo.speed = e.target.value; });
+  bind('d-perm', 'change', (e) => { S.demo.perm = e.target.value; renderMode(); refreshDb(false); renderFlow(); renderPicker(); renderCheck(); renderSubbar(); refresh(); });
+  bind('d-load', 'click', () => { go('submit'); loadExample(); });
+  bind('d-reset', 'click', resetAll);
+  bind('btn-collapse', 'click', () => {
+    const b = $('demo-body');
+    b.hidden = !b.hidden;
+    $('btn-collapse').setAttribute('aria-expanded', String(!b.hidden));
+    $('btn-collapse').textContent = b.hidden ? '演示控制条 ▾' : '演示控制条 ▴';
+  });
+  bind('btn-changes', 'click', () => {
+    const p = $('changes');
+    p.hidden = !p.hidden;
+    $('btn-changes').setAttribute('aria-expanded', String(!p.hidden));
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('changes').hidden && $('m-confirm').hidden) { $('changes').hidden = true; $('btn-changes').setAttribute('aria-expanded', 'false'); $('btn-changes').focus(); } });
+  document.querySelectorAll('button[data-skin]').forEach((b) => b.addEventListener('click', () => setSkin(b.dataset.skin)));
+  ['submit', 'detail', 'list'].forEach((t) => {
+    bind('tab-' + t, 'click', () => go(t));
+    bind('tab-' + t, 'keydown', (e) => {
+      const order = ['submit', 'detail', 'list'];
+      const k = order.indexOf(t);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const n = order[(k + (e.key === 'ArrowRight' ? 1 : 2)) % 3]; go(n); $('tab-' + n).focus(); }
+    });
+  });
+  bind('l-new', 'click', () => go('submit'));
+  bind('l-status', 'change', (e) => { S.list.status = e.target.value; renderList(); });
+  bind('l-inst', 'change', (e) => { S.list.inst = e.target.value; renderList(); });
+  bind('l-batch', 'change', (e) => { S.list.batch = e.target.value; renderList(); });
+  bind('l-q', 'input', (e) => { S.list.q = e.target.value; renderList(); });
+  bind('l-clear', 'click', () => { S.list = { status: '', inst: '', batch: '', q: '' }; $('l-status').value = ''; $('l-batch').value = ''; $('l-q').value = ''; renderList(); });
+
+  let skin = 'dark';
+  try { skin = localStorage.getItem('dt-proto-skin') || 'dark'; } catch (e) { /* ignore */ }
+  setSkin(['light', 'dark', 'sepia'].includes(skin) ? skin : 'dark');
+  S.orders = seedOrders();
+  renderChanges();
+  syncForm();
+  go('submit');
+  if (window.innerWidth <= 700) $('btn-collapse').click(); // 手机宽度下默认折叠演示控制条
+}
+init();
+})();
+</script>
+</body>
+</html>

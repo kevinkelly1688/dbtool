@@ -1,0 +1,57 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: advisor.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/sqlopt.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="sqladvisor">
+  <div class="page-head">
+    <h1>{{t "智能调优"}}</h1>
+  </div>
+  <div id="ad-msg"></div>
+
+  <div class="dgrid">
+    <section class="card">
+      <h2>SQL</h2>
+      <div id="ad-editor" class="editor-wrap tall" aria-label="{{t "SQL 编辑器"}}"></div>
+    </section>
+    <section class="card">
+      <h2>{{t "选项"}}</h2>
+      <div class="form-grid one">
+        <label>{{t "实例"}}<select id="ad-inst" aria-label="{{t "实例"}}"><option value="">{{t "请选择实例"}}</option></select></label>
+        <label>{{t "数据库"}}<select id="ad-db" aria-label="{{t "数据库"}}" disabled><option value="">{{t "请选择数据库"}}</option></select></label>
+        <label>{{t "优化方式"}}<select id="ad-tool" aria-label="{{t "优化方式"}}"></select></label>
+        <div id="ad-tuning-wrap" hidden>
+          <span class="lbl">{{t "SQLTuning 选项"}}</span>
+          <div class="check-list">
+            <label><input type="checkbox" id="ad-opt-sys_parm"> {{t "显示系统参数"}}</label>
+            <label><input type="checkbox" id="ad-opt-sql_plan" checked> {{t "显示执行计划"}}</label>
+            <label><input type="checkbox" id="ad-opt-obj_stat" checked> {{t "显示相关对象（表、索引）统计信息"}}</label>
+            <label><input type="checkbox" id="ad-opt-sql_profile"> {{t "显示 PROFILE 跟踪（会真实执行）"}}</label>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="ad-format" type="button">{{t "美化"}}</button>
+          <button class="btn" id="ad-explain" type="button">{{t "执行计划"}}</button>
+          <button class="btn primary" id="ad-run" type="button">{{t "获取优化建议"}}</button>
+          <button class="btn danger" id="ad-cancel" type="button" hidden>{{t "取消"}}</button>
+        </div>
+        <span class="muted small" id="ad-status"></span>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>{{t "优化建议"}}</h2>
+    <div class="tabbar" id="ad-tabs"></div>
+    <div id="ad-result"><div class="so-empty">{{t "暂无结果"}}</div></div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script src="/static/vendor/ace/ace.js"></script>
+<script src="/static/vendor/ace/ext-language_tools.js"></script>
+<script type="module" src="/static/js/sqlopt/advisor.js"></script>{{end}}

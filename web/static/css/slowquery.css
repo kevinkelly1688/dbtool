@@ -1,0 +1,27 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: slowquery.css
+ * @time: 2026/10/28
+ */
+/* 慢查日志页（/slowquery）独有的样式；公共部分见 slowlog.css / admin.css。 */
+.sq-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .sq-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sq-kpis small { margin-top: 2px; }
+
+table.sq-stat td.num small.sq-avg { display: block; font-size: 11px; }
+table.sq-stat td.sq-ops { white-space: nowrap; }
+table.sq-stat td.sq-ops .btn.sm { padding: 2px 8px; font-size: 12px; text-decoration: none; }
+td.nowrap { white-space: nowrap; }
+
+/* 行内趋势：每天的慢查次数 */
+svg.sq-spark { width: 84px; height: 22px; display: block; }
+svg.sq-spark .line { fill: none; stroke: var(--dt-cyan); stroke-width: 1.5; stroke-linejoin: round; }
+
+/* 优化建议弹窗：评分 */
+.sq-score { display: flex; align-items: baseline; gap: 10px; margin: 0 0 8px; }
+.sq-score b { font-size: 26px; font-family: var(--dt-f-mono); }
+.sq-score b.good { color: var(--dt-ok); }
+.sq-score b.mid { color: var(--dt-amber); }
+.sq-score b.bad { color: var(--dt-crit); }
+.sq-sec { margin: 12px 0 4px; }

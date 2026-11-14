@@ -1,0 +1,7 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: instmgr_side.html
+@time: 2026/10/28
+*/ -}}
+{{define "instmgr_side"}}<aside class="sidenav" aria-label="{{t "实例管理"}}"><h4>{{t "实例管理"}}</h4>{{range .Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>{{end}}

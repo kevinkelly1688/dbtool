@@ -1,0 +1,11 @@
+bin/
+*.exe
+.env
+.idea/
+.vscode/
+*.log
+.env.test
+.tmp/
+dist/
+__pycache__/
+*.pyc

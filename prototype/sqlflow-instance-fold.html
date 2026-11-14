@@ -1,0 +1,372 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: sqlflow-instance-fold.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>执行结果：超出列宽就折叠 · 原型 · dbtool</title>
+<style>
+/* ===== 皮肤变量：取自 web/static/css/app.css 的 --dt-*（深空 / 明亮 / 护眼），与正式页面一致 ===== */
+:root {
+  --dt-bg: #17171a; --dt-panel: #232324; --dt-raise: #2c2c2e; --dt-hover: #2a2a2d;
+  --dt-line: #35353a; --dt-line-hi: #4a4a50;
+  --dt-fg: #eceef2; --dt-muted: #a6abb5; --dt-dim: #767c87;
+  --dt-cyan: #1d6aff; --dt-cyan-rgb: 29, 106, 255; --dt-cyan-soft: rgba(29, 106, 255, .18); --dt-cyan-text: #6197ff;
+  --dt-amber: #ff9626; --dt-amber-rgb: 255, 150, 38; --dt-amber-soft: rgba(255, 150, 38, .14);
+  --dt-ok: #2fc75a; --dt-ok-rgb: 47, 199, 90; --dt-ok-soft: rgba(47, 199, 90, .14);
+  --dt-crit: #f9766f; --dt-crit-rgb: 249, 118, 111; --dt-crit-soft: rgba(249, 118, 111, .15);
+  --dt-input: #1b1b1d; --dt-sunken: rgba(0, 0, 0, .22); --dt-btn-bg: #2c2c2e;
+  --dt-on-accent: #ffffff; --dt-accent-hover: #2c73ff; --dt-link-hover: #8db3ff;
+  --dt-f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+  --dt-f-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+  --dt-h: 32px; --dt-h-sm: 24px; --dt-r: 4px; --dt-r-lg: 8px; --dt-ease: cubic-bezier(.34, .69, .1, 1);
+  --dt-focus: rgba(var(--dt-cyan-rgb), .22);
+  --dt-cyan-line: rgba(var(--dt-cyan-rgb), .42); --dt-amber-line: rgba(var(--dt-amber-rgb), .45); --dt-crit-line: rgba(var(--dt-crit-rgb), .45);
+  color-scheme: dark;
+}
+:root[data-skin="light"] {
+  color-scheme: light;
+  --dt-bg: #f2f3f5; --dt-panel: #ffffff; --dt-raise: #f7f8fa; --dt-hover: #f2f3f5; --dt-line: #e5e6eb; --dt-line-hi: #c9cdd4;
+  --dt-fg: #1d2129; --dt-muted: #4e5969; --dt-dim: #86909c;
+  --dt-cyan: #165dff; --dt-cyan-rgb: 22, 93, 255; --dt-cyan-soft: rgba(22, 93, 255, .09); --dt-cyan-text: #165dff;
+  --dt-amber: #b15000; --dt-amber-rgb: 177, 80, 0; --dt-amber-soft: rgba(255, 125, 0, .11);
+  --dt-ok: #007f22; --dt-ok-rgb: 0, 127, 34; --dt-ok-soft: rgba(0, 160, 40, .1);
+  --dt-crit: #da0808; --dt-crit-rgb: 218, 8, 8; --dt-crit-soft: rgba(245, 63, 63, .09);
+  --dt-input: #ffffff; --dt-sunken: #f7f8fa; --dt-btn-bg: #ffffff;
+  --dt-on-accent: #ffffff; --dt-accent-hover: #216cff; --dt-link-hover: #0e42d2;
+}
+:root[data-skin="sepia"] {
+  color-scheme: light;
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #efe7d3; --dt-hover: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #cfc1a1;
+  --dt-fg: #3b3428; --dt-muted: #6f6450; --dt-dim: #988a71;
+  --dt-cyan: #267060; --dt-cyan-rgb: 38, 112, 96; --dt-cyan-soft: rgba(38, 112, 96, .11); --dt-cyan-text: #267060;
+  --dt-amber: #8d5a0f; --dt-amber-rgb: 141, 90, 15; --dt-amber-soft: rgba(166, 106, 18, .11);
+  --dt-ok: #3a7335; --dt-ok-rgb: 58, 115, 53; --dt-ok-soft: rgba(63, 125, 58, .1);
+  --dt-crit: #ae4339; --dt-crit-rgb: 174, 67, 57; --dt-crit-soft: rgba(178, 68, 58, .09);
+  --dt-input: #fbf7ec; --dt-sunken: #f3ecda; --dt-btn-bg: #fbf7ec;
+  --dt-on-accent: #fbf7ec; --dt-accent-hover: #2d7e6d; --dt-link-hover: #1c5a4d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 14px/1.5715 var(--dt-f-body); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: var(--dt-fg); }
+:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 1px; border-radius: var(--dt-r); }
+[hidden] { display: none !important; }
+.mono { font-family: var(--dt-f-mono); }
+.muted { color: var(--dt-muted); }
+
+/* ===== 原型外壳（只在原型里有，不属于正式页面）===== */
+.top { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 24px; background: var(--dt-panel); border-bottom: 1px solid var(--dt-line); }
+.top .crumb { color: var(--dt-muted); } .top .crumb b { color: var(--dt-fg); font-weight: 600; }
+.top .sp { flex: 1; }
+.skins { display: flex; gap: 6px; align-items: center; color: var(--dt-muted); font-size: 12px; }
+.skins button { width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1px solid var(--dt-line-hi); cursor: pointer; }
+.skins button[aria-pressed="true"] { outline: 2px solid var(--dt-cyan); outline-offset: 1px; }
+.skins [data-skin-set="dark"] { background: #232324; } .skins [data-skin-set="light"] { background: #fff; } .skins [data-skin-set="sepia"] { background: #f1ead9; }
+.page { max-width: 1480px; margin: 0 auto; padding: 20px 24px 40px; }
+.intro { margin: 0 0 14px; }
+.intro h1 { margin: 0 0 6px; font-size: 20px; line-height: 28px; font-weight: 600; }
+.intro p { margin: 0; color: var(--dt-muted); }
+.opts { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; margin: 0 0 14px; padding: 10px 14px; border: 1px dashed var(--dt-line-hi); border-radius: var(--dt-r-lg); }
+.opts .tag { font-size: 12px; color: var(--dt-amber); border: 1px solid var(--dt-amber-line); background: var(--dt-amber-soft); border-radius: var(--dt-r); padding: 0 8px; line-height: 20px; }
+.opt { display: flex; align-items: center; gap: 8px; }
+.opt .l { color: var(--dt-muted); font-size: 13px; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--dt-line-hi); border-radius: 6px; background: var(--dt-input); }
+.seg button { height: 26px; padding: 0 12px; border: 0; border-radius: 4px; background: none; color: var(--dt-muted); cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--dt-fg); }
+.seg button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan-text); font-weight: 600; }
+.legend { margin: 0 0 10px; font-size: 12px; color: var(--dt-muted); }
+.legend b { color: var(--dt-fg); font-weight: 500; }
+
+/* ===== 以下按正式页面（app.css / sqlflow.css）的写法 ===== */
+.card { background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: var(--dt-r-lg); padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; }
+.card h2 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; line-height: 24px; margin: 0 0 16px; }
+.btn { height: var(--dt-h); padding: 0 15px; background: var(--dt-btn-bg); border: 1px solid var(--dt-line-hi); border-radius: var(--dt-r); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; line-height: 1; transition: border-color .2s var(--dt-ease), color .2s var(--dt-ease); }
+.btn:hover { border-color: var(--dt-accent-hover); color: var(--dt-link-hover); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+#fold-all { margin-left: 8px; font-weight: 400; }
+table.list { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.list th { text-align: left; padding: 10px 16px; background: var(--dt-raise); border-bottom: 1px solid var(--dt-line); color: var(--dt-fg); font-size: 14px; font-weight: 500; white-space: nowrap; }
+table.list th:first-child { border-top-left-radius: var(--dt-r); } table.list th:last-child { border-top-right-radius: var(--dt-r); }
+table.list td { padding: 10px 16px; border-bottom: 1px solid var(--dt-line); vertical-align: top; }
+table.list tbody tr:last-child td { border-bottom: 0; }
+table.list td.num { text-align: right; font-family: var(--dt-f-mono); } table.list th.num { text-align: right; }
+table.list tr:hover td { background: var(--dt-hover); }
+table.list tr.lv-err td { background: var(--dt-crit-soft); }
+
+/* ===== 新增：通用折叠（所有列同一个规则）=====
+   每列有定义好的宽度（表格用固定布局）；单元格里的内容在这个宽度里放得下就原样显示，放不下才折成一行（带 ▸），
+   点开后在同一列宽里换行，列不会变宽、别的列不会挪动。写法沿用结果表里 SQL 列已有的折叠（sqlflow.css 的 .sql-fold）。 */
+table.list.fixed { table-layout: fixed; min-width: 1230px; }
+table.list.fixed th, table.list.fixed td { overflow: hidden; }
+table.list.fixed th { text-overflow: ellipsis; }
+.cf { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.cf-t { flex: none; width: 20px; padding: 0; border: 0; background: none; color: var(--dt-muted); cursor: pointer; font: inherit; line-height: 1.4; }
+.cf-t:hover, .cf-t:focus-visible { color: var(--dt-cyan-text); }
+.cf-one { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf.over .cf-one { cursor: pointer; }
+.cf.over .cf-one:hover { color: var(--dt-cyan-text); }
+.cf-full { flex: 1 1 auto; min-width: 0; padding: 3px 9px; background: var(--dt-sunken); border: 1px solid var(--dt-line); border-radius: 6px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cf-one.mono, .cf-full.mono { font-size: 12.5px; }
+td.num .cf { justify-content: flex-end; } td.num .cf-one { text-align: right; }
+.cf.pad { padding-left: 26px; }   /* 这一列里有折叠的，放得下的格子也留出 ▸ 的位置，整列文字左对齐 */
+.ruler { position: absolute; left: -9999px; top: 0; visibility: hidden; white-space: nowrap; font-size: 14px; }
+.ruler.mono { font-family: var(--dt-f-mono); font-size: 12.5px; }
+.ruler.num { font-family: var(--dt-f-mono); }
+.ditto { display: inline-block; padding-left: 26px; color: var(--dt-dim); cursor: default; }
+.th-toggle { margin-left: 4px; width: 20px; padding: 0; border: 0; background: none; color: var(--dt-muted); cursor: pointer; font: inherit; }
+.th-toggle:hover, .th-toggle:focus-visible { color: var(--dt-cyan-text); }
+/* “当前样子”：照截图复现——自动布局，其它列把实例列挤得很窄，整段名字一个字一个字地折行；SQL、信息两列照现在的写法折叠 */
+.mode-now td.inst { width: 5.5em; max-width: 5.5em; word-break: break-all; }
+.mode-now td.sql .cf-one { max-width: 420px; }
+.mode-now td.msg .cf-one { max-width: 260px; }
+
+.how ul { margin: 0; padding-left: 20px; color: var(--dt-muted); }
+.how li { margin: 4px 0; }
+.how b { color: var(--dt-fg); font-weight: 600; }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="crumb">原型 · SQL 工单详情 › <b>执行结果</b>（批量上线）</span>
+  <span class="sp"></span>
+  <div class="skins" role="group" aria-label="皮肤">
+    <span>皮肤</span>
+    <button type="button" data-skin-set="dark" aria-pressed="true" title="深空" aria-label="深空"></button>
+    <button type="button" data-skin-set="light" aria-pressed="false" title="明亮" aria-label="明亮"></button>
+    <button type="button" data-skin-set="sepia" aria-pressed="false" title="护眼" aria-label="护眼"></button>
+  </div>
+</header>
+
+<main class="page">
+  <div class="intro">
+    <h1>执行结果：内容超出列宽就折叠，点一下再展开</h1>
+    <p>批量上线的执行结果里，实例名很长，被挤成一个字一个字地折行，一行语句要占五六行高。这里改成：每一列都有定义好的宽度，内容放得下就原样显示，放不下的折成一行（前面带 ▸），点一下在同一列宽里展开全文。实例、阶段、级别、信息、SQL……所有列用同一个规则。下面的表可以直接点。</p>
+  </div>
+
+  <div class="opts" aria-label="原型选项（不属于正式页面）">
+    <span class="tag">原型选项</span>
+    <div class="opt"><span class="l">表格</span>
+      <div class="seg" role="group" aria-label="表格显示"><button type="button" data-mode="now" aria-pressed="false">当前样子</button><button type="button" data-mode="fold" aria-pressed="true">超出列宽就折叠（建议）</button></div>
+    </div>
+    <div class="opt"><span class="l">相邻同一实例的行</span>
+      <div class="seg" role="group" aria-label="相邻同一实例的行"><button type="button" data-ditto="0" aria-pressed="true">每行都写名称</button><button type="button" data-ditto="1" aria-pressed="false">只在第一行写名称</button></div>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2><span>执行结果</span><span class="mono muted" style="font-size:12px;font-weight:400" id="count"></span><button type="button" class="btn" id="fold-all">展开全部</button></h2>
+    <p class="legend" id="legend"></p>
+    <table class="list" id="result-table">
+      <colgroup id="cols"></colgroup>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
+
+  <section class="card how">
+    <h2>怎么用</h2>
+    <ul>
+      <li><b>折叠规则</b>：每列的宽度是定义好的（表上方一行小字写出来）。内容在这个宽度里放得下就原样显示，没有 ▸；放不下（或者本身带换行）才折成一行、末尾用“…”省略，前面带 ▸。窗口变宽 / 变窄后自动重新判断。</li>
+      <li><b>展开</b>：点 ▸ 或这行文字，在同一列宽里换行显示全文（这一列不变宽，别的列不挪动），点 ▾ 折叠；展开后的文字可以选中复制；鼠标放上去直接显示全文；键盘 Tab + Enter 也行。</li>
+      <li><b>列头的 ▸</b>：这一列有被折叠的内容时才出现，一键展开 / 折叠整列；右上角的“展开全部”管所有列。</li>
+      <li><b>数字列</b>（影响行数、耗时）同样遵守这个规则，但数字被“…”截断容易看错，所以这两列的宽度留足，正常数据不会触发折叠。</li>
+      <li><b>可选</b>：相邻几行属于同一个实例时，只在第一行写名字，后面的行写“〃”（放上去显示全名）；上面“原型选项”里可以切换看效果。</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  /* ---- 模拟数据：照截图的命名（站点 V1-编号 [引擎]-(地区)）；d 是更长的名字，e 是短名 ---- */
+  var INSTS = {
+    a: '(演示站) V1-9900 [SQL-Server]-(越南)',
+    b: '(演示站) V1-9901 [SQL-Server]-(印度)',
+    c: '(演示站) V1-9902 [SQL-Server]-(泰国)',
+    d: '(正式站) V2-1001 [SQL-Server]-(新加坡) 主库读写分离备份节点',
+    e: 'prod-order-01'
+  };
+  /* 每列定义好的宽度（px，含左右内边距）；没写宽度的列（SQL）拿走表格剩下的宽度 */
+  var COLS = [
+    { k: 'n', h: '#', w: 56 },
+    { k: 'inst', h: '实例', w: 200 },
+    { k: 'stage', h: '阶段', w: 220 },
+    { k: 'lv', h: '级别', w: 80 },
+    { k: 'msg', h: '信息', w: 260 },
+    { k: 'sql', h: 'SQL', mono: true },
+    { k: 'aff', h: '影响行数', w: 96, num: true },
+    { k: 't', h: '耗时(s)', w: 84, num: true }
+  ];
+  var UP = function (site, region) { return '-- 库: lottery (V1 站点库), 先在 ' + site + ' ' + region + '站点执行\n-- 用途: 补充商品的默认配置\nUPDATE dbo.ProductConfig SET Enabled = 1 WHERE SiteId = ' + site + ' AND Enabled IS NULL;'; };
+  var OK = 'Execute Successfully', BK = 'Execute Successfully\nBackup successfully';
+  var ROWS = [
+    { inst: 'a', stage: OK, lv: 0, msg: '', sql: 'USE [lottery]', aff: 0, t: 0 },
+    { inst: 'a', stage: BK, lv: 0, msg: '', sql: UP(9900, '越南'), aff: 1, t: 0.005 },
+    { inst: 'b', stage: OK, lv: 0, msg: '', sql: 'USE [lottery]', aff: 0, t: 0 },
+    { inst: 'b', stage: BK, lv: 0, msg: '', sql: UP(9901, '印度'), aff: 1, t: 0.004 },
+    { inst: 'c', stage: OK, lv: 0, msg: '', sql: 'USE [lottery]', aff: 0, t: 0 },
+    { inst: 'c', stage: BK, lv: 0, msg: '', sql: UP(9902, '泰国'), aff: 1, t: 0.006 },
+    { inst: 'd', stage: OK, lv: 0, msg: '', sql: 'USE [lottery]', aff: 0, t: 0 },
+    { inst: 'd', stage: 'Execute Failed', lv: 2, msg: "Invalid object name 'dbo.ProductConfig'. 目标库里没有这张表，请先同步表结构。", sql: UP(1001, '新加坡'), aff: 0, t: 0.002 },
+    { inst: 'e', stage: OK, lv: 0, msg: '', sql: 'USE [lottery]', aff: 0, t: 0 },
+    { inst: 'e', stage: BK, lv: 0, msg: '', sql: UP(1002, '本机'), aff: 1, t: 0.003 }
+  ];
+
+  var S = { mode: 'fold', ditto: false, open: new Set() };   // open：被点开的单元格（行号:列）
+  var OVER = {};                                              // 当前折叠着的单元格：列 -> [键]
+  var $ = function (id) { return document.getElementById(id); };
+  var table = $('result-table'), tbody = $('tbody');
+
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) { var c = arguments[i]; if (c != null && c !== false) e.append(c); }
+    return e;
+  }
+  var sameAsPrev = function (i) { return S.ditto && i > 0 && ROWS[i - 1].inst === ROWS[i].inst; };
+  function textOf(r, i, k) {
+    switch (k) {
+      case 'n': return String(i + 1);
+      case 'inst': return INSTS[r.inst];
+      case 'stage': return r.stage;
+      case 'lv': return r.lv === 2 ? '错误' : '通过';
+      case 'msg': return r.msg;
+      case 'sql': return r.sql;
+      case 'aff': return String(r.aff);
+      default: return String(r.t);
+    }
+  }
+
+  /* 一个单元格：▸ 按钮 + 一行省略的文字 + 展开后的全文。哪些真的要折叠、折叠还是展开，由 applyFold() 按实际宽度决定 */
+  function cell(key, col, text) {
+    var btn = h('button', { type: 'button', class: 'cf-t', hidden: '', onclick: function () { flip(key); } }, '▸');
+    var one = h('span', { class: 'cf-one' + (col.mono ? ' mono' : ''), onclick: function () { if (!btn.hidden) flip(key); } }, text.replace(/\s+/g, ' ').trim());
+    var full = h('div', { class: 'cf-full' + (col.mono ? ' mono' : ''), hidden: '' }, text);
+    return h('div', { class: 'cf', 'data-key': key, 'data-col': col.k, 'data-text': text }, btn, one, full);
+  }
+  // “当前样子”里只有 SQL 和信息两列折叠（和现在的页面一样），其它列是普通文字
+  var foldable = function (c) { return S.mode === 'fold' || c.k === 'sql' || c.k === 'msg'; };
+
+  function row(r, i) {
+    var tr = h('tr', { class: r.lv === 2 ? 'lv-err' : '' });
+    COLS.forEach(function (c) {
+      var td = h('td', { class: c.k + (c.num ? ' num' : '') }), text = textOf(r, i, c.k);
+      if (c.k === 'inst' && S.mode === 'fold' && sameAsPrev(i)) td.append(h('span', { class: 'ditto', title: '同上：' + text }, '〃'));
+      else if (!text) td.textContent = '';
+      else if (foldable(c)) td.append(cell(i + ':' + c.k, c, text));
+      else td.textContent = text;
+      tr.append(td);
+    });
+    return tr;
+  }
+
+  function flip(key) { if (S.open.has(key)) S.open.delete(key); else S.open.add(key); applyFold(); }
+  function setKeys(keys, open) { keys.forEach(function (k) { if (open) S.open.add(k); else S.open.delete(k); }); applyFold(); }
+
+  /* 一行文字在 14px（SQL 是等宽 12.5px）下有多宽：用一个看不见的量尺量，不用动页面上的元素（按钮的焦点也就不会丢） */
+  var ruler = h('span', { class: 'ruler', 'aria-hidden': 'true' });
+  document.body.append(ruler);
+  var COLBY = {}; COLS.forEach(function (c) { COLBY[c.k] = c; });
+  function textWidth(text, c) { ruler.className = 'ruler' + (c.mono ? ' mono' : c.num ? ' num' : ''); ruler.textContent = text; return ruler.getBoundingClientRect().width; }
+  var CARET = 26;   // ▸ 按钮 20px + 间距 6px
+
+  /* 按现在的宽度逐个单元格判断：放得下就是普通文字；放不下（或本身带换行）才出现 ▸，并按 S.open 决定折叠还是展开。
+     一列里只要有折叠的，这一列放得下的单元格也留出 ▸ 的位置，整列文字左对齐 */
+  function applyFold() {
+    OVER = {};
+    var cfs = [].slice.call(document.querySelectorAll('.cf')), info = cfs.map(function (cf) {
+      var text = cf.getAttribute('data-text'), col = cf.getAttribute('data-col');
+      var base = cf.clientWidth;   // 这一格能用的全部宽度（.cf 铺满单元格，留 ▸ 位置的 padding 算在里面）
+      var tw = textWidth(text.replace(/\s+/g, ' ').trim(), COLBY[col]);
+      return { cf: cf, col: col, text: text, base: base, tw: tw, multi: /\n/.test(text) };
+    });
+    var colHas = {};
+    info.forEach(function (x) { if (x.multi || x.tw > x.base + 1) colHas[x.col] = true; });
+    var reserve = function (x) { return S.mode === 'fold' && !!colHas[x.col]; };   // 必须是布尔值：classList.toggle 的第二个参数是 undefined 时会当成“没给”
+    info.forEach(function (x) {
+      var cf = x.cf, key = cf.getAttribute('data-key');
+      var btn = cf.querySelector('.cf-t'), one = cf.querySelector('.cf-one'), full = cf.querySelector('.cf-full');
+      var over = x.multi || x.tw > x.base - (reserve(x) ? CARET : 0) + 1;
+      cf.classList.toggle('over', over);
+      cf.classList.toggle('pad', !over && reserve(x));
+      one.removeAttribute('title');
+      if (!over) { btn.hidden = true; one.hidden = false; full.hidden = true; return; }
+      var open = S.open.has(key);
+      btn.hidden = false; btn.textContent = open ? '▾' : '▸';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.title = open ? '折叠' : '展开全文';
+      btn.setAttribute('aria-label', (open ? '折叠' : '展开') + '：' + x.text.replace(/\s+/g, ' ').slice(0, 40));
+      one.hidden = open; full.hidden = !open;
+      if (!open) one.title = x.text;                                        // 鼠标放上去直接看全文
+      (OVER[x.col] = OVER[x.col] || []).push(key);
+    });
+    var all = [];
+    COLS.forEach(function (c) {
+      var keys = OVER[c.k] || [], b = $('th-' + c.k), allOpen = keys.length > 0 && keys.every(function (k) { return S.open.has(k); });
+      all = all.concat(keys);
+      b.hidden = !keys.length || S.mode === 'now';                         // 列头的 ▸ 是新增的，“当前样子”里没有
+      b.textContent = allOpen ? '▾' : '▸';
+      b.title = (allOpen ? '折叠' : '展开') + '这一列的全部内容';
+    });
+    var every = all.length > 0 && all.every(function (k) { return S.open.has(k); });
+    $('fold-all').textContent = every ? '折叠全部' : '展开全部';
+    $('fold-all').disabled = !all.length;
+    $('count').textContent = ROWS.length + ' 行 · ' + Object.keys(INSTS).length + ' 个实例 · ' + all.length + ' 处折叠';
+  }
+
+  function render() {
+    var fold = S.mode === 'fold';
+    table.className = 'list ' + (fold ? 'fixed' : 'mode-now');
+    $('cols').replaceChildren.apply($('cols'), fold ? COLS.map(function (c) { return h('col', c.w ? { style: 'width:' + c.w + 'px' } : {}); }) : []);
+    $('head').replaceChildren.apply($('head'), COLS.map(function (c) {
+      return h('th', { class: c.num ? 'num' : '' }, c.h, h('button', { type: 'button', class: 'th-toggle', id: 'th-' + c.k, hidden: '', onclick: function () { var ks = OVER[c.k] || []; setKeys(ks, ks.some(function (k) { return !S.open.has(k); })); } }, '▸'));
+    }));
+    tbody.replaceChildren.apply(tbody, ROWS.map(row));
+    $('legend').hidden = !fold;
+    $('legend').innerHTML = '定义的列宽（px）：' + COLS.map(function (c) { return '<b>' + c.h + '</b> ' + (c.w || '其余的宽度'); }).join(' · ');
+    applyFold();
+  }
+
+  $('fold-all').addEventListener('click', function () {
+    var all = [];
+    Object.keys(OVER).forEach(function (k) { all = all.concat(OVER[k]); });
+    setKeys(all, all.some(function (k) { return !S.open.has(k); }));
+  });
+  document.querySelectorAll('[data-mode]').forEach(function (b) { b.addEventListener('click', function () {
+    S.mode = b.getAttribute('data-mode');
+    document.querySelectorAll('[data-mode]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    render();
+  }); });
+  document.querySelectorAll('[data-ditto]').forEach(function (b) { b.addEventListener('click', function () {
+    S.ditto = b.getAttribute('data-ditto') === '1';
+    document.querySelectorAll('[data-ditto]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    render();
+  }); });
+  document.querySelectorAll('[data-skin-set]').forEach(function (b) { b.addEventListener('click', function () {
+    document.documentElement.setAttribute('data-skin', b.getAttribute('data-skin-set'));
+    document.querySelectorAll('[data-skin-set]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    applyFold();
+  }); });
+  // 窗口宽度变了，哪些放得下、哪些放不下也跟着变
+  var tick = 0;
+  var recheck = function () { cancelAnimationFrame(tick); tick = requestAnimationFrame(applyFold); };
+  window.addEventListener('resize', recheck);
+  if (window.ResizeObserver) new ResizeObserver(recheck).observe(table);
+  render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(applyFold);
+})();
+</script>
+</body>
+</html>

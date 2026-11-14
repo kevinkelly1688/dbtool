@@ -1,0 +1,181 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: partman.css
+ * @time: 2026/10/28
+ */
+/* 分区维护页面独有样式；公共组件见 app.css / admin.css */
+#partman table.list td { white-space: nowrap; }
+.pm-pager { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.pm-stmt { font-family: var(--dt-f-mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-all; }
+.pm-kind { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--dt-line-hi); }
+.pm-kind.add { color: var(--dt-ok); border-color: var(--dt-ok-line); background: var(--dt-ok-soft); }
+.pm-kind.drop { color: var(--dt-crit); border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.pm-kind.init { color: var(--dt-crit); border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+.pm-kind.reorganize { color: var(--dt-amber); border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+.pm-danger { border: 1px solid var(--dt-crit-line); background: var(--dt-crit-soft); border-radius: 6px; padding: 10px 14px; margin-top: 10px; }
+.pm-danger ul { margin: 6px 0; padding-left: 20px; font-family: var(--dt-f-mono); }
+.pm-danger label { display: block; margin-top: 8px; font-size: 12.5px; }
+.pm-danger input { display: block; width: 100%; margin-top: 4px; }
+.pm-reorg { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; }
+.pm-reorg input { width: auto; margin-top: 3px; }
+.pm-parts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-family: var(--dt-f-mono); font-size: 12px; color: var(--dt-muted); margin: 6px 0; }
+.pm-log-sql { font-family: var(--dt-f-mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-all; }
+.pm-log-err { color: var(--dt-crit); }
+/* 子页签（分区配置 / 维护日志） */
+.pm-tabs { display: flex; gap: 4px; margin: 0 0 10px; border-bottom: 1px solid var(--dt-line); flex-wrap: wrap; }
+.pm-tabs a { padding: 8px 14px; color: var(--dt-muted); text-decoration: none; border-bottom: 2px solid transparent; }
+.pm-tabs a:hover { color: var(--dt-fg); }
+.pm-tabs a.on { color: var(--dt-cyan-text); border-bottom-color: var(--dt-cyan); }
+/* KPI：栅格见 admin.css 的 .kpis */
+#pm-kpis b.warn { color: var(--dt-amber); }
+/* 每行状态 */
+.pm-stat { min-width: 90px; white-space: normal !important; }
+.pm-st-msg { color: var(--dt-muted); font-size: 12px; max-width: 220px; word-break: break-all; }
+/* 全局维护日志 */
+#partman-logs table.list td { vertical-align: top; }
+#partman-logs .nowrap { white-space: nowrap; }
+.st.pm-src-manual { color: var(--dt-cyan-text); border-color: var(--dt-cyan-line); background: var(--dt-cyan-soft); }
+.st.pm-src-auto { color: var(--dt-amber); border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+.st.pm-src-external { color: var(--dt-muted); }
+/* 时区输入：常用项 + 说明 */
+.pm-tz-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pm-chip { height: 28px; padding: 0 10px; background: var(--dt-raise); border: 1px solid var(--dt-line-hi); border-radius: 14px; color: var(--dt-fg); cursor: pointer; font-size: 12.5px; }
+.pm-chip:hover { border-color: var(--dt-cyan); }
+.pm-chip[aria-pressed="true"] { border-color: var(--dt-cyan-line); color: var(--dt-cyan-text); background: var(--dt-cyan-soft); }
+.pm-tz p { margin: 6px 0 0; }
+.pm-tz p:empty { display: none; }
+.pm-tz-warn { color: var(--dt-amber); }
+@media (max-width: 700px) { .pm-chip { height: 36px; } }
+/* 实例类型标记 */
+.pm-dialect { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--dt-line-hi); border-radius: 4px; font-size: 11px; color: var(--dt-muted); }
+/* 初始化为分区表 */
+.pm-init { border: 1px solid var(--dt-amber); border-radius: 6px; padding: 10px 14px; margin: 8px 0; }
+.pm-init h3 { margin: 0 0 8px; }
+.pm-start { border: 1px solid var(--dt-line); border-radius: 6px; margin: 0; padding: 8px 12px; min-width: 0; }
+.pm-start legend { padding: 0 6px; color: var(--dt-muted); font-size: 12.5px; }
+.pm-opt { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; cursor: pointer; }
+.pm-opt input { width: auto; margin-top: 4px; flex: none; }
+.pm-start-date { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px 24px; }
+.pm-start-date input { flex: 1 1 220px; min-width: 0; }
+.pm-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 6px 0 10px; font-size: 13px; }
+.pm-kv dt { color: var(--dt-muted); }
+.pm-kv dd { margin: 0; word-break: break-all; }
+.pm-checks { list-style: none; margin: 4px 0 10px; padding: 0; }
+.pm-checks li { padding: 3px 0; word-break: break-word; }
+/* 推送设置 */
+.pm-hook-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.pm-hooks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; }
+.pm-hook { border: 1px solid var(--dt-line-hi); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.pm-hook.off { opacity: .75; }
+.pm-hook-head { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.pm-hook-url { flex: 1 1 100%; font-size: 12px; color: var(--dt-muted); word-break: break-all; }
+.pm-hook-ops { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pm-test-results { list-style: none; margin: 6px 0; padding: 0; }
+.pm-test-results li { padding: 6px 0; border-top: 1px solid var(--dt-line); word-break: break-word; }
+@media (max-width: 700px) {
+  .pm-start-date { margin-left: 0; }
+  .pm-kv { grid-template-columns: 1fr; gap: 0; }
+  .pm-kv dt { margin-top: 4px; }
+  .pm-hook-ops .btn, .pm-hook-bar .btn, .pm-start-date .btn { min-height: 40px; height: auto; }
+  #pm-hook .modal, #pm-hook-edit .modal, #pm-run .modal { max-height: 100vh; }
+}
+/* 运行输出面板：等宽、级别着色，在自身内部滚动，不撑宽页面 */
+.pm-out { border: 1px solid var(--dt-line-hi); border-radius: 6px; margin: 6px 0; min-width: 0; max-width: 100%; }
+.pm-out-bar { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--dt-line); }
+.pm-out-bar .spacer { flex: 1 1 auto; }
+.pm-out-search { flex: 1 1 140px; min-width: 0; max-width: 260px; }
+.pm-out-cut-note { padding: 4px 8px; border-bottom: 1px solid var(--dt-line); color: var(--dt-amber); }
+.pm-out-body { max-height: 320px; overflow: auto; padding: 6px 8px; font-family: var(--dt-f-mono); font-size: 12px; line-height: 1.55; background: var(--dt-bg, transparent); }
+.pm-out-line { display: grid; grid-template-columns: max-content 5ch minmax(0, 1fr); gap: 0 8px; white-space: pre-wrap; word-break: break-all; }
+.pm-out-t { color: var(--dt-muted); }
+.pm-out-l { font-weight: 600; }
+.pm-lv-info .pm-out-l { color: var(--dt-muted); }
+.pm-lv-warn .pm-out-l, .pm-lv-warn .pm-out-m { color: var(--dt-amber); }
+.pm-lv-error .pm-out-l, .pm-lv-error .pm-out-m { color: var(--dt-crit); }
+.pm-out-cut .pm-out-m { font-style: italic; }
+.pm-out-m mark { background: var(--dt-cyan-soft); color: inherit; border-radius: 2px; }
+.pm-out-copybuf { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }
+.pm-out-toggle { margin-top: 4px; }
+.pm-trace-box { margin-top: 10px; }
+.pm-trace-box > h3 { margin: 0 0 4px; font-size: 14px; }
+@media (max-width: 700px) {
+  .pm-out-line { display: block; }
+  .pm-out-t { font-size: 11px; margin-right: 8px; }
+  .pm-out-m { display: block; padding-left: 1ch; }
+  .pm-out-bar .btn, .pm-out-bar select, .pm-out-bar input { min-height: 36px; }
+  .pm-out-body { max-height: 50vh; }
+}
+/* 窄屏：日志表改为卡片式（每行一块，列名取自 data-label），运行输出面板占满卡片宽度 */
+@media (max-width: 700px) {
+  #pm-log table.list, #pm-log table.list tbody, #pm-log table.list tr, #pm-log table.list td,
+  #partman-logs table.list, #partman-logs table.list tbody, #partman-logs table.list tr, #partman-logs table.list td { display: block; width: 100%; min-width: 0; box-sizing: border-box; }
+  #pm-log table.list thead, #partman-logs table.list thead { display: none; }
+  #pm-log table.list tr, #partman-logs table.list tr { border: 1px solid var(--dt-line); border-radius: 6px; margin-bottom: 8px; padding: 6px 8px; }
+  #pm-log table.list td, #partman-logs table.list td { border: 0; padding: 2px 0; white-space: normal; }
+  #pm-log table.list td[data-label]::before, #partman-logs table.list td[data-label]::before { content: attr(data-label) "："; color: var(--dt-muted); font-size: 12px; }
+  #pm-log table.list td.empty::before, #partman-logs table.list td.empty::before { content: none; }
+  #partman-logs .page > .card > table.list, #partman-logs table.list { min-width: 0; }
+}
+/* 运行输出整行（表格里紧随日志行之后，占满全部列） */
+.pm-out-row[hidden] { display: none; }
+.pm-out-row > td { padding-top: 0; }
+@media (max-width: 700px) {
+  #pm-log table.list tr.pm-out-row, #partman-logs table.list tr.pm-out-row { border-top: 0; margin-top: -9px; padding-top: 0; }
+}
+.pm-kind { white-space: nowrap; }
+/* 长语句、未知上界、定时轮次汇总 */
+.pm-stmt-text { word-break: break-all; }
+.pm-stmt-ops { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-family: var(--dt-f-sans, inherit); }
+.pm-part-unknown { color: var(--dt-amber); }
+.pm-round { margin-bottom: 6px; }
+.pm-round-sum { font-weight: 600; }
+.pm-round-items { list-style: none; margin: 4px 0; padding: 0; }
+.pm-round-items li { padding: 3px 0; word-break: break-word; }
+/* 页头筛选表单：窄屏换行，不被裁掉 */
+#partman .inline-form, #partman-logs .inline-form { flex-wrap: wrap; max-width: 100%; }
+#partman .inline-form select, #partman .inline-form input, #partman-logs .inline-form select { max-width: 100%; min-width: 0; }
+@media (max-width: 700px) {
+  #partman .page-head .inline-form, #partman-logs .page-head .inline-form { flex: 1 1 100%; }
+  #partman .inline-form > *, #partman-logs .inline-form > * { flex: 1 1 140px; }
+}
+/* 表名下拉（见 partman.js 的“表名下拉”）：只列分区表；淡红 = 已有分区配置，浅绿 = 可以新增分区配置 */
+.pm-tb-list { position: fixed; z-index: 300; width: max-content; max-width: min(560px, 92vw); max-height: 300px; overflow: auto; margin: 0; padding: 4px; list-style: none; background: var(--dt-panel); border: 1px solid var(--dt-line-hi); border-radius: 6px; box-shadow: var(--dt-shadow); }
+.pm-tb-list[hidden] { display: none; }
+.pm-tb-opt { display: flex; flex-direction: column; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.pm-tb-opt + .pm-tb-opt { margin-top: 2px; }
+.pm-tb-name { color: var(--dt-fg); font-family: var(--dt-f-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-tb-sub { color: var(--dt-muted); font-size: 12px; }
+.pm-tb-opt.taken { background: rgba(var(--dt-crit-rgb), .2); }
+.pm-tb-opt.free { background: rgba(var(--dt-ok-rgb), .2); }
+.pm-tb-opt.on { outline: 2px solid var(--dt-cyan); outline-offset: -2px; }
+.pm-tb-empty { padding: 6px 8px; color: var(--dt-muted); font-size: 12.5px; }
+/* 可用分区告警：列表里的“可用分区”列、标签、告警设置弹窗 */
+.pm-avail { white-space: normal !important; min-width: 150px; }
+.pm-slots { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 8px; }
+.pm-slots i { width: 8px; height: 14px; border-radius: 2px; border: 1px solid var(--dt-line-hi); }
+.pm-slots i.on { background: var(--dt-ok); border-color: var(--dt-ok); }
+.pm-slots.warn i.on { background: var(--dt-amber); border-color: var(--dt-amber); }
+.pm-slots.crit i.on { background: var(--dt-crit); border-color: var(--dt-crit); }
+.pm-slots i.need { border-style: dashed; border-color: var(--dt-amber); } /* 虚线 = 还差几个才到阈值 */
+.pm-slots.crit i.need { border-color: var(--dt-crit); }
+.pm-av { font-variant-numeric: tabular-nums; }
+.pm-av.warn { color: var(--dt-amber); }
+.pm-av.crit { color: var(--dt-crit); }
+.pm-runway { color: var(--dt-muted); font-size: 12px; }
+.pm-runway.crit { color: var(--dt-crit); }
+.pm-tag { margin-left: 6px; padding: 0 6px; border: 1px solid var(--dt-line-hi); border-radius: 4px; font-size: 11px; color: var(--dt-muted); white-space: nowrap; }
+.pm-tag.warn { color: var(--dt-amber); border-color: var(--dt-amber); }
+.pm-warn-t { color: var(--dt-amber); margin: 6px 0 0; }
+.pm-sec { margin: 14px 0; }
+.pm-sec h3 { margin: 0 0 6px; font-size: 14px; }
+.pm-big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pm-big.crit { color: var(--dt-crit); }
+.pm-opt input.pm-n { width: 80px; margin: 0 4px; }
+.pm-verdict { margin-top: 8px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--dt-line-hi); color: var(--dt-muted); }
+.pm-verdict.ok { color: var(--dt-ok); border-color: var(--dt-ok-line); background: var(--dt-ok-soft); }
+.pm-verdict.warn { color: var(--dt-amber); border-color: var(--dt-amber-line); background: var(--dt-amber-soft); }
+.pm-verdict.crit { color: var(--dt-crit); border-color: var(--dt-crit-line); background: var(--dt-crit-soft); }
+#pm-kpis { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); } /* 多了“可用分区不足”一张卡，不再固定 6 列 */
+.pm-alert-ops { margin-top: 4px; }
+.pm-alert-ops .btn { height: 24px; padding: 0 8px; font-size: 12px; }

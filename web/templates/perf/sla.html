@@ -1,0 +1,36 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: sla.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/perf.css">{{end}}
+{{define "content"}}
+<div class="with-side">
+<aside class="sidenav" aria-label="{{t "性能工单"}}"><h4>{{t "性能工单"}}</h4>{{range .Data.Side}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{tp .Label}}</a>{{end}}</aside>
+<main class="page" id="perf-sla">
+  <div class="page-head"><h1>{{t "SLA 策略"}}</h1><span class="spacer"></span><button class="btn" id="ps-reset" type="button">{{t "重置"}}</button><button class="btn primary" id="ps-save" type="button" data-btn="perfcfg.sla">{{t "保存修改"}}</button></div>
+  <div id="ps-ro"></div>
+  <div id="ps-msg"></div>
+  <section class="card">
+    <table class="list">
+      <thead><tr><th>{{t "级别"}}</th><th>{{t "受理时限(小时)"}}</th><th>{{t "解决时限(小时)"}}</th><th>{{t "超时后升级总监(小时)"}}</th><th>{{t "重复催办间隔(小时)"}}</th><th>{{t "最多延期次数"}}</th></tr></thead>
+      <tbody id="ps-rows"><tr><td colspan="6" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table>
+    <h3 style="margin-top:14px">{{t "升级规则与通知对象"}}</h3>
+    <table class="list">
+      <thead><tr><th>{{t "升级级别"}}</th><th>{{t "触发条件"}}</th><th>{{t "负责人"}}</th><th>{{t "团队 TL"}}</th><th>{{t "跟进 DBA"}}</th><th>{{t "总监"}}</th><th>{{t "全局渠道"}}</th></tr></thead>
+      <tbody id="ps-esc"></tbody>
+    </table>
+    <p class="muted small" id="ps-esc-note"></p>
+    <h3 style="margin-top:14px">{{t "级别评估规则"}} <small id="ps-custom" class="muted"></small></h3>
+    <table class="list">
+      <thead><tr><th>{{t "级别"}}</th><th>{{t "日均浪费 DB 时间"}}</th><th>{{t "占实例慢 SQL 总耗时"}}</th><th>{{t "平均耗时 且 日均次数"}}</th></tr></thead>
+      <tbody id="ps-rules"></tbody>
+    </table>
+  </section>
+</main>
+</div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/perf/todo.js"></script><script type="module" src="/static/js/perf/sla.js"></script>{{end}}

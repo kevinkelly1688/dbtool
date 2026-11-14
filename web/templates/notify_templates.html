@@ -1,0 +1,87 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: notify_templates.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/notify.css"><link rel="stylesheet" href="/static/css/notify_tpl.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="nt">
+  <div class="page-head">
+    <h1>{{t "消息模板"}}</h1>
+    <span class="spacer"></span>
+    <a class="btn" href="/settings/notify">{{t "← 通知渠道"}}</a>
+  </div>
+  <div id="nt-msg"></div>
+
+  <div class="nt-layout">
+    <aside class="card nt-list" aria-label="{{t "消息列表"}}">
+      <input type="search" id="nt-q" placeholder="{{t "搜索消息"}}" aria-label="{{t "搜索消息"}}" autocomplete="off">
+      <div id="nt-events" role="list"></div>
+    </aside>
+
+    <section class="card nt-main" id="nt-editor" hidden aria-label="{{t "编辑模板"}}">
+      <div class="nt-head">
+        <div>
+          <h2 id="nt-title"></h2>
+        </div>
+        <span class="spacer"></span>
+        <label class="nt-scope">{{t "范围"}}
+          <select id="nt-scope" aria-label="{{t "模板范围"}}"></select>
+        </label>
+      </div>
+      <div id="nt-source"></div>
+
+      <div class="form-grid nt-meta">
+        <label>{{t "模板名称"}}<input type="text" id="nt-name" maxlength="60" placeholder="{{t "例如：待审批 · 卡片"}}" autocomplete="off"></label>
+        <label>{{t "状态色"}}<select id="nt-tone">
+          <option value="info">{{t "蓝（信息）"}}</option><option value="ok">{{t "绿（成功）"}}</option><option value="warn">{{t "橙（待处理）"}}</option><option value="crit">{{t "红（异常）"}}</option>
+        </select></label>
+        <label>{{t "图标（可选）"}}<input type="text" id="nt-icon" maxlength="8" placeholder="📋" autocomplete="off"></label>
+        <label class="check"><input type="checkbox" id="nt-enabled" checked> {{t "启用这个模板"}}</label>
+        <label class="full">{{t "标题"}}<input type="text" id="nt-ttl" maxlength="200" placeholder="[{{"{{"}}kind{{"}}"}}]#{{"{{"}}ticket_id{{"}}"}}" autocomplete="off"></label>
+      </div>
+
+      <h3 class="nt-sub">{{t "内容"}}</h3>
+      <div id="nt-blocks"></div>
+      <div class="nt-add" id="nt-add">
+        <span class="muted small">{{t "添加："}}</span>
+        <button class="btn" type="button" data-add="fields">{{t "+ 字段表"}}</button>
+        <button class="btn" type="button" data-add="text">{{t "+ 文本"}}</button>
+        <button class="btn" type="button" data-add="code">{{t "+ SQL / 代码块"}}</button>
+        <button class="btn" type="button" data-add="link">{{t "+ 链接 / 按钮"}}</button>
+        <button class="btn" type="button" data-add="divider">{{t "+ 分隔线"}}</button>
+      </div>
+
+      <div id="nt-issues"></div>
+
+      <div class="nt-actions">
+        <label class="nt-note">{{t "修改说明（可选）"}}<input type="text" id="nt-note" maxlength="200" autocomplete="off"></label>
+        <span class="spacer"></span>
+        <button class="btn" type="button" id="nt-history">{{t "历史"}}</button>
+        <button class="btn danger" type="button" id="nt-reset" hidden>{{t "恢复到上一层"}}</button>
+        <button class="btn primary" type="button" id="nt-save">{{t "保存"}}</button>
+      </div>
+      <div class="nt-test">
+        <span class="lbl">{{t "测试发送"}}</span>
+        <select id="nt-test-ch" aria-label="{{t "测试发送到哪个渠道"}}"></select>
+        <input type="text" id="nt-test-to" placeholder="{{t "测试收件人（可空）"}}" autocomplete="off" aria-label="{{t "测试收件人"}}" hidden>
+        <button class="btn" type="button" id="nt-test">{{t "发送测试消息"}}</button>
+      </div>
+      <div id="nt-test-result"></div>
+      <div id="nt-hist" hidden></div>
+    </section>
+
+    <aside class="card nt-side" id="nt-side" hidden aria-label="{{t "变量与预览"}}">
+      <h3 class="nt-sub">{{t "预览"}}</h3>
+      <div class="tabbar" id="nt-ptabs" role="tablist"></div>
+      <div id="nt-pv"></div>
+      <h3 class="nt-sub">{{t "可用变量"}}</h3>
+      <div id="nt-vars"></div>
+    </aside>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/notify/templates.js"></script>{{end}}

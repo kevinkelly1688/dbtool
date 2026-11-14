@@ -1,0 +1,68 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: instmgr.css
+ * @time: 2026/10/28
+ */
+/* 实例管理（instmgr）独有的样式；侧栏、页签、弹窗、徽标等公共组件在 admin.css / app.css。 */
+.page .toolbar { margin-bottom: 10px; }
+.page .toolbar input[type=search] { min-width: 220px; }
+.inline-form { flex-wrap: wrap; }
+td.wrap { max-width: 520px; }
+.modal select[multiple] { height: auto; min-height: 120px; }
+.grant-cols select[multiple] { width: 100%; }
+.privgrp .check-list { max-height: none; }
+.privgrp > label.check { margin-bottom: 4px; }
+.privgrp .crit { color: var(--dt-crit); }
+#g-sql { min-height: 44px; }
+#g-warn .alert { margin-top: 6px; }
+.modal .form-grid small.mono { color: var(--dt-muted); margin-left: 6px; }
+td.nw { white-space: nowrap; }
+/* HOST:PORT 列：长地址折成 30 个字符宽（等宽字体里 1ch = 1 个字符），点开显示全部 */
+.im-hp { display: inline-flex; align-items: baseline; gap: 4px; cursor: pointer; }
+.im-hp-t { display: inline-block; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.im-hp.open .im-hp-t { max-width: none; overflow: visible; }
+.im-hp-x { flex: none; color: var(--dt-muted); font-size: 11px; }
+.im-hp:hover .im-hp-x, .im-hp:focus-visible .im-hp-x { color: var(--dt-fg); }
+/* 类型 / 版本列：宽度以“PolarDB 8.0.18”这样的常见长度为准，超出就让版本号另起一行（类型名不拆），版本串里的连字符处可继续折行 */
+td.il-ver { max-width: 9em; }
+td.il-ver > span { white-space: nowrap; }
+td.il-ver > small { display: inline-block; overflow-wrap: break-word; }
+td.ops { white-space: normal; min-width: 250px; }
+td.ops .btn { margin: 0 4px 4px 0; height: 26px; padding: 0 8px; }
+/* 实例列表：操作列的按钮排成一行不换行（其它页面的操作列保持原样）；屏幕不够宽时表格自己横向滚动，页面不出现横向滚动条 */
+.il-scroll { overflow-x: auto; }
+#il-rows td.ops { white-space: nowrap; min-width: 0; }
+#il-rows td.ops .btn { margin-bottom: 0; }
+/* ---- 实例列表：统计条、停用行、详情抽屉 ---- */
+.im-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0 0 12px; }
+.im-kpis4 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 12px; }
+.im-kpis b.warn, .im-kpis4 b.warn { color: var(--dt-amber); }
+.im-kpis b.crit, .im-kpis4 b.crit { color: var(--dt-crit); }
+@media (max-width: 900px) { .im-kpis, .im-kpis4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 会话诊断：右上角的“实例”选择框右边缘和下面卡片里统计块（阻塞源）的右边缘对齐——留出卡片的边框 + 内边距（app.css .card：1px + 24px） */
+#ss .page-head { padding-right: 25px; }
+tr.im-off td { color: var(--dt-muted); }
+tr.im-off td .badge { opacity: .9; }
+td.ok-text { color: var(--dt-ok); }
+.modal-mask.im-drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
+.modal-mask.im-drawer > .modal { width: min(560px, 100%); max-height: 100vh; height: 100vh; border-radius: 8px 0 0 8px; border-right: 0; }
+.im-drawer-badges { margin: 0 0 12px; }
+.im-drawer-links { margin-top: 16px; }
+.im-drawer-links .btn { text-decoration: none; margin: 0 6px 6px 0; }
+/* ---- 会话管理：定位到的行、阻塞链 ---- */
+tr.im-hl td { box-shadow: inset 0 2px 0 var(--dt-cyan), inset 0 -2px 0 var(--dt-cyan); }
+.im-chains { margin-bottom: 10px; }
+.im-chain { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--dt-line-hi); }
+.im-chain-node { padding: 2px 0; }
+.im-chain-sql { color: var(--dt-fg); background: var(--dt-sunken); padding: 1px 6px; border-radius: 3px; }
+/* ---- 账号管理：登记信息 ---- */
+td.im-reg { min-width: 180px; }
+
+/* 实例列表：行首勾选与批量操作条 */
+.im-batch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--dt-line); border-radius: 8px; background: var(--dt-sunken); }
+.im-batch b { color: var(--dt-fg); }
+th.im-sel, td.im-sel { width: 34px; text-align: center; padding-left: 6px; padding-right: 0; }
+td.im-sel input, th.im-sel input { margin: 0; cursor: pointer; }
+tr.im-picked td { background: var(--dt-cyan-soft); }
+#il-msg .alert { white-space: pre-line; }

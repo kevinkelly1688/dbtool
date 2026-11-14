@@ -1,0 +1,125 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: security.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/auth.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="sec">
+  <div class="page-head">
+    <h1>{{t "安全策略"}}</h1>
+    <span class="spacer"></span>
+    <button class="btn primary" type="button" id="sec-save" disabled>{{t "保存配置"}}</button>
+  </div>
+  <div id="sec-msg"><div class="alert info" role="status">{{t "加载中…"}}</div></div>
+
+  <div class="kpi-row" id="sec-kpis" aria-label="{{t "安全策略概览"}}">
+    <div class="kpi"><span class="kl">{{t "账号锁定策略"}}</span><b class="kv" id="kpi-lock">—</b></div>
+    <div class="kpi"><span class="kl">{{t "两步验证"}}</span><b class="kv" id="kpi-2fa">—</b><span class="kd" id="kpi-2fa-d">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">{{t "密码策略"}}</span><b class="kv" id="kpi-pw">—</b><span class="kd" id="kpi-pw-d">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">{{t "会话 / JWT"}}</span><b class="kv" id="kpi-sess">—</b><span class="kd" id="kpi-sess-d">&nbsp;</span></div>
+  </div>
+
+  <div class="cols">
+    <section class="card" aria-labelledby="sec-h-account">
+      <h2 id="sec-h-account">{{t "账号安全"}}</h2>
+      <div class="form-grid one">
+        <label>{{t "登录失败锁定次数"}}<input type="text" inputmode="numeric" id="sec-lock-cnt" data-min="1" data-max="100" data-name="{{t "登录失败锁定次数"}}"></label>
+        <label>{{t "锁定时间（秒）"}}<input type="text" inputmode="numeric" id="sec-lock-time" data-min="10" data-max="86400" data-name="{{t "锁定时间"}}"></label>
+        <label class="check"><input type="checkbox" id="sec-enforce-2fa"> {{t "强制两步验证"}}</label>
+        <label class="check"><input type="checkbox" id="sec-signup"> {{t "开放用户自助注册"}}</label>
+        <label>{{t "密码最小长度"}}<input type="text" inputmode="numeric" id="sec-pw-min" data-min="6" data-max="64" data-name="{{t "密码最小长度"}}"></label>
+        <label class="check"><input type="checkbox" id="sec-pw-complex"> {{t "密码需含字母、数字、特殊字符"}}</label>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="sec-h-session">
+      <h2 id="sec-h-session">{{t "会话与 API"}}</h2>
+      <div class="form-grid one">
+        <label>{{t "会话有效期（分钟）"}}<input type="text" inputmode="numeric" id="sec-session-min" data-min="5" data-max="43200" data-name="{{t "会话有效期"}}"></label>
+        <label class="check"><input type="checkbox" id="sec-browser-close"> {{t "关闭浏览器即退出"}}</label>
+        <label>{{t "JWT 有效期（小时）"}}<input type="text" inputmode="numeric" id="sec-jwt-hours" data-min="1" data-max="720" data-name="{{t "JWT 有效期"}}"></label>
+        <label class="check"><input type="checkbox" id="sec-jwt-otp"> {{t "JWT 登录要求动态口令（OTP）"}}</label>
+        <label>{{t "API 用户白名单（留空 = 不限制）"}}<select id="sec-whitelist" multiple size="5"></select></label>
+        <label>{{t "新用户默认权限组"}}<select id="sec-def-ag" multiple size="4"></select></label>
+        <label>{{t "新用户默认资源组"}}<select id="sec-def-rg" multiple size="4"></select></label>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="sec-h-wm">
+    <h2 id="sec-h-wm">{{t "页面水印"}}</h2>
+    <div class="wm-grid">
+      <div class="form-grid one">
+        <label class="check"><input type="checkbox" id="sec-watermark"> {{t "启用页面水印"}}</label>
+        <label>{{t "水印内容"}}<input type="text" class="mono" id="sec-wm-text" maxlength="60" autocomplete="off">
+          <span class="wm-vars" id="sec-wm-vars" role="group" aria-label="{{t "插入变量"}}"></span></label>
+        <label>{{t "附加文字（第二行，可空）"}}<input type="text" id="sec-wm-extra" maxlength="40" autocomplete="off" placeholder="{{t "如：内部资料 严禁外传"}}"></label>
+        <label>{{t "透明度"}}
+          <span class="wm-range"><input type="range" id="sec-wm-op" min="3" max="30" step="1"><b id="sec-wm-opv">14%</b></span></label>
+        <label>{{t "字号（px）"}}<input type="text" inputmode="numeric" id="sec-wm-size" data-min="12" data-max="28" data-name="{{t "水印字号"}}"></label>
+        <label>{{t "倾斜角度（°）"}}<input type="text" inputmode="numeric" id="sec-wm-angle" data-min="-60" data-max="0" data-name="{{t "水印倾斜角度"}}"></label>
+        <label>{{t "疏密"}}
+          <select id="sec-wm-gap"><option value="tight">{{t "紧凑"}}</option><option value="normal">{{t "标准"}}</option><option value="loose">{{t "宽松"}}</option></select></label>
+        <label>{{t "颜色"}}
+          <select id="sec-wm-color"><option value="auto">{{t "跟随主题"}}</option><option value="gray">{{t "灰色"}}</option><option value="red">{{t "红色"}}</option><option value="blue">{{t "蓝色"}}</option></select></label>
+      </div>
+      <div>
+        <span class="lbl">{{t "效果预览"}}</span>
+        <div class="wm-prev" id="sec-wm-prev" role="img" aria-label="{{t "水印效果预览"}}"></div>
+        <button class="btn" type="button" id="sec-wm-full">{{t "全页预览 5 秒（未保存）"}}</button>
+        <div id="sec-wm-msg"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section class="card" aria-labelledby="sec-h-sms">
+      <h2 id="sec-h-sms">{{t "两步验证短信服务"}}</h2>
+      <div class="form-grid one">
+        <label>{{t "服务商"}}
+          <select id="sec-sms-provider">
+            <option value="disabled">{{t "关闭（仅 TOTP）"}}</option>
+            <option value="aliyun">{{t "阿里云"}}</option>
+            <option value="tencent">{{t "腾讯云"}}</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-grid one" id="sec-sms-aliyun" hidden>
+        <label>AccessKey ID<input type="text" class="mono" id="sec-ali-id" autocomplete="off" placeholder="LTAI…"></label>
+        <label>AccessKey Secret<input type="password" id="sec-ali-secret" autocomplete="new-password"></label>
+        <label>{{t "短信签名"}}<input type="text" id="sec-ali-sign" autocomplete="off"></label>
+        <label>{{t "模板编号"}}<input type="text" class="mono" id="sec-ali-tpl" autocomplete="off" placeholder="SMS_123456789"></label>
+        <label>{{t "模板变量名"}}<input type="text" class="mono" id="sec-ali-var" autocomplete="off" placeholder="code"></label>
+      </div>
+      <div class="form-grid one" id="sec-sms-tencent" hidden>
+        <label>SecretId<input type="text" class="mono" id="sec-tc-id" autocomplete="off"></label>
+        <label>SecretKey<input type="password" id="sec-tc-key" autocomplete="new-password"></label>
+        <label>{{t "短信签名"}}<input type="text" id="sec-tc-sign" autocomplete="off"></label>
+        <label>{{t "模板 ID"}}<input type="text" class="mono" id="sec-tc-tpl" autocomplete="off"></label>
+        <label>SDK AppID<input type="text" class="mono" id="sec-tc-appid" autocomplete="off"></label>
+      </div>
+      <div id="sec-sms-test-box" hidden>
+        <div class="sms-test">
+          <label for="sec-sms-phone" class="muted small">{{t "测试手机号"}}</label>
+          <input type="text" inputmode="tel" id="sec-sms-phone" autocomplete="off" placeholder="13800000000">
+          <button class="btn" type="button" id="sec-sms-test">{{t "发送测试短信（用已保存的配置）"}}</button>
+        </div>
+        <div id="sec-sms-msg"></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="sec-h-provs">
+      <h2 id="sec-h-provs">{{t "已定义的登录方式"}}<span class="spacer"></span><a class="btn" href="/settings/auth-providers">{{t "去配置登录方式"}}</a></h2>
+      <table class="list">
+        <thead><tr><th scope="col">{{t "名称"}}</th><th scope="col">{{t "类型"}}</th><th scope="col">{{t "状态"}}</th></tr></thead>
+        <tbody id="sec-provs"><tr><td colspan="3" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/auth/security.js"></script>{{end}}

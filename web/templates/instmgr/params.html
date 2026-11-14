@@ -1,0 +1,87 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: params.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/instmgr.css">{{end}}
+
+{{define "content"}}
+<div class="with-side">{{template "instmgr_side" .Data}}
+<main class="page fill-list" id="pm">
+  <div class="page-head">
+    <h1>{{t "参数管理"}}</h1><span class="spacer"></span>
+    <label class="muted small">{{t "实例"}} <select id="pm-inst" aria-label="{{t "实例"}}"></select></label>
+    <button class="btn" type="button" id="pm-add-tpl" hidden>{{t "+ 添加参数模板"}}</button>
+  </div>
+  <div id="pm-msg"></div>
+  <div class="tabbar" id="pm-tabs">
+    <button class="tab on" type="button" data-tab="vars">{{t "参数列表"}}</button>
+    <button class="tab" type="button" data-tab="tpl">{{t "参数模板"}}</button>
+    <button class="tab" type="button" data-tab="hist">{{t "修改历史"}}</button>
+  </div>
+
+  <section class="card fill" data-pane="vars">
+    <form class="toolbar" id="v-filter">
+      <label class="muted small">{{t "允许修改"}} <select id="v-editable"><option value="yes">{{t "是"}}</option><option value="no">{{t "否"}}</option><option value="all">{{t "全部"}}</option></select></label>
+      <label class="muted small"><input type="checkbox" id="v-dev"> {{t "只看偏离推荐值"}}</label>
+      <input type="search" id="v-q" placeholder="{{t "搜索参数名"}}" aria-label="{{t "搜索参数名"}}"><button class="btn" type="submit">{{t "查询"}}</button>
+      <span class="spacer"></span><span class="muted small" id="v-dev-count"></span>
+    </form>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "参数名"}}</th><th>{{t "运行值"}}</th><th>{{t "默认值"}}</th><th>{{t "推荐值"}}</th><th>{{t "可修改值"}}</th><th>{{t "描述"}}</th><th></th></tr></thead>
+      <tbody id="v-rows"><tr><td colspan="7" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card fill" data-pane="tpl" hidden>
+    <div class="toolbar"><span class="muted small" id="tpl-count"></span></div>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "参数名"}}</th><th>{{t "默认值"}}</th><th>{{t "推荐值"}}</th><th>{{t "可修改值"}}</th><th>{{t "允许修改"}}</th><th>{{t "描述"}}</th><th></th></tr></thead>
+      <tbody id="tpl-rows"><tr><td colspan="7" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card fill" data-pane="hist" hidden>
+    <form class="toolbar" id="h-filter">
+      <select id="h-scope" aria-label="{{t "范围"}}"><option value="cur">{{t "仅当前实例"}}</option><option value="all">{{t "全部实例"}}</option></select>
+      <input type="search" id="h-q" placeholder="{{t "搜索参数名"}}" aria-label="{{t "搜索参数名"}}"><button class="btn" type="submit">{{t "查询"}}</button>
+    </form>
+    <div class="grid-wrap"><table class="list">
+      <thead><tr><th>{{t "实例"}}</th><th>{{t "参数名"}}</th><th>{{t "变更前"}}</th><th>{{t "变更后"}}</th><th>{{t "执行的语句"}}</th><th>{{t "修改人"}}</th><th>{{t "修改时间"}}</th></tr></thead>
+      <tbody id="h-rows"><tr><td colspan="7" class="empty">{{t "加载中…"}}</td></tr></tbody>
+    </table></div>
+    <div class="pager" id="h-pager"></div>
+  </section>
+</main></div>
+
+<div class="modal-mask" id="pm-m-set" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="pm-m-set-t">
+  <h2 id="pm-m-set-t">{{t "修改参数值"}}</h2>
+  <div id="pm-set-msg"></div>
+  <div class="form-grid">
+    <label class="full">{{t "参数名"}}<input type="text" id="s-name" readonly></label>
+    <label>{{t "当前运行值"}}<input type="text" id="s-old" readonly></label>
+    <label>{{t "新值"}}<small id="s-valid" class="mono"></small><input type="text" id="s-new" autocomplete="off"></label>
+    <label class="full" id="s-rec-box" hidden>{{t "推荐值"}}<input type="text" id="s-rec" readonly></label>
+  </div>
+  <p class="muted small">{{t "仅修改运行值，不会写入配置文件，重启后恢复。"}}</p>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="s-submit">{{t "执行"}}</button></div>
+</div></div>
+
+<div class="modal-mask" id="pm-m-tpl" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="pm-m-tpl-t">
+  <h2 id="pm-m-tpl-t">{{t "添加参数模板"}}</h2>
+  <div id="pm-tpl-msg"></div>
+  <div class="form-grid">
+    <label>{{t "数据库类型"}}<select id="t-dbtype"></select></label>
+    <label>{{t "参数名"}}<input type="text" id="t-name" placeholder="max_connections" autocomplete="off"></label>
+    <label>{{t "默认值"}}<input type="text" id="t-default" autocomplete="off"></label>
+    <label>{{t "推荐值"}}<input type="text" id="t-rec" placeholder="{{t "留空则不提示偏离"}}" autocomplete="off"></label>
+    <label class="full">{{t "可修改值"}}<input type="text" class="mono" id="t-valid" placeholder="{{t "[1-65535] 或 [ON|OFF]"}}" autocomplete="off"></label>
+    <label class="check"><input type="checkbox" id="t-editable" checked> {{t "允许在平台修改"}}</label>
+    <label class="full">{{t "描述"}}<input type="text" id="t-desc" autocomplete="off"></label>
+  </div>
+  <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-close>{{t "取消"}}</button><button class="btn primary" type="button" id="t-submit">{{t "保存"}}</button></div>
+</div></div>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/instmgr/params.js"></script>{{end}}

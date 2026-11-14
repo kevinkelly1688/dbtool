@@ -1,0 +1,114 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/firewall.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="fw">
+  <div class="page-head">
+    <h1>{{t "SQL 防火墙"}}</h1>
+    <span class="spacer"></span>
+    <span class="muted small">{{t "全局模式"}}</span>
+    <div class="fw-seg warn" id="fw-gmode" role="group" aria-label="{{t "全局模式"}}">
+      <button type="button" data-m="observe" aria-pressed="false">{{t "观察"}}</button><button type="button" data-m="enforce" aria-pressed="false">{{t "拦截"}}</button>
+    </div>
+    <button class="btn" id="fw-switch" type="button"></button>
+    <button class="btn" id="fw-b-test" type="button">{{t "语句测试台"}}</button>
+    <button class="btn primary" id="fw-b-new" type="button">{{t "新建规则"}}</button>
+  </div>
+
+  <div id="fw-alerts"></div>
+  <div class="fw-stats" id="fw-stats"></div>
+  <div class="fw-note muted small" id="fw-explain" hidden></div>
+
+  <div class="fw-tabs" id="fw-tabs" role="tablist">
+    <button type="button" role="tab" data-t="rules" aria-selected="true">{{t "规则"}}<span class="n" id="fw-n-rules"></span></button>
+    <button type="button" role="tab" data-t="bench" aria-selected="false">{{t "语句测试台"}}</button>
+    <button type="button" role="tab" data-t="hits" aria-selected="false">{{t "命中记录"}}<span class="n" id="fw-n-hits"></span></button>
+    <button type="button" role="tab" data-t="exc" aria-selected="false">{{t "例外名单"}}<span class="n" id="fw-n-exc"></span></button>
+    <button type="button" role="tab" data-t="tpl" aria-selected="false">{{t "规则模板"}}</button>
+  </div>
+
+  <!-- 规则 -->
+  <section id="fw-p-rules" class="fw-panel">
+    <div class="fw-toolbar">
+      <input id="fw-f-q" class="fw-grow" type="search" placeholder="{{t "筛选规则名称 / 说明"}}" aria-label="{{t "筛选规则"}}">
+      <select id="fw-f-action" aria-label="{{t "动作"}}"><option value="">{{t "全部动作"}}</option></select>
+      <select id="fw-f-scene" aria-label="{{t "场景"}}"><option value="">{{t "全部场景"}}</option></select>
+      <select id="fw-f-state" aria-label="{{t "状态"}}">
+        <option value="">{{t "全部状态"}}</option><option value="on">{{t "已启用"}}</option><option value="off">{{t "已停用"}}</option><option value="observe">{{t "观察中"}}</option>
+      </select>
+    </div>
+    <div class="fw-scroll"><table class="fw-list" id="fw-rules"></table></div>
+  </section>
+
+  <!-- 语句测试台 -->
+  <section id="fw-p-bench" hidden>
+    <div class="fw-bench">
+      <div class="fw-panel fw-pad">
+        <div class="fw-row">
+          <b>{{t "语句"}}</b>
+          <select id="fw-b-pre" class="fw-end" aria-label="{{t "示例语句"}}"><option value="">{{t "示例语句…"}}</option></select>
+        </div>
+        <textarea id="fw-b-sql" class="mono" rows="6" placeholder="{{t "粘贴要测试的 SQL"}}" aria-label="{{t "要测试的语句"}}"></textarea>
+        <div class="fw-fgrid fw-fgrid4">
+          <label for="fw-b-scene">{{t "场景"}}</label><select id="fw-b-scene"></select>
+          <label for="fw-b-inst">{{t "实例"}}</label><select id="fw-b-inst"><option value="">{{t "不指定（手选环境）"}}</option></select>
+          <label for="fw-b-env">{{t "实例环境"}}</label><select id="fw-b-env"><option value="">{{t "未标注"}}</option></select>
+          <label for="fw-b-group">{{t "用户权限组"}}</label><select id="fw-b-group"><option value="">{{t "不属于任何组"}}</option></select>
+          <label for="fw-b-when">{{t "时间"}}</label>
+          <select id="fw-b-when">
+            <option value="workday_day">{{t "工作日 14 点"}}</option><option value="workday_night">{{t "工作日凌晨 3 点"}}</option>
+            <option value="workday_late">{{t "工作日晚上 22 点"}}</option><option value="weekend">{{t "周末 11 点"}}</option><option value="now">{{t "现在"}}</option>
+          </select>
+          <label for="fw-b-user">{{t "用户名"}}</label><input id="fw-b-user" type="text" placeholder="{{t "可选"}}" autocomplete="off">
+          <label for="fw-b-scan">{{t "预估扫描"}}</label><input id="fw-b-scan" type="number" min="0" placeholder="{{t "行；留空 = 未知"}}">
+          <label for="fw-b-aff">{{t "预估影响"}}</label><input id="fw-b-aff" type="number" min="0" placeholder="{{t "行；留空 = 未知"}}">
+        </div>
+        <div><button class="btn primary" id="fw-b-run" type="button">{{t "评估这条语句"}}</button></div>
+      </div>
+      <div class="fw-panel fw-pad" id="fw-b-res" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- 命中记录 -->
+  <section id="fw-p-hits" class="fw-panel" hidden>
+    <div class="fw-toolbar">
+      <input id="fw-h-q" class="fw-grow" type="search" placeholder="{{t "筛选用户 / 语句 / 规则 / 实例"}}" aria-label="{{t "筛选命中记录"}}">
+      <select id="fw-h-rule" aria-label="{{t "规则"}}"><option value="">{{t "全部规则"}}</option></select>
+      <select id="fw-h-result" aria-label="{{t "结果"}}">
+        <option value="">{{t "全部结果"}}</option><option value="deny">{{t "已拒绝"}}</option><option value="reason">{{t "要求原因"}}</option>
+        <option value="limit">{{t "已限行"}}</option><option value="mask">{{t "已脱敏"}}</option><option value="warn">{{t "仅告警"}}</option><option value="observe">{{t "观察命中"}}</option>
+      </select>
+      <select id="fw-h-scene" aria-label="{{t "场景"}}"><option value="">{{t "全部场景"}}</option></select>
+      <select id="fw-h-days" aria-label="{{t "时间范围"}}">
+        <option value="1">{{t "今天"}}</option><option value="7" selected>{{t "近 7 天"}}</option><option value="30">{{t "近 30 天"}}</option><option value="90">{{t "近 90 天"}}</option>
+      </select>
+      <button class="btn" id="fw-h-refresh" type="button">{{t "刷新"}}</button>
+    </div>
+    <div class="fw-scroll"><table class="fw-list" id="fw-hits"></table></div>
+    <div class="fw-pager" id="fw-h-pager"></div>
+  </section>
+
+  <!-- 例外名单 -->
+  <section id="fw-p-exc" class="fw-panel" hidden>
+    <div class="fw-toolbar">
+      <span class="spacer"></span>
+      <button class="btn primary" id="fw-e-new" type="button">{{t "添加例外"}}</button>
+    </div>
+    <div class="fw-scroll"><table class="fw-list" id="fw-excs"></table></div>
+  </section>
+
+  <!-- 规则模板 -->
+  <section id="fw-p-tpl" class="fw-panel" hidden>
+    <div class="fw-tpls" id="fw-tpls"></div>
+  </section>
+
+  <div class="fw-mask" id="fw-mask" hidden></div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/firewall/main.js"></script>{{end}}

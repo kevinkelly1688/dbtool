@@ -1,0 +1,27 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: help.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/help.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="help" data-base="/static/help/">
+  <div class="help">
+    <aside class="card topics" aria-label="{{t "文档目录"}}">
+      <input type="search" id="help-q" placeholder="{{t "搜索文档（回车）"}}" aria-label="{{t "搜索文档"}}" autocomplete="off">
+      <nav id="help-nav">
+        {{range .Data.Groups}}
+        <div class="g">{{tp .Name}}</div>
+        {{range .Topics}}<a href="#help/{{.ID}}" data-topic="{{.ID}}">{{tp .Title}}</a>{{end}}
+        {{end}}
+      </nav>
+    </aside>
+    <article class="card hp" id="help-body" aria-live="polite"><div class="muted">{{t "正在加载文档…"}}</div></article>
+    <aside class="toc" id="help-toc" aria-label="{{t "本页目录"}}"></aside>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/help/help.js"></script>{{end}}

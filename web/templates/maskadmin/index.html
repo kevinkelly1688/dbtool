@@ -1,0 +1,117 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: index.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/maskadmin.css">{{end}}
+
+{{define "content"}}
+<main class="page" id="mk">
+  <div class="page-head">
+    <h1>{{t "数据脱敏"}}</h1>
+    <label class="muted" for="mk-inst">{{t "实例"}}</label>
+    <select id="mk-inst" aria-label="{{t "实例"}}"></select>
+    <span class="spacer"></span>
+    <button class="btn" id="mk-paste-open" type="button">{{t "粘贴清单选字段"}}</button>
+  </div>
+
+  <div class="mk-engine" id="mk-engine" hidden></div>
+  <div id="mk-alerts"></div>
+
+  <div class="mk-tabs" role="tablist">
+    <button type="button" role="tab" class="mk-tab" id="mk-t-wiz" aria-selected="true">{{t "配置向导"}}</button>
+    <button type="button" role="tab" class="mk-tab" id="mk-t-cfg" aria-selected="false">{{t "已配置字段"}} <span class="mk-badge" id="mk-cfg-count">0</span></button>
+  </div>
+
+  <!-- 配置向导 -->
+  <section id="mk-wiz" class="mk-bench">
+    <div class="mk-panel">
+      <h2><span class="mk-step">1</span>{{t "选择字段"}} <span class="muted small" id="mk-sel-hint"></span></h2>
+      <div class="mk-toolbar">
+        <select id="mk-db" aria-label="{{t "数据库"}}"></select>
+        <input id="mk-q" class="mk-grow" type="search" placeholder="{{t "筛选表 / 字段 / 注释"}}" aria-label="{{t "筛选"}}">
+        <div class="mk-seg" role="group" aria-label="{{t "视图"}}">
+          <button type="button" id="mk-v-table" aria-pressed="true">{{t "按表"}}</button>
+          <button type="button" id="mk-v-name" aria-pressed="false">{{t "按字段名"}}</button>
+        </div>
+      </div>
+      <div class="mk-toolbar">
+        <div class="mk-chips" role="group" aria-label="{{t "状态筛选"}}">
+          <button class="mk-chip" data-f="all" aria-pressed="true" type="button">{{t "全部"}}</button>
+          <button class="mk-chip" data-f="sus" aria-pressed="false" type="button">{{t "疑似敏感"}}</button>
+          <button class="mk-chip" data-f="un" aria-pressed="false" type="button">{{t "未脱敏"}}</button>
+          <button class="mk-chip" data-f="ok" aria-pressed="false" type="button">{{t "已脱敏"}}</button>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="mk-b-sus" type="button">{{t "选中疑似敏感"}}</button>
+        <button class="btn ghost" id="mk-b-all" type="button">{{t "全选当前结果"}}</button>
+        <button class="btn ghost" id="mk-b-none" type="button">{{t "清空"}}</button>
+      </div>
+      <div class="mk-addpath" id="mk-addpath" hidden>
+        <span class="muted">{{t "补充字段路径"}}</span>
+        <input id="mk-ap-in" class="mono mk-grow" type="text" placeholder="{{t "集合.字段路径"}}" aria-label="{{t "手动添加字段路径"}}" autocomplete="off">
+        <button class="btn" id="mk-ap-add" type="button">{{t "添加"}}</button>
+      </div>
+      <div class="mk-scroll" id="mk-tree"></div>
+    </div>
+
+    <div class="mk-panel">
+      <h2><span class="mk-step">2</span>{{t "选择脱敏方式"}}</h2>
+      <div class="mk-scroll"><div class="mk-rule-body">
+        <div class="mk-kinds" id="mk-kinds" role="group" aria-label="{{t "规则类型"}}"></div>
+        <div id="mk-params"></div>
+        <div>
+          <div class="muted small mk-lbl">{{t "常用预设"}}</div>
+          <div class="mk-presets" id="mk-presets"></div>
+        </div>
+        <div>
+          <div class="muted small mk-lbl">{{t "试算"}}</div>
+          <div class="mk-preview"><table id="mk-prev"></table></div>
+        </div>
+        <div>
+          <div class="muted small mk-lbl">{{t "生效范围"}}</div>
+          <label class="mk-radio"><input type="radio" name="mk-scope" value="exact" checked><span><b id="mk-sc-exact">{{t "只对所选的“库.表.字段”"}}</b></span></label>
+          <label class="mk-radio"><input type="radio" name="mk-scope" value="name"><span><b id="mk-sc-name">{{t "该实例所有表里的同名字段"}}</b></span></label>
+        </div>
+        <div class="mk-impact" id="mk-impact"></div>
+        <button class="btn primary" id="mk-apply" type="button">{{t "应用到所选字段"}}</button>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 已配置字段 -->
+  <section id="mk-cfgsec" class="mk-cfg" hidden>
+    <div class="mk-panel mk-grow">
+      <div class="mk-toolbar">
+        <input id="mk-cq" class="mk-grow" type="search" placeholder="{{t "筛选 库.表.字段 / 规则"}}" aria-label="{{t "筛选已配置"}}">
+        <select id="mk-cf-rule" aria-label="{{t "规则类型"}}"><option value="">{{t "全部规则"}}</option></select>
+        <select id="mk-cf-state" aria-label="{{t "启用状态"}}"><option value="">{{t "全部状态"}}</option><option value="1">{{t "已启用"}}</option><option value="0">{{t "已停用"}}</option></select>
+        <span class="spacer"></span>
+        <button class="btn" id="mk-c-on" type="button">{{t "批量启用"}}</button>
+        <button class="btn" id="mk-c-off" type="button">{{t "批量停用"}}</button>
+        <button class="btn" id="mk-c-edit" type="button">{{t "用所选字段改规则"}}</button>
+        <button class="btn danger" id="mk-c-del" type="button">{{t "批量移除"}}</button>
+      </div>
+      <div class="mk-scroll"><table class="mk-list" id="mk-ctable"></table></div>
+    </div>
+  </section>
+
+  <div class="mk-bar" id="mk-bar"></div>
+
+  <!-- 粘贴清单 -->
+  <div class="mk-mask" id="mk-m-paste" hidden>
+    <div class="mk-dlg" role="dialog" aria-modal="true" aria-labelledby="mk-paste-t">
+      <h3 id="mk-paste-t">{{t "粘贴清单选字段"}}</h3>
+      <div class="mk-bd">
+        <textarea id="mk-paste" class="mono" placeholder="shop.users.phone&#10;orders.receiver_phone&#10;id_card" aria-label="{{t "字段清单"}}"></textarea>
+        <label class="mk-check"><input type="checkbox" id="mk-paste-add"> {{t "目录里没有的完整路径也添加进来"}}</label>
+        <div id="mk-paste-res" class="small muted"></div>
+      </div>
+      <div class="mk-ft"><button class="btn" id="mk-p-close" type="button">{{t "取消"}}</button><button class="btn primary" id="mk-p-ok" type="button">{{t "选中匹配到的字段"}}</button></div>
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/maskadmin/main.js"></script>{{end}}

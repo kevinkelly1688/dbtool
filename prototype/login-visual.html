@@ -1,0 +1,305 @@
+<!--
+  @author: kevinkelly
+  @license: Apache Licence
+  @file: login-visual.html
+  @time: 2026/10/28
+-->
+<!doctype html>
+<html lang="zh-CN" data-skin="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录页左侧视觉 · 原型 · dbtool</title>
+<style>
+/* ===== 与正式页面一致的皮肤变量（取自 web/static/css/app.css 的 --dt-*）===== */
+:root {
+  --dt-bg: #060a11; --dt-panel: #0b121e; --dt-raise: #132036; --dt-line: #1a2a42; --dt-line-hi: #27405f;
+  --dt-fg: #d6e2f0; --dt-muted: #7a8ca6; --dt-dim: #4f6079;
+  --dt-cyan: #38e1ff; --dt-cyan-soft: rgba(56, 225, 255, .12);
+  --dt-amber: #ffb547; --dt-ok: #37d99a; --dt-crit: #ff5577; --dt-info: #6aa8ff;
+  --dt-input: #0a111c; --dt-on-accent: #04121a; --dt-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  --e-violet: #b79cff; --e-pink: #ff7ab8; --e-teal: #3de0c4;
+  --grid: rgba(56, 225, 255, .07);
+}
+:root[data-skin="light"] {
+  --dt-bg: #f3f5f8; --dt-panel: #ffffff; --dt-raise: #eef2f7; --dt-line: #e3e8ef; --dt-line-hi: #cfd7e3;
+  --dt-fg: #1d2735; --dt-muted: #5d6b7e; --dt-dim: #94a0b0;
+  --dt-cyan: #1f6feb; --dt-cyan-soft: rgba(31, 111, 235, .09);
+  --dt-amber: #b7700a; --dt-ok: #1a8f5c; --dt-crit: #cf2c46; --dt-info: #2f6fd0;
+  --dt-input: #f8fafc; --dt-on-accent: #ffffff; --dt-shadow: 0 10px 28px rgba(20, 35, 60, .12);
+  --e-violet: #7a52e0; --e-pink: #d6377f; --e-teal: #0f9d86;
+  --grid: rgba(31, 111, 235, .08);
+}
+:root[data-skin="sepia"] {
+  --dt-bg: #f1ead9; --dt-panel: #f8f2e3; --dt-raise: #ece3cf; --dt-line: #e2d7bf; --dt-line-hi: #d3c5a7;
+  --dt-fg: #3b3428; --dt-muted: #7a6e59; --dt-dim: #a89b80;
+  --dt-cyan: #2f7d6d; --dt-cyan-soft: rgba(47, 125, 109, .1);
+  --dt-amber: #a66a12; --dt-ok: #3f7d3a; --dt-crit: #b2443a; --dt-info: #3c6f96;
+  --dt-input: #fbf7ec; --dt-on-accent: #fbf7ec; --dt-shadow: 0 10px 28px rgba(90, 70, 30, .14);
+  --e-violet: #7d55b8; --e-pink: #b8456f; --e-teal: #2a8a78;
+  --grid: rgba(47, 125, 109, .09);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--dt-bg); color: var(--dt-fg); font: 14px/1.5 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; }
+
+/* ===== 页面骨架：左品牌区 + 右登录区（与 login.html 同构）===== */
+.login-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); height: 100%; min-height: 640px; }
+.login-brand { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 18px; padding: 36px 48px 40px; background: linear-gradient(150deg, var(--dt-raise) 0%, var(--dt-panel) 60%, var(--dt-bg) 100%); border-right: 1px solid var(--dt-line); }
+.lg { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; letter-spacing: .06em; position: relative; z-index: 2; }
+.lg i { width: 38px; height: 38px; display: grid; place-items: center; font: 700 14px sans-serif; font-style: normal; letter-spacing: 0; color: var(--dt-cyan); border: 1px solid var(--dt-cyan); background: var(--dt-cyan-soft); border-radius: 10px; }
+.lg small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--dt-muted); }
+.clock { position: absolute; top: 40px; right: 48px; z-index: 2; font: 12px ui-monospace, Consolas, monospace; color: var(--dt-muted); }
+
+/* 中间留白处：视觉区（本原型的设计对象），占满 logo 与标题之间的全部高度 */
+.visual { position: relative; flex: 1 1 auto; min-height: 220px; z-index: 1; margin: -8px -24px -4px; }
+.visual svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.kicker { font-size: 12px; letter-spacing: .12em; color: var(--dt-cyan); position: relative; z-index: 2; }
+.login-brand h2 { margin: 0; font-size: 44px; line-height: 1.2; position: relative; z-index: 2; }
+.login-brand h2 em { font-style: normal; color: var(--dt-cyan); }
+.login-brand p { margin: 0; max-width: 520px; color: var(--dt-muted); position: relative; z-index: 2; }
+.engines { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; padding: 0; list-style: none; position: relative; z-index: 2; }
+.engines li { padding: 3px 10px; border: 1px solid var(--dt-line-hi); border-radius: 4px; font-size: 12px; color: var(--dt-muted); }
+
+.login-pane { position: relative; display: grid; place-items: center; padding: 32px 24px; }
+.card { width: 340px; padding: 26px 28px; background: var(--dt-panel); border: 1px solid var(--dt-line); border-radius: 10px; box-shadow: var(--dt-shadow); }
+.card .eyebrow { font-size: 11px; letter-spacing: .24em; color: var(--dt-dim); }
+.card h1 { margin: 2px 0 6px; font-size: 20px; }
+.card label { display: block; margin: 12px 0 4px; font-size: 12.5px; color: var(--dt-muted); }
+.card .ipt { height: 34px; border: 1px solid var(--dt-line-hi); border-radius: 4px; background: var(--dt-input); }
+.card .go { margin-top: 18px; height: 36px; display: grid; place-items: center; border-radius: 4px; background: var(--dt-cyan); color: var(--dt-on-accent); font-weight: 600; }
+
+/* 原型控制条（正式页面里没有）*/
+.proto-bar { position: fixed; right: 16px; top: 12px; z-index: 10; display: flex; gap: 6px; align-items: center; padding: 4px; border: 1px solid var(--dt-line-hi); border-radius: 8px; background: var(--dt-panel); font-size: 12px; }
+.proto-bar button { height: 26px; padding: 0 10px; border: 0; border-radius: 5px; background: none; color: var(--dt-muted); font: inherit; cursor: pointer; }
+.proto-bar button[aria-pressed="true"] { background: var(--dt-cyan-soft); color: var(--dt-cyan); font-weight: 600; }
+.proto-bar .sep { width: 1px; height: 16px; background: var(--dt-line-hi); }
+
+/* ===== 视觉区元素 ===== */
+.v-grid { stroke: var(--grid); stroke-width: 1; fill: none; }
+.ring { fill: none; stroke: var(--dt-line-hi); stroke-width: 1; }
+.ring.dash { stroke-dasharray: 3 7; }
+.ring.gate { stroke: var(--dt-cyan); stroke-opacity: .55; stroke-width: 1.4; }
+.ring.soft { stroke-opacity: .5; }
+.ticks { stroke: var(--dt-dim); stroke-width: 1; }
+.spoke { stroke: var(--dt-line-hi); stroke-width: 1; fill: none; }
+.sat-line { stroke: var(--dt-line-hi); stroke-width: .8; opacity: .8; }
+.sat { fill: var(--dt-muted); }
+.hub-hex { fill: var(--dt-cyan-soft); stroke: var(--dt-cyan); stroke-width: 1.6; }
+.hub-text { fill: var(--dt-cyan); font: 700 14px sans-serif; text-anchor: middle; dominant-baseline: central; letter-spacing: .04em; }
+.pulse { fill: none; stroke: var(--dt-cyan); stroke-width: 1.2; }
+.gate-chip { fill: var(--dt-panel); stroke: var(--dt-cyan); stroke-width: 1.2; }
+.gate-text { fill: var(--dt-cyan); font: 600 11px "PingFang SC", "Microsoft YaHei", sans-serif; text-anchor: middle; dominant-baseline: central; }
+.node-label { font: 11px ui-monospace, Consolas, monospace; fill: var(--c); }
+.node-core { fill: var(--dt-panel); stroke: var(--c); stroke-width: 1.6; }
+.node-dot { fill: var(--c); }
+.node-halo { fill: var(--c); opacity: .14; }
+.packet { fill: var(--c); }
+.sweep { fill: url(#sweep); }
+.n-mysql { --c: var(--dt-cyan); } .n-polardb { --c: var(--dt-amber); } .n-polardbx { --c: var(--e-violet); } .n-selectdb { --c: var(--dt-ok); }
+.n-adb { --c: var(--e-pink); } .n-mssql { --c: var(--dt-info); } .n-redis { --c: var(--dt-crit); } .n-mongo { --c: var(--e-teal); }
+
+/* 动画：全部用 CSS / SMIL，没有脚本逻辑；偏好“减少动态效果”或点了控制条的“静止”就停掉 */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-r { to { transform: rotate(-360deg); } }
+@keyframes pulse { 0% { r: 34; opacity: .55; } 100% { r: 92; opacity: 0; } }
+@keyframes twinkle { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes breathe { 0%, 100% { opacity: .1; } 50% { opacity: .22; } }
+.spin-slow { transform-origin: 320px 320px; animation: spin 140s linear infinite; }
+.spin-rev { transform-origin: 320px 320px; animation: spin-r 90s linear infinite; }
+.sweep-g { transform-origin: 320px 320px; animation: spin 14s linear infinite; }
+.pulse { animation: pulse 3.6s ease-out infinite; }
+.pulse.p2 { animation-delay: 1.8s; }
+.sat { animation: twinkle 4s ease-in-out infinite; }
+.node-halo { animation: breathe 5s ease-in-out infinite; }
+.paused *, .paused { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .spin-slow, .spin-rev, .sweep-g, .pulse, .sat, .node-halo { animation: none; } .pulse { opacity: .25; } }
+@media (max-width: 900px) { .login-split { grid-template-columns: 1fr; } .login-brand { display: none; } }
+</style>
+</head>
+<body>
+<div class="proto-bar" role="group" aria-label="原型控制">
+  <button type="button" data-skin="dark" aria-pressed="true">深空</button>
+  <button type="button" data-skin="light" aria-pressed="false">明亮</button>
+  <button type="button" data-skin="sepia" aria-pressed="false">护眼</button>
+  <span class="sep"></span>
+  <button type="button" id="b-motion" aria-pressed="true">动画</button>
+</div>
+
+<div class="login-split">
+  <section class="login-brand">
+    <div class="lg"><i>DB</i><span>DBTOOL<small>数据库运维中枢</small></span></div>
+    <time class="clock" id="clock"></time>
+
+    <!-- ↓↓↓ 设计对象：登录页左侧原来空着的这一块 ↓↓↓ -->
+    <div class="visual" id="visual" aria-hidden="true">
+      <svg id="topo" viewBox="0 0 640 640" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+    </div>
+    <!-- ↑↑↑ -->
+
+    <div class="kicker">SQL 审核 · 在线查询 · 慢 SQL 治理 · 巡检 · 审计</div>
+    <h2>每一条 SQL<br>上线前都<em>被看见</em></h2>
+    <p>变更有审核，查询有脱敏，慢 SQL 有人跟进。所有操作都会记录审计。</p>
+    <ul class="engines">
+      <li>MySQL</li><li>PolarDB</li><li>PolarDB-X</li><li>SelectDB</li><li>ADB</li><li>SQL Server</li><li>Redis</li><li>MongoDB</li>
+    </ul>
+  </section>
+  <main class="login-pane">
+    <div class="card">
+      <div class="eyebrow">SIGN IN</div>
+      <h1>登录控制台</h1>
+      <label>用户名</label><div class="ipt"></div>
+      <label>密码</label><div class="ipt"></div>
+      <div class="go">登录审核平台</div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var C = 320; // 画布中心
+  var svg = document.getElementById('topo');
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // 固定种子的伪随机：每次刷新画面一致，便于评审
+  var seed = 20261012;
+  function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+  var rad = function (deg) { return deg * Math.PI / 180; };
+  var pt = function (r, deg) { return [C + r * Math.cos(rad(deg)), C + r * Math.sin(rad(deg))]; };
+
+  // ---- 定义：扫描扇区的渐变 ----
+  var defs = el('defs', {}, svg);
+  var g = el('linearGradient', { id: 'sweep', x1: '0', y1: '0', x2: '1', y2: '0' }, defs);
+  el('stop', { offset: '0', 'stop-color': 'var(--dt-cyan)', 'stop-opacity': '0' }, g);
+  el('stop', { offset: '1', 'stop-color': 'var(--dt-cyan)', 'stop-opacity': '.28' }, g);
+
+  // ---- 背景：细网格（极淡）----
+  var grid = el('g', {}, svg);
+  for (var i = 0; i <= 640; i += 40) {
+    el('line', { class: 'v-grid', x1: i, y1: 0, x2: i, y2: 640 }, grid);
+    el('line', { class: 'v-grid', x1: 0, y1: i, x2: 640, y2: i }, grid);
+  }
+
+  // ---- 同心圈 + 外圈刻度（慢速旋转）----
+  el('circle', { class: 'ring soft', cx: C, cy: C, r: 290 }, svg);
+  var outer = el('g', { class: 'spin-slow' }, svg);
+  el('circle', { class: 'ring dash', cx: C, cy: C, r: 270 }, outer);
+  for (var t = 0; t < 120; t++) {
+    var long = t % 10 === 0;
+    var a = pt(270, t * 3), b = pt(long ? 258 : 264, t * 3);
+    el('line', { class: 'ticks', x1: a[0], y1: a[1], x2: b[0], y2: b[1], 'stroke-opacity': long ? .9 : .4 }, outer);
+  }
+  el('circle', { class: 'ring dash', cx: C, cy: C, r: 232 }, svg);
+  el('circle', { class: 'ring', cx: C, cy: C, r: 190, 'stroke-opacity': .6 }, svg);
+
+  // ---- 雷达扫描扇区（引擎圈内）----
+  var sw = el('g', { class: 'sweep-g' }, svg);
+  el('path', { class: 'sweep', d: 'M' + C + ' ' + C + ' L' + (C + 190) + ' ' + C + ' A190 190 0 0 0 ' + pt(190, -38)[0] + ' ' + pt(190, -38)[1] + ' Z' }, sw);
+
+  // ---- 引擎节点 ----
+  var engines = [
+    ['MySQL', 'n-mysql', 7], ['PolarDB', 'n-polardb', 6], ['PolarDB-X', 'n-polardbx', 5], ['SelectDB', 'n-selectdb', 5],
+    ['ADB', 'n-adb', 4], ['SQL Server', 'n-mssql', 6], ['Redis', 'n-redis', 4], ['MongoDB', 'n-mongo', 4]
+  ];
+  var R = 190, GATE = 70;
+  var spokes = el('g', {}, svg);
+  var sats = el('g', {}, svg);
+  var nodes = el('g', {}, svg);
+  var packets = el('g', {}, svg);
+
+  engines.forEach(function (en, idx) {
+    var deg = -90 + idx * 45;
+    var p = pt(R, deg);
+    var cls = en[1];
+
+    // 轮辐：引擎 → 中心（数据流的方向相反：SQL 从外向内被“看见”）
+    var spId = 'sp' + idx;
+    var path = 'M' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ' L' + C + ' ' + C;
+    el('path', { class: 'spoke', id: spId, d: path }, spokes);
+
+    // 实例卫星：围绕引擎外侧的小点，细线连回引擎
+    for (var s = 0; s < en[2]; s++) {
+      var sd = deg + (rnd() - 0.5) * 36;
+      var sr = R + 34 + rnd() * 70;
+      var q = pt(sr, sd);
+      el('line', { class: 'sat-line', x1: p[0].toFixed(1), y1: p[1].toFixed(1), x2: q[0].toFixed(1), y2: q[1].toFixed(1) }, sats);
+      var d = el('circle', { class: 'sat', cx: q[0].toFixed(1), cy: q[1].toFixed(1), r: (1.6 + rnd() * 1.4).toFixed(1) }, sats);
+      d.setAttribute('style', 'animation-delay:' + (rnd() * 4).toFixed(2) + 's');
+    }
+
+    // 节点：光晕 + 圆环 + 点 + 标签
+    var grp = el('g', { class: cls }, nodes);
+    var halo = el('circle', { class: 'node-halo', cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 16 }, grp);
+    halo.setAttribute('style', 'animation-delay:' + (idx * 0.6).toFixed(1) + 's');
+    el('circle', { class: 'node-core', cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 8 }, grp);
+    el('circle', { class: 'node-dot', cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 3 }, grp);
+    var lp = pt(R + 24, deg);
+    var anchor = Math.abs(Math.cos(rad(deg))) < 0.3 ? 'middle' : (Math.cos(rad(deg)) > 0 ? 'start' : 'end');
+    var dx = anchor === 'start' ? -2 : anchor === 'end' ? 2 : 0;
+    var lab = el('text', { class: 'node-label', x: (lp[0] + dx).toFixed(1), y: (lp[1] + (Math.sin(rad(deg)) > 0.6 ? 10 : Math.sin(rad(deg)) < -0.6 ? -4 : 4)).toFixed(1), 'text-anchor': anchor }, grp);
+    lab.textContent = en[0];
+
+    // SQL 数据包：沿轮辐从引擎飞向中心，经过“三道关”后消失在中心
+    for (var k = 0; k < 2; k++) {
+      var dur = 3.4 + (idx % 3) * 0.5;
+      var begin = (idx * 0.55 + k * dur / 2).toFixed(2) + 's';
+      var pk = el('circle', { class: 'packet ' + cls, r: 2.6, opacity: 0 }, packets);
+      var am = el('animateMotion', { dur: dur + 's', begin: begin, repeatCount: 'indefinite', rotate: 'auto' }, pk);
+      el('mpath', { href: '#' + spId }, am);
+      el('animate', { attributeName: 'opacity', values: '0;1;1;0', keyTimes: '0;0.12;0.8;1', dur: dur + 's', begin: begin, repeatCount: 'indefinite' }, pk);
+    }
+  });
+
+  // ---- 三道关：审核 / 脱敏 / 审计，贴着中心的内圈 ----
+  var gate = el('g', {}, svg);
+  el('circle', { class: 'ring gate', cx: C, cy: C, r: GATE }, gate);
+  // 只有外面那圈虚线在反向慢转；三个关卡的文字不转，保证始终可读
+  var inner = el('g', { class: 'spin-rev' }, gate);
+  el('circle', { class: 'ring dash', cx: C, cy: C, r: GATE + 22 }, inner);
+  [['审核', -90], ['脱敏', 30], ['审计', 150]].forEach(function (x) {
+    var gp = pt(GATE, x[1]);
+    el('circle', { class: 'gate-chip', cx: gp[0].toFixed(1), cy: gp[1].toFixed(1), r: 15 }, gate);
+    var tx = el('text', { class: 'gate-text', x: gp[0].toFixed(1), y: gp[1].toFixed(1) }, gate);
+    tx.textContent = x[0];
+  });
+
+  // ---- 中心：脉冲 + 六边形 DB ----
+  el('circle', { class: 'pulse', cx: C, cy: C, r: 34 }, svg);
+  el('circle', { class: 'pulse p2', cx: C, cy: C, r: 34 }, svg);
+  var hex = [];
+  for (var h = 0; h < 6; h++) { var hp = pt(30, -90 + h * 60); hex.push(hp[0].toFixed(1) + ',' + hp[1].toFixed(1)); }
+  el('polygon', { class: 'hub-hex', points: hex.join(' ') }, svg);
+  var ht = el('text', { class: 'hub-text', x: C, y: C }, svg);
+  ht.textContent = 'DB';
+
+  // ---- 控制条：皮肤 / 动画开关 / 时钟 ----
+  var root = document.documentElement;
+  var qs = new URLSearchParams(location.search).get('skin');
+  function setSkin(s) {
+    root.setAttribute('data-skin', s);
+    document.querySelectorAll('[data-skin]').forEach(function (b) { if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', String(b.dataset.skin === s)); });
+  }
+  document.querySelectorAll('.proto-bar [data-skin]').forEach(function (b) { b.addEventListener('click', function () { setSkin(b.dataset.skin); }); });
+  if (qs) setSkin(qs);
+  var mb = document.getElementById('b-motion');
+  mb.addEventListener('click', function () {
+    var on = mb.getAttribute('aria-pressed') !== 'true';
+    mb.setAttribute('aria-pressed', String(on));
+    svg.classList.toggle('paused', !on);
+    if (on) svg.unpauseAnimations(); else svg.pauseAnimations();
+  });
+  var clock = document.getElementById('clock');
+  var two = function (n) { return String(n).padStart(2, '0'); };
+  function tick() { var d = new Date(); clock.textContent = d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()) + ' ' + two(d.getHours()) + ':' + two(d.getMinutes()) + ':' + two(d.getSeconds()); }
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

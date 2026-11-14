@@ -1,0 +1,128 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: notify_settings.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/notify.css">{{end}}
+
+{{define "content"}}
+<main class="page fill-list" id="notify">
+  <div class="page-head">
+    <h1>{{t "通知渠道（机器人 / 邮件）"}}</h1>
+    <span class="spacer"></span>
+    <a class="btn" href="/settings/notify/templates">{{t "消息模板"}}</a>
+    <button class="btn primary" id="nc-new" type="button">{{t "新增渠道"}}</button>
+  </div>
+  <div id="nc-msg"></div>
+
+  <div class="kpis nc-kpis" id="nc-kpis"></div>
+
+  <section class="card" id="nc-panel" hidden aria-label="{{t "编辑渠道"}}">
+    <h2 id="nc-title">{{t "新增渠道"}}</h2>
+    <div class="form-grid">
+      <label>{{t "类型"}}<select id="nc-type" aria-label="{{t "渠道类型"}}"></select></label>
+      <label>{{t "名称"}}<input type="text" id="nc-name" maxlength="50" placeholder="{{t "例如：订单中心 · DBA 值班群"}}" aria-label="{{t "名称"}}"></label>
+      <label class="check"><input type="checkbox" id="nc-enabled" checked> {{t "启用"}}</label>
+      <div class="full">
+        <span class="lbl">{{t "关联资源组"}}</span>
+        <label class="check-inline"><input type="checkbox" id="nc-global"> {{t "全局（对所有资源组生效）"}}</label>
+        <div class="check-list" id="nc-groups"></div>
+        <small class="muted" id="nc-groups-hint"></small>
+      </div>
+      <label class="full" id="nc-url-wrap">{{t "Webhook 地址"}}<input type="text" id="nc-url" autocomplete="off" placeholder="https://…" aria-label="{{t "Webhook 地址"}}"></label>
+      <label class="full" id="nc-secret-wrap"><span id="nc-secret-txt">{{t "签名密钥（可留空）"}}</span><input type="password" id="nc-secret" autocomplete="new-password" aria-label="{{t "签名密钥"}}"></label>
+      <label class="check-inline full" id="nc-clear-wrap" hidden><input type="checkbox" id="nc-clear"> <span id="nc-clear-txt">{{t "清除已有签名密钥"}}</span></label>
+      <div class="full" id="nc-email" hidden>
+        <h3 class="nc-sub">{{t "SMTP 与收件人"}}</h3>
+        <div id="nc-em-notice"></div>
+        <div class="form-grid">
+          <label>{{t "SMTP 主机"}}<input type="text" id="nc-em-host" maxlength="253" autocomplete="off" placeholder="smtp.example.com" aria-label="{{t "SMTP 主机"}}"></label>
+          <label>{{t "端口"}}<input type="number" id="nc-em-port" min="1" max="65535" aria-label="{{t "SMTP 端口"}}"></label>
+          <label>{{t "加密方式"}}<select id="nc-em-enc" aria-label="{{t "加密方式"}}"><option value="starttls">STARTTLS</option><option value="ssl">SSL/TLS</option><option value="none">{{t "不加密"}}</option></select></label>
+          <label>{{t "SMTP 用户名（可留空）"}}<input type="text" id="nc-em-user" maxlength="200" autocomplete="off" aria-label="{{t "SMTP 用户名"}}"></label>
+          <div class="full">
+            <label class="check-inline"><input type="checkbox" id="nc-em-verify" checked> {{t "校验服务器证书"}}</label>
+            <div class="alert warn" id="nc-em-verify-warn" role="note" hidden>{{t "已关闭证书校验：无法确认对方身份，存在被中间人窃听的风险。"}}</div>
+          </div>
+          <div class="full" id="nc-em-plain-wrap" hidden>
+            <label class="check-inline"><input type="checkbox" id="nc-em-plain"> {{t "允许明文认证"}}</label>
+            <div class="alert warn" role="note">{{t "用户名和密码将以明文发送，存在被窃听的风险。"}}</div>
+          </div>
+          <label>{{t "发件人地址"}}<input type="text" id="nc-em-from" maxlength="254" autocomplete="off" placeholder="dbtool@example.com" aria-label="{{t "发件人地址"}}"></label>
+          <label>{{t "发件人显示名（可选）"}}<input type="text" id="nc-em-fromname" maxlength="64" autocomplete="off" placeholder="{{t "DB 工具"}}" aria-label="{{t "发件人显示名"}}"></label>
+          <label class="full">{{t "固定收件人 To（逗号分隔）"}}<input type="text" id="nc-em-to" autocomplete="off" placeholder="ops@example.com" aria-label="{{t "固定收件人"}}"></label>
+          <label class="full">{{t "抄送 Cc（逗号分隔）"}}<input type="text" id="nc-em-cc" autocomplete="off" aria-label="{{t "抄送"}}"></label>
+          <label>{{t "主题前缀"}}<input type="text" id="nc-em-prefix" maxlength="50" autocomplete="off" placeholder="[dbtool]" aria-label="{{t "主题前缀"}}"></label>
+        </div>
+      </div>
+      <div class="full">
+        <span class="lbl">{{t "订阅的事件（不选 = 全部）"}}</span>
+        <div class="check-list" id="nc-events"></div>
+      </div>
+      <label class="full">{{t "DBA 值班人员（用户名，逗号分隔）"}}<input type="text" id="nc-duty" autocomplete="off" placeholder="dba_li,dba_wang" aria-label="{{t "DBA 值班人员"}}"><small class="muted" id="nc-duty-hint"></small></label>
+      <div class="full">
+        <span class="lbl">{{t "@ 规则"}}</span>
+        <div id="nc-rules"></div>
+        <button class="btn ghost" id="nc-add-rule" type="button">{{t "+ 添加 @ 规则"}}</button>
+      </div>
+    </div>
+
+    <div class="nc-sim">
+      <h3>{{t "测试与预览"}}</h3>
+      <div class="nc-sim-bar">
+        <label>{{t "模拟事件"}}<select id="nc-sim-event" aria-label="{{t "模拟事件"}}"></select></label>
+        <label>{{t "模拟时间"}}<select id="nc-sim-time" aria-label="{{t "模拟时间"}}"><option value="">{{t "当前时间"}}</option><option value="true">{{t "工作时间"}}</option><option value="false">{{t "非工作时间"}}</option></select></label>
+        <label>{{t "模拟当前审批级"}}<select id="nc-sim-level" aria-label="{{t "模拟当前审批级的权限组"}}"></select></label>
+        <label id="nc-test-to-wrap" hidden>{{t "测试收件人（邮件）"}}<input type="text" id="nc-test-to" autocomplete="off" placeholder="{{t "单个邮箱地址"}}" aria-label="{{t "测试收件人"}}"></label>
+      </div>
+      <div id="nc-test-result"></div>
+      <div id="nc-preview"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="nc-preview-btn" type="button">{{t "预览（不发送）"}}</button>
+      <button class="btn" id="nc-test" type="button">{{t "发送测试消息"}}</button>
+      <span class="spacer"></span>
+      <button class="btn" id="nc-cancel" type="button">{{t "取消"}}</button>
+      <button class="btn primary" id="nc-save" type="button">{{t "保存"}}</button>
+    </div>
+  </section>
+
+  <section class="card fill" id="nc-tabs">
+    <div class="tabbar" role="tablist" style="margin-top:0">
+      <button class="tab on" type="button" data-tab="list" role="tab">{{t "渠道"}}</button>
+      <button class="tab" type="button" data-tab="logs" role="tab">{{t "发送记录"}}</button>
+    </div>
+
+    <div class="fill-pane" data-pane="list">
+      <form class="inline-form wrap nc-filter" id="nc-filter">
+        <select id="nc-f-type" aria-label="{{t "类型筛选"}}"></select>
+        <select id="nc-f-group" aria-label="{{t "资源组筛选"}}"></select>
+        <input type="search" id="nc-f-q" placeholder="{{t "搜索渠道名称 / 主机"}}" aria-label="{{t "关键词"}}" style="min-width:220px">
+      </form>
+      <div class="grid-wrap"><table class="list">
+        <thead><tr><th>{{t "名称"}}</th><th>{{t "类型"}}</th><th>{{t "关联资源组"}}</th><th>{{t "机器人 / SMTP"}}</th><th>{{t "订阅事件"}}</th><th>{{t "@ 规则"}}</th><th>{{t "状态"}}</th><th>{{t "最近发送"}}</th><th>{{t "操作"}}</th></tr></thead>
+        <tbody id="nc-rows"><tr><td colspan="9" class="empty">{{t "加载中…"}}</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div class="fill-pane" data-pane="logs" hidden>
+      <form class="inline-form wrap nc-filter" id="nl-form">
+        <select id="nl-channel" aria-label="{{t "渠道"}}"></select>
+        <select id="nl-event" aria-label="{{t "事件"}}"></select>
+        <label class="check-inline"><input type="checkbox" id="nl-failed"> {{t "仅看失败"}}</label>
+        <button class="btn" type="submit">{{t "查询"}}</button>
+      </form>
+      <div id="nl-note"></div>
+      <div class="grid-wrap"><table class="list">
+        <thead><tr><th>{{t "时间"}}</th><th>{{t "渠道"}}</th><th>{{t "事件"}}</th><th>{{t "结果"}}</th><th>{{t "耗时"}}</th><th>{{t "@ / 收件人数"}}</th><th>{{t "说明"}}</th></tr></thead>
+        <tbody id="nl-rows"><tr><td colspan="7" class="empty">{{t "点击页签后加载"}}</td></tr></tbody>
+      </table></div>
+      <div class="pager" id="nl-pager"></div>
+    </div>
+  </section>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/notify/notify.js"></script>{{end}}

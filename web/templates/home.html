@@ -1,0 +1,169 @@
+{{- /*
+@author: kevinkelly
+@license: Apache Licence
+@file: home.html
+@time: 2026/10/28
+*/ -}}
+{{define "head"}}<link rel="stylesheet" href="/static/css/home.css">{{end}}
+
+{{define "content"}}
+<main class="page home">
+  <div class="page-head">
+    <h1>{{t "{greeting}，{name}" "greeting" (tp .Data.Greeting) "name" (or .Display .Username)}}</h1>
+    <span class="muted small">{{.Data.Today}}</span>
+    <span class="spacer"></span>
+    {{if can . "sqlworkflow.submit"}}<a class="btn primary" href="/sqlworkflow/new">{{t "提交 SQL 工单"}}</a>{{end}}
+  </div>
+
+  {{if .Data.KPIs}}
+  <div class="home-kpis" id="home-kpis">
+    {{range .Data.KPIs}}
+    <a class="hk{{if .Warn}} warn{{end}}" id="{{.ID}}" href="{{.Href}}"><span class="hk-l">{{tp .Label}}</span><span class="hk-v" data-role="v">{{.Value}}</span><span class="hk-d" data-role="d">{{tp .Hint}}</span></a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Data.Cards}}
+  <div class="home-cards">
+    {{range .Data.Cards}}
+    <a class="hc{{if .Warn}} warn{{end}}" href="{{.Href}}"><span class="hc-n">{{.Count}}</span><span class="hc-l">{{tp .Label}}</span></a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="home-grid">
+    <div class="home-col">
+      {{if or .Data.HasTodo .Data.HasPerf}}
+      <section class="card" id="todo" aria-labelledby="todo-h">
+        <h2 id="todo-h">{{t "我的待办"}} <span class="muted small" id="todo-total"></span></h2>
+        <div class="tabbar home-tabs" role="tablist" aria-label="{{t "待办分类"}}">
+          {{if .Data.HasTodo}}<button type="button" class="tab on" role="tab" aria-selected="true" aria-controls="todo-approve" data-tab="approve">{{t "待我审批"}} <span class="count" id="cnt-approve">{{.Data.ApproveN}}</span></button>
+          <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="todo-mine" data-tab="mine">{{t "我提交的"}} <span class="count" id="cnt-mine">{{.Data.MineN}}</span></button>{{end}}
+          {{if .Data.HasPerf}}<button type="button" class="tab{{if not .Data.HasTodo}} on{{end}}" role="tab" aria-selected="{{if .Data.HasTodo}}false{{else}}true{{end}}" aria-controls="todo-perf" data-tab="perf" id="tab-perf">{{t "性能工单"}} <span class="count" id="cnt-perf">…</span></button>{{end}}
+        </div>
+        {{if .Data.HasTodo}}
+        <div class="todo-list" id="todo-approve" role="tabpanel">
+          {{range .Data.Approve}}
+          <a class="todo-row" href="{{.Href}}"><span class="tag brand">{{tp .Kind}}</span><span class="todo-main"><b>{{.Title}}</b><small class="muted">{{tp .Sub}}</small></span><span class="todo-act">{{t "查看 →"}}</span></a>
+          {{else}}<p class="empty-note">{{t "没有等你审批的事项"}}</p>{{end}}
+          {{if .Data.ApproveMore}}<p class="more-note muted small">{{t "还有 {n} 项，见" "n" .Data.ApproveMore}} <a href="/sqlworkflow?status=workflow_manreviewing">{{t "变更工单"}}</a> / <a href="/query/applies">{{t "权限申请"}}</a> / <a href="/archive">{{t "数据归档"}}</a> {{t "列表|lists"}}</p>{{end}}
+        </div>
+        <div class="todo-list" id="todo-mine" role="tabpanel" hidden>
+          {{range .Data.Mine}}
+          <a class="todo-row" href="{{.Href}}"><span class="tag brand">{{tp .Kind}}</span><span class="todo-main"><b>{{.Title}}</b><small class="muted">{{tp .Sub}}</small></span><span class="todo-act">{{if .Warn}}<span class="st rejected">{{t "需处理"}}</span>{{else}}{{t "查看 →"}}{{end}}</span></a>
+          {{else}}<p class="empty-note">{{t "你没有进行中的工单或申请"}}</p>{{end}}
+        </div>
+        {{end}}
+        {{if .Data.HasPerf}}
+        <div class="todo-list" id="todo-perf" role="tabpanel"{{if .Data.HasTodo}} hidden{{end}}><p class="empty-note" id="perf-empty">{{t "加载中…"}}</p></div>
+        {{end}}
+      </section>
+      {{end}}
+
+      {{if .Data.Recent}}
+      <section class="card">
+        <h2>{{t "最近的 SQL 工单"}}<span class="spacer"></span><a class="small" href="/sqlworkflow">{{t "全部工单 →"}}</a></h2>
+        <table class="list">
+          <thead><tr><th>{{t "编号"}}</th><th>{{t "工单名称"}}</th><th>{{t "实例 / 库"}}</th><th>{{t "提交人"}}</th><th>{{t "状态"}}</th><th>{{t "提交时间"}}</th></tr></thead>
+          <tbody>
+            {{range .Data.Recent}}
+            <tr>
+              <td><a href="/sqlworkflow/{{.ID}}">#{{.ID}}</a></td>
+              <td>{{.Name}}</td>
+              <td>{{.InstanceName}} <span class="muted mono">/ {{.DBName}}</span></td>
+              <td>{{.Engineer}}</td>
+              <td><span class="st {{sqlStatusClass .Status}}">{{tp .StatusLabel}}</span></td>
+              <td>{{.CreateTime.Format "2006-01-02 15:04"}}</td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </section>
+      {{end}}
+
+      {{if .Data.Applies}}
+      <section class="card">
+        <h2>{{t "最近的权限申请"}}<span class="spacer"></span><a class="small" href="/query/applies">{{t "全部申请 →"}}</a></h2>
+        <table class="list">
+          <thead><tr><th>{{t "编号"}}</th><th>{{t "标题"}}</th><th>{{t "实例"}}</th><th>{{t "申请人"}}</th><th>{{t "状态"}}</th><th>{{t "时间"}}</th></tr></thead>
+          <tbody>
+            {{range .Data.Applies}}
+            <tr>
+              <td><a href="/query/applies/{{.ID}}">#{{.ID}}</a></td>
+              <td>{{.Title}}</td>
+              <td>{{.Instance}}</td>
+              <td>{{.User}}</td>
+              <td><span class="st {{.Class}}">{{tp .StatusLabel}}</span></td>
+              <td>{{.Created}}</td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </section>
+      {{end}}
+
+      {{if .Data.Chart}}
+      <section class="card">
+        <h2>{{t "近 7 日 SQL 工单"}} <span class="muted small">{{t "共 {n} 张" "n" .Data.Chart.Total}}</span></h2>
+        <svg class="home-chart" viewBox="0 0 {{.Data.Chart.W}} {{.Data.Chart.H}}" role="img" aria-label="{{t "近 7 日每天提交的 SQL 工单数"}}">
+          <line class="axis" x1="10" y1="140" x2="{{.Data.Chart.W}}" y2="140"/>
+          {{range .Data.Chart.Bars}}
+          <rect class="bar{{if .Today}} today{{end}}" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="3"><title>{{t "{label}：{n} 张" "label" .Label "n" .N}}</title></rect>
+          <text class="bar-n" x="{{.CX}}" y="{{.NY}}" text-anchor="middle">{{.N}}</text>
+          <text class="bar-l" x="{{.CX}}" y="{{.LY}}" text-anchor="middle">{{.Label}}</text>
+          {{end}}
+        </svg>
+        {{if .Data.Chart.Truncated}}<p class="muted small">{{t "部分日期统计失败，柱高可能偏低。"}}</p>{{end}}
+      </section>
+      {{end}}
+
+      <section class="card">
+        <h2>{{t "快捷入口"}}</h2>
+        {{if .Data.Quick}}
+        <div class="quick">
+          {{range .Data.Quick}}<a href="{{.Href}}"><span class="gl">{{.Icon}}</span>{{tp .Label}}</a>{{end}}
+        </div>
+        {{else}}<p class="muted">{{t "当前账号没有可用的功能入口，请联系资源组负责人或 DBA 开通权限。"}}</p>{{end}}
+      </section>
+    </div>
+
+    <div class="home-col">
+      {{if .Data.Insts}}
+      <section class="card" id="home-insts" data-ids="{{.Data.InstIDs}}">
+        <h2>{{t "实例健康"}} <span class="muted small">{{t "{n} 个" "n" .Data.InstN}}</span><span class="spacer"></span><a class="small" href="/inspection" id="insp-link" hidden>{{t "性能巡检 →"}}</a></h2>
+        <ul class="inst-list" id="inst-list">
+          {{range .Data.Insts}}
+          <li data-inst="{{.ID}}"><span class="dot unknown" aria-hidden="true"></span><span class="in-name">{{.Name}}</span>{{if eq .Env "prod"}}<span class="badge prod">{{t "生产"}}</span>{{else if .EnvProd}}<span class="badge prod">{{.EnvLabel}}</span>{{end}}<span class="in-meta muted">{{.DBType}} · {{if eq .Role "master"}}{{t "主|primary"}}{{else}}{{t "从|replica"}}{{end}}</span><span class="in-st muted small" data-role="st"></span></li>
+          {{end}}
+        </ul>
+        {{if .Data.InstMore}}<p class="muted small">{{t "… 另有 {n} 个，见" "n" .Data.InstMore}} <a href="/query">{{t "在线查询"}}</a> {{t "的实例列表"}}</p>{{end}}
+      </section>
+      {{end}}
+
+      {{if .Data.Activity}}
+      <section class="card">
+        <h2>{{t "最近动态"}} <span class="muted small">{{if .Data.ActAll}}{{t "全平台"}}{{else}}{{t "我的操作"}}{{end}}</span><span class="spacer"></span>{{if .Data.CanAudit}}<a class="small" href="/audit">{{t "审计日志 →"}}</a>{{end}}</h2>
+        <ul class="act-list">
+          {{range .Data.Activity}}
+          <li><div class="small"><b>{{.User}}</b> {{tp .Action}}{{if .Extra}} <span class="muted">{{.Extra}}</span>{{end}}</div><div class="small muted">{{.At}}</div></li>
+          {{end}}
+        </ul>
+      </section>
+      {{end}}
+
+      {{if .Data.Platform}}
+      <section class="card">
+        <h2>{{t "平台状态"}}</h2>
+        <ul class="plat-list">
+          {{range .Data.Platform}}
+          <li><span class="muted">{{tp .Label}}</span><span class="tag {{.Class}}">{{tp .Value}}</span></li>
+          {{end}}
+        </ul>
+      </section>
+      {{end}}
+    </div>
+  </div>
+</main>
+{{end}}
+
+{{define "scripts"}}<script type="module" src="/static/js/home.js"></script>{{end}}

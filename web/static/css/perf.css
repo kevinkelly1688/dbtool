@@ -1,0 +1,26 @@
+/**
+ * @author: kevinkelly
+ * @license: Apache Licence
+ * @file: perf.css
+ * @time: 2026/10/28
+ */
+/* 性能工单页面的少量独有样式；公共组件（.sev .kpis .score .tabbar .modal-mask .trend 等）在 admin.css。 */
+.perf-actions { justify-content: flex-start; flex-wrap: wrap; align-items: center; }
+button.sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+button.sort:hover { color: var(--dt-cyan-text); }
+table.perf td .clip { max-width: 360px; }
+#perf-detail .sqlbox { max-height: 280px; }
+#perf-detail ul.log li b { margin-right: 4px; }
+#perf-collect td.wrap, #perf-collect .mono.wrap { white-space: pre-wrap; word-break: break-all; max-width: 640px; }
+#perf-sla .num-in { width: 96px; }
+.page .tabbar + .card, .page .tabbar + div { margin-top: 0; }
+.pd-effect { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .pd-effect { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#perf-list .kpis small { margin-top: 2px; }
+#pcc-win-note:empty, #ps-esc-note:empty, #pa-tip:empty, #pd-effect-note:empty { display: none; }
+#perf-collect .form-inline, #perf-team .form-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0; }
+#perf-collect .num-in { width: 96px; }
+#perf-team .card.flat { box-shadow: none; margin-top: 14px; border: 1px dashed var(--dt-line-hi); }
+#perf-team #rt-res { margin-top: 8px; }
+#perf-team #rt-res .alert div + div { margin-top: 2px; }
+#perf-team #rt-sql { width: 100%; margin-top: 6px; }
